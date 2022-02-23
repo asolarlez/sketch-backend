@@ -493,7 +493,7 @@ public:
 
 //    VarStore(const LightInliningTree* _inlining_tree);
 
-    VarStore(const VarStore& to_copy);
+    VarStore(const VarStore& to_copy, bool deep_clone = false);
     VarStore(const VarStore& to_copy, LightInliningTree* _inlining_tree);
 
     void operator = (const VarStore& to_copy);
@@ -735,7 +735,8 @@ public:
 
     bool check_rep() const;
 
-    void set_inlining_tree(const LightInliningTree *new_inlining_tree);
+    void set_inlining_tree(LightInliningTree *new_inlining_tree);
+//    void set_inlining_tree(LightInliningTree *new_inlining_tree);
 
     bool check_rep_and_clear();
 

@@ -88,8 +88,6 @@ class SketchFunction: public BooleanDagUtility
 
     void core_clear(const string& dag_name);
 
-    set<string> get_deep_holes();
-
 public:
 
     const Dependencies& get_dependencies() const {
@@ -114,7 +112,7 @@ public:
             const map<string, string>& _original_labels = map<string, string>(),
             const FMTL::TransformPrimitive* _rep = nullptr,
             Dependencies _responsibility = Dependencies(),
-            LightInliningTree* _inlining_tree = nullptr,
+            const LightInliningTree* _inlining_tree = nullptr,
             bool _has_been_concretized = false) :
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized),
 #ifndef REMOVE_SkVal

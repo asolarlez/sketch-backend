@@ -76,8 +76,13 @@ void LightInliningTree::
     if(is_root) delete visited;
 }
 
-LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, LightInliningTree*>* visited, set<LightInliningTree*>* not_owned): LightSkFuncSetter(_skfunc) {
+LightInliningTree::LightInliningTree(
+        const BooleanDagUtility *_skfunc,
+        const VarStore* _to_set_var_store, map<int, LightInliningTree*>* visited, set<LightInliningTree*>* not_owned): LightSkFuncSetter(_skfunc) {
+    AssertDebug(_skfunc->get_inlining_tree(false) == nullptr, "if _skfunc has an inlining_tree, it shouldn't need to reconstruct it.");
+    assert(!_skfunc->get_has_been_concretized());
     bool is_root = visited->empty();
+
     assert(visited->find(get_dag_id()) == visited->end());
 
 //    if(_skfunc->get_dag_name() == "printf")
@@ -103,6 +108,7 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
 
     if(ufun_nodes.empty()) {
         if(skfunc_inlining_tree != nullptr) {
+            AssertDebug(false, "DEAD CODE (skfunc_inlining_tree should always be == nullptr here), otherwise you don't need to construct the inliing_tree");
             assert(_skfunc->get_has_been_concretized());
             for(const auto& it: skfunc_inlining_tree->get_var_name_to_inlining_subtree()) {
                 if(visited->find(it.second->get_dag_id()) == visited->end()) {
@@ -112,7 +118,8 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                     var_name_to_inlining_subtree[it.first] = it.second;
                     var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited, not_owned);
                     assert(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end());
-                    it.second->increment_num_shared_ptr();
+                    var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
+                    local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
 #endif
                 }
                 else
@@ -120,6 +127,7 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                     var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
                     if(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end()) {
                         var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
+                        local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
                     }
                 }
             }
@@ -136,7 +144,16 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                     assert(get_var_name_to_inlining_subtree().at(var_name)->get_dag_id() == sub_dag->get_dag_id());
                     assert(sub_dag != nullptr);
                 } else {
-                    var_name_to_inlining_subtree[var_name] = new LightInliningTree(sub_dag, visited);
+                    if(sub_dag->get_inlining_tree(false) == nullptr) {
+                        var_name_to_inlining_subtree[var_name] = new LightInliningTree(sub_dag, (const VarStore*)nullptr, visited, not_owned);
+                    } else
+                    {
+                        var_name_to_inlining_subtree[var_name] = sub_dag->get_inlining_tree_non_const();
+                        var_name_to_inlining_subtree[var_name]->populate_and_assert_not_visited(visited, not_owned);
+                        assert(not_owned->find(var_name_to_inlining_subtree[var_name]) != not_owned->end());
+                        var_name_to_inlining_subtree[var_name]->increment_num_shared_ptr();
+                        local_not_owned.insert(var_name_to_inlining_subtree[var_name]);
+                    }
                 }
             } else {
                 if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
@@ -145,6 +162,7 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                     var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag->get_dag_id()];
                     if(not_owned->find(var_name_to_inlining_subtree[var_name]) != not_owned->end()) {
                         var_name_to_inlining_subtree[var_name]->increment_num_shared_ptr();
+                        local_not_owned.insert(var_name_to_inlining_subtree[var_name]);
                     }
                 }
             }
@@ -153,6 +171,9 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
     assert_nonnull();
     get_solution();
     if(is_root){
+        if(_to_set_var_store != nullptr) {
+            set_var_store(_to_set_var_store);
+        }
         delete visited;
         delete not_owned;
     }
@@ -409,10 +430,7 @@ long long int LightSkFuncSetter::get_tree_id() const {
 
 void LightSkFuncSetter::init() {
     inlining_tree_id = inlining_tree_global_id++;
-//    if(dag_id == 23)
-//    {
-//        cout << "here" << endl;
-//    }
+
     assert(all_inlining_trees.find(this) == all_inlining_trees.end());
     all_inlining_trees.insert(this);
     if(name_to_count.find(get_dag_name()) == name_to_count.end()) {
@@ -420,6 +438,10 @@ void LightSkFuncSetter::init() {
     }
     name_to_count[get_dag_name()]+=1;
     max_count = max(max_count, name_to_count[get_dag_name()]);
+    if(get_dag_name() == "printf__id14__id54" && name_to_count[get_dag_name()] >= 1)
+    {
+        cout << "here" << endl;
+    }
 //    cout << "#trees " << all_inlining_trees.size() <<", tree_id: " << inlining_tree_global_id << ", dag_name: " << get_dag_name() << ", count: "<< name_to_count[get_dag_name()] << ", ptr: " << this << endl;
 //    cout << "";
 }

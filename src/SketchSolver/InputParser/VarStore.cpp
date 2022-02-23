@@ -262,10 +262,15 @@ const string &VarStore::get_name(const string& var_name, const string &source_da
 //    }
 //}
 
-VarStore::VarStore(const VarStore &to_copy)
+VarStore::VarStore(const VarStore &to_copy, bool deep_clone)
 {
     AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
     AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
+
+    if(deep_clone) {
+        assert(to_copy.inlining_tree != nullptr);
+        inlining_tree = new LightInliningTree(to_copy.inlining_tree, true);
+    }
 
     *this = to_copy;
 }
@@ -312,12 +317,17 @@ bool VarStore::check_rep() const {
     return true;
 }
 
-void VarStore::set_inlining_tree(const LightInliningTree *new_inlining_tree) {
-    if(inlining_tree != nullptr) {
-        inlining_tree->clear();
-    }
-    inlining_tree = new LightInliningTree(new_inlining_tree);
+void VarStore::set_inlining_tree(LightInliningTree *new_inlining_tree) {
+    assert(inlining_tree == nullptr);
+    inlining_tree = new_inlining_tree;
 }
+
+//void VarStore::set_inlining_tree(LightInliningTree *new_inlining_tree) {
+//    if(inlining_tree != nullptr) {
+//        inlining_tree->clear();
+//    }
+//    inlining_tree = new LightInliningTree(new_inlining_tree);
+//}
 
 void VarStore::operator=(const VarStore &to_copy){
 

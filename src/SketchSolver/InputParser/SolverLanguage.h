@@ -1604,6 +1604,7 @@ public:
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
+                assert(all_remaining_inlining_trees == 0);
 
                 assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);

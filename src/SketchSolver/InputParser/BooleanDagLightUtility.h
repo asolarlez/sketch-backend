@@ -50,6 +50,10 @@ protected:
     {
         assert(name_to_count.find(dag_name) != name_to_count.end());
         name_to_count[dag_name]--;
+        if(dag_name == "printf__id14__id54")
+        {
+            cout << "here" << endl;
+        }
         if(name_to_count[dag_name] == 0)
         {
             name_to_count.erase(dag_name);
@@ -58,7 +62,12 @@ protected:
         if(name_to_count.find(dag_name) == name_to_count.end()) {
             name_to_count[dag_name] = 0;
         }
+        if(dag_name == "printf__id14__id54")
+        {
+            cout << "here" << endl;
+        }
         name_to_count[dag_name]+=1;
+        max_count = max(max_count, name_to_count[dag_name]);
     }
 
     void change_id(int new_id){
@@ -77,6 +86,10 @@ protected:
 
     void decrement_num_shared_ptr() const {
         assert(num_shared_ptr >= 1);
+        if(inlining_tree_id == 622)
+        {
+            cout << "here" << endl;
+        }
         num_shared_ptr--;
     }
 
@@ -86,6 +99,10 @@ protected:
         cleared = true;
         assert(name_to_count.find(get_dag_name()) != name_to_count.end());
         name_to_count[get_dag_name()] --;
+        if(dag_name == "printf__id14__id54")
+        {
+            cout << "here" << endl;
+        }
         if(name_to_count[get_dag_name()] == 0) {
             name_to_count.erase(get_dag_name());
         }
@@ -146,9 +163,9 @@ protected:
         {
             auto _obj = var_store->getObjConst(obj.name);
             assert(obj.name == _obj.name && obj.element_size() == _obj.element_size() &&
-            obj.get_type() == _obj.get_type() &&
-            obj.get_original_name() == _obj.get_original_name() &&
-            obj.get_source_dag_name() == _obj.get_source_dag_name());
+                   obj.get_type() == _obj.get_type() &&
+                   obj.get_original_name() == _obj.get_original_name() &&
+                   obj.get_source_dag_name() == _obj.get_source_dag_name());
         }
         return true;
     }
@@ -180,14 +197,13 @@ public:
     }
 
     explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy):
-    dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), unconc_hole_original_name_to_name(to_copy->unconc_hole_original_name_to_name) {
+            dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), unconc_hole_original_name_to_name(to_copy->unconc_hole_original_name_to_name) {
         assert(this != to_copy);
         assert(all_inlining_trees.find(this) == all_inlining_trees.end());
         init();
         if(to_copy->var_store != nullptr) {
             var_store = to_copy->var_store->clone();
         }
-        assert(var_store != nullptr || unconc_hole_original_name_to_name.empty());
     }
 
     explicit LightSkFuncSetter(const BooleanDagUtility* _skfunc);
@@ -203,6 +219,10 @@ public:
     }
 
     void increment_num_shared_ptr() {
+        if(inlining_tree_id == 622)
+        {
+            cout << "here" << endl;
+        }
         num_shared_ptr++;
     }
 };
@@ -258,8 +278,10 @@ class LightInliningTree: public LightSkFuncSetter
         }
     }
 
-protected:
     map<string, LightInliningTree*> var_name_to_inlining_subtree;
+
+    set<LightInliningTree*> local_not_owned;
+
 public:
     const LightInliningTree* get_target(const string& target_subdag) const
     {
@@ -310,7 +332,7 @@ public:
                 assert(to_check->contains(obj, path));
             }
         }
-        for(auto it: var_name_to_inlining_subtree)
+        for(const auto& it: var_name_to_inlining_subtree)
         {
             if(visited->find(it.second) == visited->end()) {
                 path->push_back(it.first);
@@ -323,6 +345,7 @@ public:
 
     explicit LightInliningTree(
             const LightInliningTree* to_copy,
+            bool deep_clone = false,
             map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>(),
             set<LightInliningTree *> *not_owned = new set<LightInliningTree *>()
     ):
@@ -333,10 +356,24 @@ public:
         (*visited)[get_dag_id()] = this;
         for (const auto &it: to_copy->get_var_name_to_inlining_subtree()) {
             if (visited->find(it.second->get_dag_id()) == visited->end()) {
-                var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
+                //todo: if it.second is not owned by to_copy; don't clone it
+                if(!deep_clone && to_copy->local_not_owned.find(it.second) != to_copy->local_not_owned.end())
+                {
+                    var_name_to_inlining_subtree[it.first] = it.second;
+                    var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited, not_owned);
+                    assert(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end());
+                    local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
+                    var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
+                }
+                else {
+                    var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, deep_clone, visited, not_owned);
+                }
             } else {
-//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
+                if(!deep_clone && not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end()) {
+                    local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
+                    var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
+                }
             }
         }
         assert_nonnull();
@@ -346,7 +383,7 @@ public:
         }
     }
 
-    explicit LightInliningTree(const BooleanDagUtility* _skfunc, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>(),
+    explicit LightInliningTree(const BooleanDagUtility* _skfunc, const VarStore* to_set_var_store = nullptr, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>(),
                                set<LightInliningTree *> *not_owned = new set<LightInliningTree *>());
 
     void populate_and_assert_not_visited(map<int, LightInliningTree *> *visited, set<LightInliningTree*>* not_owned);
@@ -354,7 +391,7 @@ public:
     LightInliningTree(const BooleanDagUtility *to_replace_root, const LightInliningTree *to_copy,
                       map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>(),
                       set<LightInliningTree *> *not_owned = new set<LightInliningTree *>()):
-        LightSkFuncSetter(to_replace_root)
+            LightSkFuncSetter(to_replace_root)
     {
         bool is_root = visited->empty();
         assert(visited->find(get_dag_id()) == visited->end());
@@ -370,12 +407,14 @@ public:
                 var_name_to_inlining_subtree[it.first] = it.second;
                 var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited, not_owned);
                 assert(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end());
-                it.second->increment_num_shared_ptr();
+                local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
+                var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
 #endif
             }
             else {
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
                 if(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end()) {
+                    local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
                     var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
                 }
             }
@@ -807,7 +846,7 @@ public:
             if(shared_ptr == 0) {
                 clear_inlining_tree = true;
 
-                LightInliningTree* tmp_inlining_tree = inlining_tree;
+                const LightInliningTree* tmp_inlining_tree = inlining_tree;
                 inlining_tree = nullptr;
                 tmp_inlining_tree->clear(false, true);
             }
@@ -824,10 +863,10 @@ public:
     }
 
     void increment_shared_ptr() const {
-        if(get_dag()->get_dag_id() == 91)
-        {
-            cout << "here" << endl;
-        }
+//        if(get_dag()->get_dag_id() == 91)
+//        {
+//            cout << "here" << endl;
+//        }
         assert(shared_ptr >= 0);
         shared_ptr++;
     }

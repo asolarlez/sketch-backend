@@ -9,22 +9,6 @@
 
 const bool rename_holes = true;
 
-set<string> SketchFunction::get_deep_holes(){
-    set<string> ret;
-    set<string>* subf_names = get_inlined_functions();
-    for(const auto& f_name : *subf_names)
-    {
-        assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
-        SketchFunction* subf = get_env()->function_map.find(f_name)->second;
-
-        for(auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
-            if(it->get_name() != "#PC")
-            ret.insert(it->get_name());
-        }
-    }
-    return ret;
-}
-
 
 SketchFunction *SketchFunction::produce_concretization(
         const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
@@ -35,7 +19,7 @@ SketchFunction *SketchFunction::produce_concretization(
     VarStore* var_store = nullptr;
     if(_var_store != nullptr) {
         assert(_var_store->check_rep());
-        var_store = new VarStore(*_var_store);
+        var_store = new VarStore(*_var_store, true);
         assert(var_store->check_rep());
     }
 
@@ -341,15 +325,18 @@ void SketchFunction::clear(){
     }
 
     global_clear_id++;
+
+    ProgramEnvironment* prev_env = get_env();
+
     _clear();
 
-    for(const auto& sk_it : get_env()->function_map)
+    for(const auto& sk_it : prev_env->function_map)
     {
         auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
         for(auto it_ufun : ufuns)
         {
             string ufname = ((UFUN_node*)it_ufun)->get_ufname();
-            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
+            assert(prev_env->function_map.find(ufname) != prev_env->function_map.end());
         }
     }
 }
@@ -658,11 +645,13 @@ set<string> SketchFunction::ufun_names() {
 #ifdef REMOVE_SkVal
 VarStore *SketchFunction::get_solution() {
     LightInliningTree* local_inlining_tree = nullptr;
+    bool new_inlining_tree = false;
     if(get_has_been_concretized()) {
         assert(get_inlining_tree() != nullptr);
-        local_inlining_tree = get_inlining_tree();
+        local_inlining_tree = new LightInliningTree(get_inlining_tree());
     }
     else {
+        new_inlining_tree = true;
         local_inlining_tree = new LightInliningTree(this);
     }
 

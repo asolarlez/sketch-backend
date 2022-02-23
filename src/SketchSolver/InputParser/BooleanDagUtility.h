@@ -20,17 +20,19 @@ class BooleanDagUtility: public BooleanDagLightUtility {
 
 public:
 
+    vector<string> get_deep_holes() const;
+
     const VarStore* get_var_store() const {
         return var_store_used_for_concretization;
     }
 
     BooleanDagUtility(BooleanDAG* _root_dag): BooleanDagLightUtility(_root_dag) {}
 
-    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, ProgramEnvironment* _original_env, LightInliningTree* _inlining_tree, bool _has_been_concretized):
+    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, ProgramEnvironment* _original_env, const LightInliningTree* _inlining_tree, bool _has_been_concretized):
             BooleanDagLightUtility(_root_dag, _env),
-            original_program_env(_original_env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
-        if(inlining_tree != nullptr) {
-            inlining_tree = new LightInliningTree(this, inlining_tree);
+            original_program_env(_original_env), has_been_concretized(_has_been_concretized) {
+        if(_inlining_tree != nullptr) {
+            inlining_tree = new LightInliningTree(this, _inlining_tree);
             inlining_tree->get_solution();
             assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
@@ -40,10 +42,10 @@ public:
         }
     }
 
-    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, LightInliningTree* _inlining_tree, bool _has_been_concretized):
-            BooleanDagLightUtility(_root_dag, _env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
-        if(inlining_tree != nullptr) {
-            inlining_tree = new LightInliningTree(this, inlining_tree);
+    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, const LightInliningTree* _inlining_tree, bool _has_been_concretized):
+            BooleanDagLightUtility(_root_dag, _env), has_been_concretized(_has_been_concretized) {
+        if(_inlining_tree != nullptr) {
+            inlining_tree = new LightInliningTree(this, _inlining_tree);
             assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
     }
@@ -157,7 +159,7 @@ public:
         }
         else {
             assert(inlining_tree == nullptr);
-            inlining_tree = new LightInliningTree(this);
+            inlining_tree = new LightInliningTree(this, _var_store);
             inlining_tree->get_solution();
         }
         if(inlining_tree != nullptr) {
@@ -219,8 +221,6 @@ public:
                                 _var_store->getObjConst(hole_name)));
                     }
                 }
-                inlining_tree->set_var_store(_var_store);
-//                inlining_tree->check_rep();
             }
         }
     }
@@ -240,9 +240,11 @@ public:
 
     bool is_inlining_tree_nonnull();
 
-    LightInliningTree * const & get_inlining_tree(bool assert_nonnull = true) const;
+    const LightInliningTree * get_inlining_tree(bool assert_nonnull = true) const;
+    LightInliningTree * get_inlining_tree_non_const(bool assert_nonnull = true) const;
 
     bool get_has_been_concretized() const ;
+    bool get_has_been_inlined() const ;
 
     void clear_inlining_tree();
 };

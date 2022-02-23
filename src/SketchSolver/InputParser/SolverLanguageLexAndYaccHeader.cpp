@@ -404,11 +404,25 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             SketchFunction* skfunc = param_var_val->get_function();
 //            cout << "SAT SOLER ON DAG: " << skfunc->get_dag_id() << endl;
 
+            vector<string> prev_holes = skfunc->get_deep_holes();
+
+            sort(prev_holes.begin(), prev_holes.end());
+
             BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
 //            harness->get_inlining_tree()->get_solution()->check_rep();
 
+            vector<string> after_holes = harness->get_deep_holes();
+
+            sort(after_holes.begin(), after_holes.end());
+
+            assert(prev_holes.size() == after_holes.size());
+
+
+            if(harness->get_dag_id() == 83) {
+                cout << "here" << endl;
+            }
+
             harness->increment_shared_ptr();
-            param_var_val->decrement_shared_ptr();
 
             File* file = params[1]->eval(state)->get_file();
             assert(file->like_unused());
@@ -423,10 +437,19 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             assert(sol->get_inlining_tree() == nullptr);
 
             VarStore* append_sol = harness->get_inlining_tree()->get_solution();
-            harness->get_inlining_tree()->set_var_store(sol);
+            LightInliningTree* harness_inlining_tree = new LightInliningTree(harness->get_inlining_tree());
+            harness_inlining_tree->set_var_store(sol);
             sol->disjoint_join_with(*append_sol);
-            sol->set_inlining_tree(harness->get_inlining_tree());
+            sol->set_inlining_tree(harness_inlining_tree);
             assert(sol->check_rep());
+
+            //make sure produce_concretiz
+            SketchFunction* to_test = skfunc->produce_concretization(sol, bool_node::CTRL, true, true, true);
+            to_test->increment_shared_ptr();
+            to_test->clear();
+
+            param_var_val->decrement_shared_ptr();
+
 #else
             const HoleAssignment* sol = (solver)->solve(problem);
 
@@ -943,15 +966,13 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
 #ifdef REMOVE_SkVal
-                HoleVarStore *solution_holder = var_val_sol->get_solution();
-                VarStore* var_store = new VarStore(*solution_holder);
+                HoleVarStore *var_store = var_val_sol->get_solution();
 #else
                 const HoleAssignment *solution_holder = var_val_sol->get_solution();
                 VarStore* var_store = solution_holder->to_var_store();
 #endif
                 assert(var_store->check_rep());
                 SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
-                var_store->clear();
                 var_val_sol->decrement_shared_ptr();
                 return new SL::VarVal(concretized_function);
             }

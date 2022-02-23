@@ -27,7 +27,40 @@ bool BooleanDagUtility::is_inlining_tree_nonnull() {
     return ret;
 }
 
-LightInliningTree * const & BooleanDagUtility::get_inlining_tree(bool assert_nonnull) const {
+vector<string> BooleanDagUtility::get_deep_holes() const{
+    vector<string> ret;
+    set<string>* subf_names = get_inlined_functions();
+
+    if(get_has_been_inlined()) {
+        assert(subf_names->empty());
+        for (auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
+            if (it->get_name() != "#PC") {
+                ret.push_back(it->get_name());
+            }
+        }
+    }
+    else {
+        assert(get_env()->function_map.find(get_dag_name())->second == this);
+        subf_names->insert(get_dag_name());
+        for (const auto &f_name: *subf_names) {
+            assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
+            SketchFunction *subf = get_env()->function_map.find(f_name)->second;
+
+            for (auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
+                if (it->get_name() != "#PC") {
+                    ret.push_back(it->get_name());
+                }
+            }
+        }
+    }
+    return ret;
+}
+
+const LightInliningTree * BooleanDagUtility::get_inlining_tree(bool assert_nonnull) const {
+    return get_inlining_tree_non_const(assert_nonnull);
+}
+
+LightInliningTree * BooleanDagUtility::get_inlining_tree_non_const(bool assert_nonnull) const {
     if(assert_nonnull) {
         assert(inlining_tree != nullptr);
     }
@@ -39,6 +72,10 @@ LightInliningTree * const & BooleanDagUtility::get_inlining_tree(bool assert_non
 
 bool BooleanDagUtility::get_has_been_concretized() const {
     return has_been_concretized;
+}
+
+bool BooleanDagUtility::get_has_been_inlined() const {
+    return inlining_tree != nullptr;
 }
 
 void BooleanDagUtility::clear_inlining_tree() {
