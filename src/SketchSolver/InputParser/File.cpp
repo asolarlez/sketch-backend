@@ -29,10 +29,8 @@ void File::relabel(BooleanDagLightUtility *harness) {
 
 File::File(BooleanDagLightUtility *harness, const string &file, FloatManager &floats, int seed) {
     generator = std::mt19937(seed);
-//    SketchFunction* cloned_inlined_harness = harness->produce_concretization();
     BooleanDAG* problem = harness->get_dag()->clone();
     harness->get_env()->doInline(*problem);
-//    cloned_inlined_harness->get_dag();
     VarStore input_store;
     redeclareInputsAndAngelics(input_store, problem);
     auto inputs = problem->getNodesByType(bool_node::SRC);
@@ -106,7 +104,5 @@ File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
     return ret;
 }
 
-File::File() {
-
-}
+File::File() = default;
 

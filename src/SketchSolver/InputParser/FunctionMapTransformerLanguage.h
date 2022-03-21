@@ -7,22 +7,22 @@
 
 
 #include "SolverLanguageLexAndYaccHeader.h"
+#include "FunctionMap.h"
 
 namespace FMTL{
 
     class FunctionMapTransformerState
     {
         SL::CodeBlock* root = nullptr;
-        FunctionMap* function_map;
     public:
-        FunctionMapTransformerState() = default;
+        FunctionMap& function_map;
+        explicit FunctionMapTransformerState(FunctionMap& _function_map): function_map(_function_map) {};
 
         void add_root(SL::CodeBlock* code_block) {
             root = code_block;
         }
 
-        FunctionMap *eval(FunctionMap* _function_map) {
-            function_map = _function_map;
+        FunctionMap *eval() {
             AssertDebug(false, "TODO: implement state-polymorphic implementation of the AST.")
 //            root->run(this);
         }

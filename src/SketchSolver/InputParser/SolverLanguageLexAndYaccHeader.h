@@ -12,28 +12,17 @@
 #include <map>
 #include <vector>
 #include <fstream>
-#include "SketchFunction.h"
+#include "FunctionMap.h"
 
 using namespace std;
 
-//class SolverProgramState;
+class SketchFunction;
+class GenericFile;
 
-class ProgramState
+class ProgramState;
+
+namespace SL
 {
-
-};
-
-class Frame;
-
-class SketchFunction;
-class FloatManager;
-class CommandLineArgs;
-class HoleHardcoder;
-
-class File;
-class SketchFunction;
-
-namespace SL {
 
     class VarVal;
 
@@ -64,7 +53,7 @@ namespace SL {
             delete this;
         }
 
-        SL::VarVal* eval(SolverProgramState *state);
+        SL::VarVal* eval(ProgramState *state);
 
         bool operator<(const Identifier &other) const {
             assert(defined);
@@ -79,404 +68,11 @@ namespace SL {
         bool is_defined();
     };
 
-    class SLType;
-
-    template<typename Head>
-    class LinkedList
-    {
-        Head* head = nullptr;
-        LinkedList* rest = nullptr;
-    public:
-        LinkedList() = default;
-        explicit LinkedList(Head* _head): head(_head) {}
-        LinkedList(Head* _head, LinkedList* _rest): head(_head), rest(_rest) {}
-
-        void populate_vector(vector<Head*>& ret)
-        {
-            assert(ret.size() == 0);
-            LinkedList<Head>* at = this;
-            while(at != nullptr) {
-                if(at->head != nullptr) {
-                    ret.push_back(new Head(at->head));
-                }
-                else {
-                    assert(at->rest == nullptr);
-                }
-                at = at->rest;
-            }
-        }
-
-        void clear()
-        {
-            if(head != nullptr) {
-                head->clear();
-                head = nullptr;
-            }
-            else
-            {
-                assert(rest == nullptr);
-            }
-            if(rest != nullptr)
-            {
-                rest->clear();
-                rest = nullptr;
-            }
-            delete this;
-        }
-
-        bool operator < (const LinkedList& other) const
-        {
-            assert(head != nullptr && other.head != nullptr);
-            if(*head < *other.head)
-            {
-                return true;
-            }
-            else if(*other.head < *head)
-            {
-                return false;
-            }
-            if(rest == nullptr && other.rest == nullptr)
-            {
-                return false;
-            }
-            else if(rest != nullptr && other.rest == nullptr){
-                return true;
-            }
-            else
-            {
-                return *rest < *other.rest;
-            }
-        }
-
-        bool operator == (const LinkedList& other) const
-        {
-            assert(head != nullptr && other.head != nullptr);
-            if(!(*head == *other.head))
-            {
-                return false;
-            }
-            if(rest == nullptr && other.rest == nullptr)
-            {
-                return true;
-            }
-            else if(rest != nullptr && other.rest == nullptr){
-                return false;
-            }
-            else {
-                return *rest == *other.rest;
-            }
-        }
-        string to_string()
-        {
-            return head->to_string() + (rest == nullptr ? "" : ", " + rest->to_string());
-        }
-    };
-
-    class TypeParams: public LinkedList<SLType>
-    {
-    public:
-        explicit TypeParams(SLType* _head): LinkedList<SLType>(_head) {}
-        TypeParams(SLType* _head, TypeParams* _rest): LinkedList<SLType>(_head, _rest) {}
-    };
-
-    const bool is_strongly_typed = false;
-
-    class PolyType;
-
-    class SLType
-    {
-        Identifier* name = nullptr;
-        PolyType* type_params = nullptr;
-    public:
-        explicit SLType(Identifier* _name): name(_name) {assert(name != nullptr);}
-        SLType(Identifier* _name, TypeParams* _type_params);
-        explicit SLType(SLType* to_copy);
-
-        void clear();
-
-        string to_string();
-
-        bool operator < (const SLType& other) const;
-
-        bool operator == (const SLType& other) const;
-
-        Identifier *get_head() {
-            assert(name != nullptr);
-            return name;
-        }
-
-        PolyType* get_type_params() {
-            assert(name != nullptr);
-            return type_params;
-        }
-
-        bool is_simple_type();
-
-        bool is_defined() {
-            return name != nullptr;
-        }
-
-        bool is_any() {
-            assert(is_defined());
-            return name->to_string() == "any";
-        }
-    };
-
-    class Var {
-        SLType *type = nullptr;
-        Identifier *name = nullptr;
-    public:
-
-        Var(SLType *_type, Identifier *_name) : type(_type), name(_name) {}
-        Var(Identifier *_type, Identifier *_name) : type(new SL::SLType(_type)), name(_name) {}
-        explicit Var(Var* to_copy): type(new SL::SLType(to_copy->type)), name(new SL::Identifier(to_copy->name)) {}
-
-        Identifier *get_name() {
-            return name;
-        }
-
-        void clear()
-        {
-            //clears everything
-            type->clear();
-            name->clear();
-            delete this;
-        }
-
-        string to_string() const {
-            return name->to_string() + " : " + type->to_string();
-        }
-
-        void run(SolverProgramState *state);
-
-        bool defined() const
-        {
-            return type != nullptr && name != nullptr;
-        }
-
-        bool operator == (const Var& other) const
-        {
-            if(is_strongly_typed) {
-                return *type == *other.type && *name == *other.name;
-            }
-            else
-            {
-                return *name == *other.name;
-            }
-        }
-
-        bool operator < (const Var& other) const
-        {
-            assert(defined());
-            assert(other.defined());
-
-
-            if(is_strongly_typed) {
-                if (*type < *other.type) {
-                    return true;
-                } else if (*other.type < *type) {
-                    return false;
-                }
-            }
-
-            return *name < *other.name;
-        }
-
-        SL::VarVal*eval(SolverProgramState *pState);
-
-        SLType * get_type();
-
-        bool has_type()
-        {
-            return type->is_defined();
-        }
-
-        bool accepts_type(const string& type_name)
-        {
-            if(!has_type() || has_any_type()) {
-                return true;
-            }
-            assert(get_type()->is_simple_type());
-            return get_type()->get_head()->to_string() == type_name;
-        }
-
-        bool has_any_type()
-        {
-            return type->is_any();
-        }
-
-    };
-
-    vector<SL::SLType*>* copy_type_params(vector<SLType*>* to_copy);
-
-    class PolyType
-    {
-        vector<SL::SLType*>* type_params = nullptr;
-
-    public:
-        explicit PolyType(TypeParams* _type_params){
-            type_params = new vector<SL::SLType*>();
-            _type_params->populate_vector(*type_params);
-            _type_params->clear();
-        }
-        explicit PolyType(vector<SLType*>* _type_params): type_params(_type_params) {}
-        explicit PolyType(PolyType* to_copy): type_params(copy_type_params(to_copy->type_params)) {};
-
-        SL::SLType* at(int idx)
-        {
-            assert(type_params != nullptr);
-            assert(0 <= idx && idx < size());
-            return type_params->at(idx);
-        }
-
-        int size()
-        {
-            assert(type_params != nullptr);
-            if(type_params == nullptr)
-            {
-                return 0;
-            }
-            return type_params->size();
-        }
-
-        const vector<SLType*>* get_type_params()
-        {
-            return type_params;
-        }
-
-        string to_string()
-        {
-            string str;
-            for(int i = 0;i<type_params->size();i++)
-            {
-                if(i >= 1)
-                {
-                    str+= ", ";
-                }
-                str += type_params->at(i)->to_string();
-            }
-            return str;
-        }
-
-        virtual void clear()
-        {
-            soft_clear();
-            delete this;
-        }
-
-        void soft_clear()
-        {
-            for(auto & it: *type_params)
-            {
-                it->clear();
-                it = nullptr;
-            }
-            type_params->clear();
-            delete type_params;
-            type_params = nullptr;
-        }
-
-        bool operator == (const PolyType& other) const
-        {
-            if(type_params->size() != other.type_params->size())
-            {
-                return false;
-            }
-            assert(type_params->size() == other.type_params->size());
-            for(int i = 0;i<type_params->size();i++)
-            {
-                if(!(*type_params->at(i) == *other.type_params->at(i)))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        bool operator < (const PolyType& other) const
-        {
-            assert(is_strongly_typed);
-            if(type_params->size() < other.type_params->size())
-            {
-                return true;
-            }
-            else if(type_params->size() > other.type_params->size())
-            {
-                return false;
-            }
-            assert(type_params->size() == other.type_params->size());
-            for(int i = 0;i<type_params->size();i++)
-            {
-                if(*type_params->at(i) < *other.type_params->at(i))
-                {
-                    return true;
-                }
-                else if( *other.type_params->at(i) < *type_params->at(i))
-                {
-                    return false;
-                }
-            }
-            return false;
-        }
-    };
-
-    class PolyVec: public PolyType, private vector<SL::VarVal*>
-    {
-    public:
-        explicit PolyVec(PolyType* _type_params): PolyType(_type_params){
-            assert(get_type_params()->size() == 1);
-            _type_params->clear();
-        }
-        explicit PolyVec(PolyVec* to_copy);
-
-        void emplace_back(SL::VarVal* new_element);
-
-        void sort();
-
-        void clear() override;
-
-        size_t size(){
-            return vector<SL::VarVal*>::size();
-        }
-
-        SL::VarVal* at(int idx)
-        {
-            assert(idx >= 0 && idx < size());
-            return vector<SL::VarVal*>::at(idx);
-        }
-
-        void reverse();
-    };
-
-    class PolyPair: public PolyType, private pair<SL::VarVal*, SL::VarVal*>
-    {
-    public:
-        explicit PolyPair(PolyType* _type_params, SL::VarVal* left, SL::VarVal* right);
-
-        explicit PolyPair(PolyPair* to_copy);
-
-        SL::VarVal* first() const {
-            return pair<SL::VarVal*, SL::VarVal*>::first;
-        }
-        SL::VarVal* second() const {
-            return pair<SL::VarVal*, SL::VarVal*>::second;
-        }
-
-        void clear() override;
-
-        bool operator < (const PolyPair& other) const;
-    };
-
     class Method;
-
-    template<bool_node::Type type>
-    class GenericVarStore: public VarStore {
-    public:
-        explicit GenericVarStore(const VarStore& _to_copy): VarStore(_to_copy) {}
-    };
-
-    typedef GenericVarStore<bool_node::SRC> InputVarStore;
-    typedef GenericVarStore<bool_node::CTRL> HoleVarStore;
+    class PolyVec;
+    class PolyPair;
+    class FunctionCall;
+    class Param;
 
     enum VarValType {
         string_val_type, int_val_type, file_val_type,
@@ -502,8 +98,6 @@ namespace SL {
         }
     }
 
-    class FunctionCall;
-
     class VarVal{
 
         union {
@@ -511,7 +105,7 @@ namespace SL {
             int i;
             bool b;
             float float_val;
-            File* file;
+            GenericFile* file;
             Method* method;
             SketchFunction* skfunc;
             HoleVarStore* solution;
@@ -539,7 +133,7 @@ namespace SL {
             }
         }
         explicit VarVal(float _float_val);
-        explicit VarVal(File* _file);
+        explicit VarVal(GenericFile* _file);
         explicit VarVal(Method* _method);
         explicit VarVal(SketchFunction* _harness);
         explicit VarVal(PolyVec* _poly_vec);
@@ -733,60 +327,7 @@ namespace SL {
             assert(false);
         }
 
-        bool operator < (const VarVal& other) const
-        {
-            assert(var_val_type == other.var_val_type);
-            switch (var_val_type) {
-
-                case string_val_type:
-                    return s < other.s;
-                    break;
-                case int_val_type:
-                    return i < other.i;
-                    break;
-                case file_val_type:
-                    return *file < *other.file;
-                    break;
-                case method_val_type:
-                    assert(false);
-//                    return *method < *other.method;
-                    break;
-                case skfunc_val_type:
-                    //WARNING: all skfuncs are essentially equal.
-                    //TODO: should implement a meaningful definition of < for skfunc/boolean dag
-                    return false;
-                    break;
-                case solution_val_type:
-                    return false;
-                    break;
-                case input_val_type:
-                    assert(false);
-//                    return *input_holder < *other.input_holder;
-                    break;
-                case bool_val_type:
-                    return b < other.b;
-                    break;
-                case void_val_type:
-                    return false;
-                    break;
-                case float_val_type:
-                    return float_val < other.float_val;
-                    break;
-                case poly_vec_type:
-                    assert(false);
-//                    return *poly_vec < *other.poly_vec;
-                    break;
-                case poly_pair_type:
-                    return *poly_pair < *other.poly_pair;
-                    break;
-                case no_type:
-                    assert(false);
-                    break;
-                default:
-                    assert(false);
-            }
-            assert(false);
-        }
+        bool operator < (const VarVal& other) const;
 
         VarValType get_type()
         {
@@ -814,7 +355,7 @@ namespace SL {
             else if(std::is_same<SketchFunction*,T>::value){
                 assert(is_sketch_function());
             }
-            else if(std::is_same<File*,T>::value){
+            else if(std::is_same<GenericFile*,T>::value){
                 assert(var_val_type == file_val_type);
             }
             else if(std::is_same<HoleVarStore *,T>::value){
@@ -893,13 +434,13 @@ namespace SL {
             return get<string>(s->to_string(), do_count, do_assert);
         }
 
-        File *get_file(bool do_count = true, bool do_assert = true) {
+        GenericFile *get_file(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == file_val_type);
             assert(do_assert);
-            return get<File *>(file, do_count, do_assert);
+            return get<GenericFile *>(file, do_count, do_assert);
         }
 
-        File *get_file_const(bool do_count) const {
+        GenericFile *get_file_const(bool do_count) const {
             assert(!do_count);
             assert(var_val_type == file_val_type);
             return file;
@@ -1033,19 +574,10 @@ namespace SL {
 
     private:
         template<typename T>
-        void clear(T& val, bool do_delete = true)
-        {
-            assert_type_invariant<T>();
-            if(val != nullptr) {
-                val->clear();
-                if(do_delete) {
-                    delete val;
-                }
-                val = nullptr;
-            }
-        }
+        void clear(T& val, bool do_delete = true);
+
         template<typename T>
-        VarVal* eval(T& val, SolverProgramState* state, FunctionCall* function_call);
+        VarVal* eval(T& val, ProgramState* state, FunctionCall* function_call);
 
         void _clear() {
             assert(num_shared_ptr == 0);
@@ -1057,7 +589,7 @@ namespace SL {
                     //do nothing
                     break;
                 case file_val_type:
-                    clear<File*>(file, false);
+                    clear<GenericFile*>(file, false);
                     break;
                 case method_val_type:
                     clear<Method*>(method, false);
@@ -1103,13 +635,13 @@ namespace SL {
 
 
     private:
-            bool is_return = false;
+        bool is_return = false;
     public:
         void set_return();
 
         bool get_is_return() const;
 
-        VarVal *eval(SolverProgramState *pState, SL::FunctionCall *pCall);
+        VarVal *eval(ProgramState *pState, SL::FunctionCall *pCall);
 
         VarVal *clone();
 
@@ -1121,8 +653,807 @@ namespace SL {
 
     };
 
-    class Param;
+    class SLType;
 
+    template<typename Head>
+    class LinkedList
+    {
+        Head* head = nullptr;
+        LinkedList* rest = nullptr;
+    public:
+        LinkedList() = default;
+        explicit LinkedList(Head* _head): head(_head) {}
+        LinkedList(Head* _head, LinkedList* _rest): head(_head), rest(_rest) {}
+
+        void populate_vector(vector<Head*>& ret)
+        {
+            assert(ret.size() == 0);
+            LinkedList<Head>* at = this;
+            while(at != nullptr) {
+                if(at->head != nullptr) {
+                    ret.push_back(new Head(at->head));
+                }
+                else {
+                    assert(at->rest == nullptr);
+                }
+                at = at->rest;
+            }
+        }
+
+        void clear()
+        {
+            if(head != nullptr) {
+                head->clear();
+                head = nullptr;
+            }
+            else
+            {
+                assert(rest == nullptr);
+            }
+            if(rest != nullptr)
+            {
+                rest->clear();
+                rest = nullptr;
+            }
+            delete this;
+        }
+
+        bool operator < (const LinkedList& other) const
+        {
+            assert(head != nullptr && other.head != nullptr);
+            if(*head < *other.head)
+            {
+                return true;
+            }
+            else if(*other.head < *head)
+            {
+                return false;
+            }
+            if(rest == nullptr && other.rest == nullptr)
+            {
+                return false;
+            }
+            else if(rest != nullptr && other.rest == nullptr){
+                return true;
+            }
+            else
+            {
+                return *rest < *other.rest;
+            }
+        }
+
+        bool operator == (const LinkedList& other) const
+        {
+            assert(head != nullptr && other.head != nullptr);
+            if(!(*head == *other.head))
+            {
+                return false;
+            }
+            if(rest == nullptr && other.rest == nullptr)
+            {
+                return true;
+            }
+            else if(rest != nullptr && other.rest == nullptr){
+                return false;
+            }
+            else {
+                return *rest == *other.rest;
+            }
+        }
+        string to_string()
+        {
+            return head->to_string() + (rest == nullptr ? "" : ", " + rest->to_string());
+        }
+    };
+
+    class TypeParams: public LinkedList<SLType>
+    {
+    public:
+        explicit TypeParams(SLType* _head): LinkedList<SLType>(_head) {}
+        TypeParams(SLType* _head, TypeParams* _rest): LinkedList<SLType>(_head, _rest) {}
+    };
+
+    const bool is_strongly_typed = false;
+
+    class PolyType;
+
+    class SLType
+    {
+        Identifier* name = nullptr;
+        PolyType* type_params = nullptr;
+    public:
+        explicit SLType(Identifier* _name): name(_name) {assert(name != nullptr);}
+        SLType(Identifier* _name, TypeParams* _type_params);
+        explicit SLType(SLType* to_copy);
+
+        void clear();
+
+        string to_string();
+
+        bool operator < (const SLType& other) const;
+
+        bool operator == (const SLType& other) const;
+
+        Identifier *get_head() {
+            assert(name != nullptr);
+            return name;
+        }
+
+        PolyType* get_type_params() {
+            assert(name != nullptr);
+            return type_params;
+        }
+
+        bool is_simple_type();
+
+        bool is_defined() {
+            return name != nullptr;
+        }
+
+        bool is_any() {
+            assert(is_defined());
+            return name->to_string() == "any";
+        }
+    };
+
+    class Var {
+        SLType *type = nullptr;
+        Identifier *name = nullptr;
+    public:
+
+        Var(SLType *_type, Identifier *_name) : type(_type), name(_name) {}
+        Var(Identifier *_type, Identifier *_name) : type(new SL::SLType(_type)), name(_name) {}
+        explicit Var(Var* to_copy): type(new SL::SLType(to_copy->type)), name(new SL::Identifier(to_copy->name)) {}
+
+        Identifier *get_name() {
+            return name;
+        }
+
+        void clear()
+        {
+            //clears everything
+            type->clear();
+            name->clear();
+            delete this;
+        }
+
+        string to_string() const {
+            return name->to_string() + " : " + type->to_string();
+        }
+
+        void run(ProgramState *state);
+
+        bool defined() const
+        {
+            return type != nullptr && name != nullptr;
+        }
+
+        bool operator == (const Var& other) const
+        {
+            if(is_strongly_typed) {
+                return *type == *other.type && *name == *other.name;
+            }
+            else
+            {
+                return *name == *other.name;
+            }
+        }
+
+        bool operator < (const Var& other) const
+        {
+            assert(defined());
+            assert(other.defined());
+
+
+            if(is_strongly_typed) {
+                if (*type < *other.type) {
+                    return true;
+                } else if (*other.type < *type) {
+                    return false;
+                }
+            }
+
+            return *name < *other.name;
+        }
+
+        SL::VarVal* eval(ProgramState *pState);
+
+        SLType * get_type();
+
+        bool has_type()
+        {
+            return type->is_defined();
+        }
+
+        bool accepts_type(const string& type_name)
+        {
+            if(!has_type() || has_any_type()) {
+                return true;
+            }
+            assert(get_type()->is_simple_type());
+            return get_type()->get_head()->to_string() == type_name;
+        }
+
+        bool has_any_type()
+        {
+            return type->is_any();
+        }
+    };
+
+    bool var_val_invariant(SL::SLType *var_type, SL::VarVal*var_val);
+    bool var_val_invariant(SL::Var *var, SL::VarVal*var_val);
+
+}
+
+static exception NameNotFound;
+
+class Frame {
+    map<SL::Var, SL::VarVal* > vars_map;
+    map<SL::Identifier, SL::Var *> name_to_var_map;
+    vector<SL::Var*> all_new_vars;
+
+public:
+
+    bool is_empty() {
+        return vars_map.empty() && name_to_var_map.empty() && all_new_vars.empty();
+    }
+
+    Frame() = default;
+
+    void clear(bool is_global = false)
+    {
+        for (auto it: vars_map) {
+            if (it.second != nullptr) {
+                if (is_global){
+                    if (it.second->is_sketch_function()) {
+                        assert(it.second->get_num_shared_ptr() == 1);
+                        delete it.second;
+                        continue;
+                    }
+                }
+//                string skfunc_name = "not_skfunc";
+//                bool is_skfunc = false;
+//                if(it.second->is_sketch_function())
+//                {
+//                    is_skfunc = true;
+//                    SketchFunction* skfunc = it.second->get_function(false);
+//                    if(skfunc != nullptr) {
+//                        skfunc_name = skfunc->get_dag()->get_name();
+//                    }
+//                    else
+//                    {
+//                        skfunc_name = "nullptr";
+//                    }
+//                }
+                bool cleared = it.second->decrement_shared_ptr();
+//                if(is_skfunc) {
+//                    if (cleared) {
+//                        cout << "CLEARED";
+//                    }
+//                    else
+//                    {
+//                        cout << "NOT CLEARED";
+//                    }
+//                    cout << " var " << it.first.to_string() << " holding skfunc " << skfunc_name << endl;
+//                }
+            }
+        }
+
+        vars_map.clear();
+        name_to_var_map.clear();
+        for(auto it:all_new_vars){
+            it->clear();
+        }
+        all_new_vars.clear();
+    }
+
+    void add_var_name(SL::Var *_var, bool assert_new = true)
+    {
+        SL::Identifier name = *_var->get_name();
+        if(name_to_var_map.find(name) == name_to_var_map.end()) {
+            SL::Var* var = new SL::Var(_var);
+            all_new_vars.push_back(var);
+            //new variable
+            name_to_var_map[name] = var;
+        }
+        else
+        {
+            SL::Var* var = _var;
+            assert(!assert_new);
+            //existing variable.
+            assert(*name_to_var_map[name] == *var);
+        }
+    }
+
+    virtual void add_var(SL::Var *_var) {
+        SL::Var* var = new SL::Var(_var);
+        all_new_vars.push_back(var);
+        assert(vars_map.find(*var) == vars_map.end());
+        vars_map[*var] = nullptr;
+        add_var_name(var);
+    }
+
+    virtual SL::Var *name_to_var_throws(SL::Identifier *name) {
+        if(name_to_var_map.find(*name) == name_to_var_map.end())
+        {
+            throw NameNotFound;
+        }
+        return name_to_var_map[*name];
+    }
+
+    SL::Var *name_to_var(SL::Identifier *name) {
+        try{
+            return name_to_var_throws(name);
+        } catch(exception& e){
+            AssertDebug(false, "ERROR:: IDENTIFIER NOT FOUND: " + name->to_string());
+        }
+    }
+
+    exception VarNotFound;
+
+    virtual SL::VarVal* get_var_val_throws(SL::Var *var) {
+        if(vars_map.find(*var) == vars_map.end()){
+            throw VarNotFound;
+        }
+        return vars_map[*var];
+    }
+
+    SL::VarVal* get_var_val(SL::Var *var) {
+        try {
+            return get_var_val_throws(var);
+        } catch (exception& e){
+            assert(false);
+        }
+    }
+
+    virtual void set_var_val_throws(SL::Var *_var, SL::VarVal* var_val) {
+
+        if(vars_map.find(*_var) == vars_map.end())
+        {
+            //not yet declared.
+            throw VarNotFound;
+        }
+        else
+        {
+            //overwrite.
+        }
+
+        SL::Var* var = new SL::Var(_var);
+        all_new_vars.push_back(var);
+
+        if(var_val != nullptr) {
+            var_val->increment_shared_ptr();
+        }
+
+        if(vars_map[*var] != nullptr){
+            bool is_deleted = vars_map[*var]->decrement_shared_ptr();
+            if(is_deleted)
+            {
+                vars_map[*var] = nullptr;
+                vars_map.erase(*var);
+            }
+        }
+
+        vars_map[*var] = var_val;
+        add_var_name(var, false);
+    }
+
+    void set_var_val(SL::Var *var, SL::VarVal* var_val) {
+        try {
+            set_var_val_throws(var, var_val);
+        }
+        catch (exception& e) {
+            AssertDebug(false, "NOT YET DECLARED: " + var->to_string());
+        }
+    }
+
+    void add_var_and_set_var_val_and_clear_var(SL::Var *var, SL::VarVal* var_val) {
+        add_var(var);
+        set_var_val(var, var_val);
+        var->clear();
+    }
+};
+
+class NestedFrame: private Frame
+{
+    vector<Frame> frames;
+
+public:
+
+    bool is_empty()
+    {
+        return frames.empty();
+    }
+
+    explicit NestedFrame() {
+        assert(frames.empty());
+    }
+
+    void open_subframe()
+    {
+        frames.push_back(Frame());
+    }
+
+    void close_subframe()
+    {
+        assert(!frames.empty());
+        frames.rbegin()->clear();
+        frames.pop_back();
+    }
+
+    void add_var(SL::Var *var) override {
+        assert(!frames.empty());
+        frames.rbegin()->add_var(var);
+    }
+
+    SL::VarVal* get_var_val_throws(SL::Var *var) override {
+        assert(!frames.empty());
+        int at_id = frames.size()-1;
+        while(at_id >= 0){
+            try {
+                return frames[at_id].get_var_val_throws(var);
+            }
+            catch (exception e){
+                at_id--;
+            }
+        }
+        throw VarNotFound;
+    }
+
+    void set_var_val_throws(SL::Var *var, SL::VarVal* var_val) override{
+        assert(!frames.empty());
+        int at_id = frames.size()-1;
+        while(at_id >= 0){
+            try {
+                frames[at_id].set_var_val_throws(var, var_val);
+                return ;
+            }
+            catch (exception e){
+                at_id--;
+            }
+        }
+        throw VarNotFound;
+    }
+
+    SL::Var* name_to_var_throws(SL::Identifier* name) override{
+        assert(!frames.empty());
+        int at_id = frames.size()-1;
+        while(at_id >= 0){
+            try {
+                return frames[at_id].name_to_var_throws(name);
+            }
+            catch (exception e){
+                at_id--;
+            }
+        }
+        throw NameNotFound;
+    }
+
+    void clear()
+    {
+        assert(frames.size() == 1);
+        frames[0].clear();
+    }
+
+};
+
+
+class ProgramState
+{
+
+public:
+
+    FunctionMap& function_map;
+
+    Frame global;
+
+    vector<NestedFrame> frames;
+
+    virtual void clear()
+    {
+//        console_output.close();
+//        init_root->clear();
+        AssertDebug(false, "METHOD NOT IMPLEMENTED IN DERIVED CLASS.");
+
+        assert(global.is_empty());
+        for(auto it: frames) {
+            assert(it.is_empty());
+        }
+        frames.clear();
+    }
+
+    virtual void add_var(SL::Var *var) {
+        assert(!frames.empty());
+        frames.rbegin()->add_var(var);
+    }
+
+    virtual SL::VarVal* get_var_val(SL::Var *var) {
+        assert(!frames.empty());
+        try {
+            return frames.rbegin()->get_var_val_throws(var);
+        }
+        catch (exception& e) {
+            try {
+                return global.get_var_val_throws(var);
+            }
+            catch (exception& e2){
+                assert(false);
+            }
+        }
+    }
+
+    virtual void set_var_val(SL::Var *var, SL::VarVal* var_val);
+
+    virtual void add_and_set_var_val(SL::Var *var, SL::VarVal* var_val) {
+        add_var(var);
+        set_var_val(var, var_val);
+    }
+
+    virtual SL::Var* name_to_var_throws(SL::Identifier* name)
+    {
+        assert(!frames.empty());
+        try {
+            return frames.rbegin()->name_to_var_throws(name);
+        }
+        catch (exception& e1) {
+            try {
+                return global.name_to_var_throws(name);
+            }
+            catch (exception& e2){
+                if(!SL::is_strongly_typed) {
+                    throw NameNotFound;
+                }
+                else {
+                    assert(false);
+                }
+            }
+        }
+    }
+
+    virtual SL::Var* name_to_var(SL::Identifier* name)
+    {
+        assert(!frames.empty());
+        try {
+            return name_to_var_throws(name);
+        }
+        catch (exception& e1) {
+            cout << "ERROR: NAME NOT FOUND: " << name->to_string() << endl;
+            assert(false);
+        }
+    }
+
+    SL::VarVal* return_var_val = nullptr;
+
+    virtual bool has_return()
+    {
+        return return_var_val != nullptr;
+    }
+
+    virtual void set_return_var_val(SL::VarVal* var_val) {
+        assert(return_var_val == nullptr);
+        var_val->set_return();
+        return_var_val = var_val;
+    }
+
+    virtual SL::VarVal* get_return_var_val() {
+        if(return_var_val != nullptr) {
+            assert(return_var_val->get_is_return());
+            return_var_val->complete_return();
+        }
+        SL::VarVal* ret = return_var_val;
+        return_var_val = nullptr;
+        if(ret == nullptr)
+        {
+            ret = new SL::VarVal();
+        }
+        return ret;
+    }
+
+    virtual void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals, vector<SL::Param *>* meta_vals = nullptr);
+    virtual void new_stack_frame(vector<SL::Param *> &vars, vector<SL::VarVal *> &vals, vector<SL::Param *>* meta_vals = nullptr);
+
+    virtual void new_stack_frame() {
+        frames.emplace_back(NestedFrame());
+        open_subframe();
+    }
+
+    virtual void pop_stack_frame() {
+        assert(!frames.empty());
+        close_subframe();
+        assert(frames.rbegin()->is_empty());
+        frames.pop_back();
+    }
+
+    virtual SL::Var *method_name_to_var(SL::Identifier *name) {
+        SL::Var* ret = global.name_to_var(name);
+        assert(global.get_var_val(ret)->is_method());
+        return ret;
+    }
+
+    virtual void open_subframe() {
+        assert(!frames.empty());
+        frames.rbegin()->open_subframe();
+    }
+
+    virtual void close_subframe(){
+        assert(!frames.empty());
+        frames.rbegin()->close_subframe();
+    }
+
+    virtual void add_to_function_map(const string &skfunc_name, SketchFunction *skfunc);
+
+};
+
+
+class FloatManager;
+class CommandLineArgs;
+class HoleHardcoder;
+
+namespace SL {
+
+    vector<SL::SLType*>* copy_type_params(vector<SLType*>* to_copy);
+
+    class PolyType
+    {
+        vector<SL::SLType*>* type_params = nullptr;
+
+    public:
+        explicit PolyType(TypeParams* _type_params){
+            type_params = new vector<SL::SLType*>();
+            _type_params->populate_vector(*type_params);
+            _type_params->clear();
+        }
+        explicit PolyType(vector<SLType*>* _type_params): type_params(_type_params) {}
+        explicit PolyType(PolyType* to_copy): type_params(copy_type_params(to_copy->type_params)) {};
+
+        SL::SLType* at(int idx)
+        {
+            assert(type_params != nullptr);
+            assert(0 <= idx && idx < size());
+            return type_params->at(idx);
+        }
+
+        int size()
+        {
+            assert(type_params != nullptr);
+            if(type_params == nullptr)
+            {
+                return 0;
+            }
+            return type_params->size();
+        }
+
+        const vector<SLType*>* get_type_params()
+        {
+            return type_params;
+        }
+
+        string to_string()
+        {
+            string str;
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(i >= 1)
+                {
+                    str+= ", ";
+                }
+                str += type_params->at(i)->to_string();
+            }
+            return str;
+        }
+
+        virtual void clear()
+        {
+            soft_clear();
+            delete this;
+        }
+
+        void soft_clear()
+        {
+            for(auto & it: *type_params)
+            {
+                it->clear();
+                it = nullptr;
+            }
+            type_params->clear();
+            delete type_params;
+            type_params = nullptr;
+        }
+
+        bool operator == (const PolyType& other) const
+        {
+            if(type_params->size() != other.type_params->size())
+            {
+                return false;
+            }
+            assert(type_params->size() == other.type_params->size());
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(!(*type_params->at(i) == *other.type_params->at(i)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        bool operator < (const PolyType& other) const
+        {
+            assert(is_strongly_typed);
+            if(type_params->size() < other.type_params->size())
+            {
+                return true;
+            }
+            else if(type_params->size() > other.type_params->size())
+            {
+                return false;
+            }
+            assert(type_params->size() == other.type_params->size());
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(*type_params->at(i) < *other.type_params->at(i))
+                {
+                    return true;
+                }
+                else if( *other.type_params->at(i) < *type_params->at(i))
+                {
+                    return false;
+                }
+            }
+            return false;
+        }
+    };
+
+    class PolyVec: public PolyType, private vector<SL::VarVal*>
+    {
+    public:
+        explicit PolyVec(PolyType* _type_params): PolyType(_type_params){
+            assert(get_type_params()->size() == 1);
+            _type_params->clear();
+        }
+        explicit PolyVec(PolyVec* to_copy);
+
+        void emplace_back(SL::VarVal* new_element);
+
+        void sort();
+
+        void clear() override;
+
+        size_t size(){
+            return vector<SL::VarVal*>::size();
+        }
+
+        SL::VarVal* at(int idx)
+        {
+            assert(idx >= 0 && idx < size());
+            return vector<SL::VarVal*>::at(idx);
+        }
+
+        void reverse();
+    };
+
+    class PolyPair: public PolyType, private pair<SL::VarVal*, SL::VarVal*>
+    {
+    public:
+        explicit PolyPair(PolyType* _type_params, SL::VarVal* left, SL::VarVal* right);
+
+        explicit PolyPair(PolyPair* to_copy);
+
+        SL::VarVal* first() const {
+            return pair<SL::VarVal*, SL::VarVal*>::first;
+        }
+        SL::VarVal* second() const {
+            return pair<SL::VarVal*, SL::VarVal*>::second;
+        }
+
+        void clear() override;
+
+        bool operator < (const PolyPair& other) const;
+    };
+
+    class Method;
+
+    class Param;
 
     class Params: public LinkedList<Param>
     {
@@ -1205,11 +1536,11 @@ namespace SL {
 
         MethodId get_method_id();
 
-        SL::VarVal* eval_global(SolverProgramState *state);
+        SL::VarVal* eval_global(ProgramState *state);
 
-        pair<Var*, SL::VarVal*> get_var_and_var_val_and_assert_type(SolverProgramState* state, vector<string> type_names);
+        pair<Var*, SL::VarVal*> get_var_and_var_val_and_assert_type(ProgramState* state, vector<string> type_names);
 
-        SL::VarVal* eval_type_constructor(SolverProgramState* state);
+        SL::VarVal* eval_type_constructor(ProgramState* state);
 
     public:
         FunctionCall(
@@ -1244,12 +1575,12 @@ namespace SL {
         };
         explicit FunctionCall(FunctionCall* to_copy);
 
-        SL::VarVal* eval(SolverProgramState* state);
+        SL::VarVal* eval(ProgramState* state);
 
         template<typename VarType>
-        SL::VarVal* eval(VarType& var, SolverProgramState* state, const VarVal* const the_var_val);
+        SL::VarVal* eval(VarType& var, ProgramState* state, const VarVal* const the_var_val);
 
-        void run(SolverProgramState *pState);
+        void run(ProgramState *pState);
 
         void clear();
 
@@ -1281,7 +1612,7 @@ namespace SL {
             assert(dest_type == var_dest_type);
             return dest_var;
         }
-        void run(SolverProgramState* state);
+        void run(ProgramState* state);
 
         bool has_assignment();
 
@@ -1304,7 +1635,7 @@ namespace SL {
         };
         explicit Param(Param* to_copy);
 
-        SL::VarVal* eval(SolverProgramState *state);
+        SL::VarVal* eval(ProgramState *state);
 
         Var *get_var() {
             switch (meta_type) {
@@ -1347,9 +1678,9 @@ namespace SL {
         explicit Expression(SL::VarVal* _var_val): var_val(_var_val), expression_meta_type(var_val_meta_type){};
         explicit Expression(Expression* to_copy);
 
-        SL::VarVal* eval(SolverProgramState* state);
+        SL::VarVal* eval(ProgramState* state);
 
-        void run(SolverProgramState* state) {
+        void run(ProgramState* state) {
             SL::VarVal* ret = eval(state);
             if(!ret->is_void())
             {
@@ -1394,7 +1725,7 @@ namespace SL {
 
         explicit BinaryExpression(BinaryExpression* to_copy);
 
-        VarVal* eval(SolverProgramState* state)
+        VarVal* eval(ProgramState* state)
         {
             VarVal* left_var_val = left_operand->eval(state);
             VarVal* right_var_val = right_operand->eval(state);
@@ -1460,7 +1791,7 @@ namespace SL {
 
         void clear();
 
-        VarVal *eval(SolverProgramState *state);
+        VarVal *eval(ProgramState *state);
     };
 
     class While
@@ -1471,7 +1802,7 @@ namespace SL {
         While(Expression* _expression, CodeBlock* _body): expression(_expression), body(_body) {}
         explicit While(While* to_copy);
 
-        void run(SolverProgramState* state);
+        void run(ProgramState* state);
 
         void clear();
     };
@@ -1489,7 +1820,7 @@ namespace SL {
             def(_def), expression(_expression), plus_plus(_plus_plus), body(_body) {}
         explicit For(For* to_copy);
 
-        void run(SolverProgramState* state);
+        void run(ProgramState* state);
 
         void clear();
     };
@@ -1505,7 +1836,7 @@ namespace SL {
         If(Expression* _expression, CodeBlock* _body, CodeBlock* _else_body): expression(_expression), body(_body), else_body(_else_body) {}
         explicit If(If* to_copy);
 
-        void run(SolverProgramState* state);
+        void run(ProgramState* state);
 
         void clear();
     };
@@ -1517,7 +1848,7 @@ namespace SL {
         explicit Return(Expression* _expression) : expression(_expression) {}
         explicit Return(Return* to_copy): expression(new Expression(to_copy->expression)){};
 
-        void run(SolverProgramState* state);
+        void run(ProgramState* state);
 
         void clear();
     };
@@ -1547,7 +1878,7 @@ namespace SL {
         explicit UnitLine(CodeBlock* _code_block): code_block(_code_block), line_type(code_block_line){}
         explicit UnitLine(UnitLine* to_copy);
 
-        void run(SolverProgramState *state);
+        void run(ProgramState *state);
 
         void clear();
     };
@@ -1566,7 +1897,7 @@ namespace SL {
             }
         }
 
-        void run(SolverProgramState *state);
+        void run(ProgramState *state);
 
         void clear()
         {
@@ -1603,12 +1934,12 @@ namespace SL {
 
         void clear();
 
-        void run(SolverProgramState* state, vector<Param*>& input_params);
+        void run(ProgramState* state, vector<Param*>& input_params);
 
         template<typename T>
-        SL::VarVal* eval(SolverProgramState* state, vector<T>& params);
+        SL::VarVal* eval(ProgramState* state, vector<T>& params);
 
-        void run(SolverProgramState* state, vector<VarVal*>& input_params);
+        void run(ProgramState* state, vector<VarVal*>& input_params);
 
         Var* get_var()
         {
@@ -1617,9 +1948,6 @@ namespace SL {
 
         const vector<SL::Param*>* get_params();
     };
-
-    bool var_val_invariant(SL::SLType *var_type, SL::VarVal*var_val);
-    bool var_val_invariant(SL::Var *var, SL::VarVal*var_val);
 
     class Methods
     {
@@ -1646,7 +1974,7 @@ namespace SL {
 
 
 typedef void* yyscan_t;
-void yyerror(yyscan_t scanner, SolverProgramState* state, string s);
+void yyerror(yyscan_t scanner, ProgramState* state, string s);
 
 
 //using namespace SL;

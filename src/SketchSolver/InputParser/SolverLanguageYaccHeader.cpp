@@ -4,6 +4,8 @@
 
 #include "SolverLanguageYaccHeader.h"
 #include "SolverLanguage.h"
+#include "SolverLanguageLexAndYaccHeader.h"
+
 
 SL::VarVal * SolverProgramState::eval(){
     assert(init_root != nullptr);
@@ -54,7 +56,7 @@ SL::VarVal * SolverProgramState::eval(){
     return var_val_ret;
 }
 
-void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals, vector<SL::Param*>* meta_vars) {
+void ProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals, vector<SL::Param*>* meta_vars) {
     assert(vars.size() == vals.size());
 
     vector<SL::VarVal* > var_vals;
@@ -66,7 +68,7 @@ void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::P
     new_stack_frame(vars, var_vals, meta_vars);
 }
 
-void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::VarVal *> &var_vals, vector<SL::Param*>* meta_vars) {
+void ProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::VarVal *> &var_vals, vector<SL::Param*>* meta_vars) {
     assert(vars.size() == var_vals.size());
 
     vector<SL::VarVal* > meta_var_vals;
@@ -96,15 +98,42 @@ void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::V
     }
 }
 
-void SolverProgramState::open_subframe() {
+void ProgramState::set_var_val(SL::Var *var, SL::VarVal *var_val) {
     assert(!frames.empty());
-    frames.rbegin()->open_subframe();
+    assert(var_val_invariant(var, var_val));
+    try {
+        frames.rbegin()->set_var_val_throws(var, var_val);
+    }
+    catch (exception& e)
+    {
+        string var_type_str = var->get_type()->to_string();
+        if(var_type_str == "SketchFunction") {
+            global.set_var_val(var, var_val);
+            string var_name = var->get_name()->to_string();
+            SketchFunction* skfunc = var_val->get_function(false);
+            FunctionMap& _function_map = skfunc->get_env()->function_map;
+            assert(&_function_map == &function_map);
+            auto new_primitive = function_map.insert(var_name, skfunc);
+            skfunc->set_rep(new_primitive);
+        }
+        else
+        {
+//            //...
+//            else if(var_type_str == "int") {
+//                assert(var->get_name()->to_string() == "seed");
+//                global.set_var_val(var, var_val);
+//
+//                args.seed = var_val->get_int(false);
+//            }
+//            else
+//            {
+//                assert(false);
+//            }
+            AssertDebug(false, "METHOD NOT IMPLEMENTED IN DERIVED CLASS.");
+        }
+    }
 }
 
-void SolverProgramState::close_subframe() {
-    assert(!frames.empty());
-    frames.rbegin()->close_subframe();
-}
 
 void SolverProgramState::add_to_function_map(const string &skfunc_name, SketchFunction *skfunc) {
     assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);

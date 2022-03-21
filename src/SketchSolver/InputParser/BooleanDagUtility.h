@@ -5,7 +5,6 @@
 #ifndef SKETCH_SOURCE_BOOLEANDAGUTILITY_H
 #define SKETCH_SOURCE_BOOLEANDAGUTILITY_H
 
-#include "File.h"
 #include "BooleanDagLightUtility.h"
 
 

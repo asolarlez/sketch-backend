@@ -749,6 +749,16 @@ public:
     }
 };
 
+template<bool_node::Type type>
+class GenericVarStore: public VarStore {
+public:
+    explicit GenericVarStore(const VarStore& _to_copy): VarStore(_to_copy) {}
+};
+
+typedef GenericVarStore<bool_node::SRC> InputVarStore;
+typedef GenericVarStore<bool_node::CTRL> HoleVarStore;
+
+
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
 {
 	VarStore* ret = _v1.clone();

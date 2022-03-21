@@ -72,6 +72,8 @@ public:
         return true;
     }
 
+    explicit File(std::mt19937 _generator): generator(_generator){}
+
     File(BooleanDagLightUtility *harness, const string& file, FloatManager& floats, int seed);
 
     void clear() {
@@ -84,8 +86,8 @@ public:
     parseLineOut parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
 
         auto vsi = inputs->begin();
-        VarStore::objP* arrit = NULL;
-        VarStore::objP* prevArrit = NULL;
+        VarStore::objP* arrit = nullptr;
+        VarStore::objP* prevArrit = nullptr;
         bool inArray = false;
 
         int inputId = 0;
@@ -134,7 +136,7 @@ public:
                     if (!inArray) {
                         cerr << "Error parsing the input. Was expecting a line with the following format" << endl;
                         for (auto it = inputs->begin(); it != inputs->end(); ++it) {
-                            auto type = it->otype != NULL? it->otype->str() : "scalar";
+                            auto type = it->otype != nullptr? it->otype->str() : "scalar";
                             const auto isArr = it->arrSize() > 1;
                             if (isArr) {
                                 cerr << "{" << type << " }  ";
@@ -152,7 +154,7 @@ public:
                         throw BasicError(string("file parsing error"), "name");
 
                     }
-                    if (arrit == NULL) {
+                    if (arrit == nullptr) {
                         prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
                         arrit = prevArrit->next;
                         ((SRC_node*)inputNodes[inputId])->arrSz++;
@@ -190,7 +192,7 @@ public:
                     reset();
                     depth--;
                     if (depth == 0) {
-                        while (arrit != NULL) {
+                        while (arrit != nullptr) {
                             arrit->setValSafe(0);
                             arrit = arrit->next;
                         }
@@ -331,9 +333,7 @@ public:
         }
     }
 
-    File(std::mt19937 _generator): generator(_generator){}
-
-    File *sample_sub_file(int num_rows, ofstream& out) {
+    File *sample_sub_file(int num_rows) {
         if(false) {
             //DEBUG VERSION TO SEE WHICH IDs ARE CHOSEN
             vector<int> ids;
@@ -344,13 +344,7 @@ public:
             sample(ids.begin(), ids.end(), back_inserter(sample_ids),
                    num_rows, generator);
             File *new_file = new File(generator);
-            out << "samples: ";
-            for(auto i : sample_ids)
-            {
-                out << i << " ";
-                new_file->push_back(at(i)->clone());
-            }
-            out << endl;
+
 #ifdef CHECK_FILE_INVARIANT
             new_file->used = vector<int>(new_file->size(), 0);
 #endif
