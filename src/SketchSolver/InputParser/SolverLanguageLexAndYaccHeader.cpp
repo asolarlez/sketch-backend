@@ -435,25 +435,17 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
     switch (method_id) {
         case _file: {
 #ifdef USE_GENERIC_FILE
-            const bool use_generic_file = true;
+            assert(params.size() == 1 || params.size() == 2);
+            string file_name = params[0]->eval(state)->get_string();
+            SL::VarVal *ret = new SL::VarVal(new GenericFile(file_name, state->args.seed));
+            return ret;
 #else
-            const bool use_generic_file = false;
+            assert(params.size() == 2);
+            string file_name = params[0]->eval(state)->get_string();
+            SketchFunction *harness = params[1]->eval(state)->get_function();
+            SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
+            return ret;
 #endif
-
-            if(!use_generic_file) {
-                assert(params.size() == 2);
-                string file_name = params[0]->eval(state)->get_string();
-                SketchFunction *harness = params[1]->eval(state)->get_function();
-                SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
-                return ret;
-            }
-            else
-            {
-                assert(params.size() == 1 || params.size() == 2);
-                string file_name = params[0]->eval(state)->get_string();
-                SL::VarVal *ret = new SL::VarVal(new GenericFile(file_name));
-                return ret;
-            }
             break;
         }
         case _sat_solver:

@@ -33,7 +33,8 @@ public:
 
     explicit GenericFile(std::mt19937 _generator): generator(_generator){}
 
-    explicit GenericFile(const string& _file_name): file_name(_file_name) {
+    explicit GenericFile(const string& _file_name, int seed): file_name(_file_name) {
+        generator = std::mt19937(seed);
         ifstream file(file_name);
         AssertDebug(file.is_open(), "FILE " + file_name + " WASN'T SUCCESSFULLY OPENED.");
         string line;

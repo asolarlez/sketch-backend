@@ -106,7 +106,7 @@ File::File(BooleanDagLightUtility *harness, const string &file_name, FloatManage
 #ifdef IMPLEMENT_WITH_GENERIC_FILE
 
 {
-    GenericFile generic_file = GenericFile(file_name);
+    GenericFile generic_file = GenericFile(file_name, seed);
     init(harness, &generic_file, floats, seed);
 }
 

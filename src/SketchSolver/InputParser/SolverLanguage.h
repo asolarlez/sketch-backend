@@ -60,7 +60,7 @@ public:
             const bool test_generic_file = false;
             if(test_generic_file) {
                 File *ground_truth_file = new File(local_harness, file_name, state->floats, state->args.seed);
-                File *predicted_file = new File(local_harness, new GenericFile(file_name), state->floats, state->args.seed);
+                File *predicted_file = new File(local_harness, new GenericFile(file_name, state->args.seed), state->floats, state->args.seed);
                 assert(*ground_truth_file == *predicted_file);
                 assert(false);
             }
