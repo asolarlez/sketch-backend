@@ -13,26 +13,12 @@ HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePr
 
     File* file = nullptr;
 
-    if(true) {
+#ifdef USE_GENERIC_FILE
         File *predicted_file = new File(problem->get_harness(), problem->get_generic_file(), floats, params.seed);
-
-        if(!problem->get_generic_file()->get_file_name().empty()) {
-            File *ground_truth_file =
-                    new File(problem->get_harness(), problem->get_generic_file()->get_file_name(),
-                                               floats,params.seed);
-
-            assert(*predicted_file == *ground_truth_file);
-            assert(false);
-        }
-
         file = predicted_file;
-
-
-    }
-    else
-    {
+#else
         file = problem->get_file();
-    }
+#endif
 
     assert(file != nullptr);
 

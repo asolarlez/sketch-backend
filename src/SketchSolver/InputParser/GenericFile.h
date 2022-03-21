@@ -16,7 +16,7 @@
 
 using namespace std;
 
-#define USE_GENERIC_FILE
+//#define USE_GENERIC_FILE
 #ifdef USE_GENERIC_FILE
 #define FILE_TYPE GenericFile
 #else

@@ -664,12 +664,15 @@ SL::VarVal* SL::FunctionCall::eval(StateType *state)
                     assert(params.size() == 1);
                     VarVal* input_val = params[0]->eval(state);
                     input_val->increment_shared_ptr();
-//                    assert(input_val->is_input_holder());
+#ifdef USE_GENERIC_FILE
                     assert(input_val->is_string());
+                    string input_assignment = input_val->get_string();
+#else
+                    assert(input_val->is_input_holder());
+                    InputVarStore *input_assignment = input_val->get_input_holder();
+#endif
 
                     SketchFunction* skfunc = method_var_val->get_function();
-//                    InputVarStore *input_assignment = input_val->get_input_holder();
-                    string input_assignment = input_val->get_string();
                     ret = SketchFunctionEvaluator::eval(skfunc, input_assignment);
                     assert(ret != nullptr);
 
@@ -1018,8 +1021,11 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             assert(params.size() == 1);
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
-//            InputVarStore* input_holder = input_holder_var_val->get_input_holder();
+#ifdef USE_GENERIC_FILE
             string input_holder = input_holder_var_val->get_string();
+#else
+            InputVarStore* input_holder = input_holder_var_val->get_input_holder();
+#endif
             auto ret_predicted = SketchFunctionEvaluator::new_passes(skfunc, input_holder);
             input_holder_var_val->decrement_shared_ptr();
             return ret_predicted;
@@ -1259,8 +1265,11 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
         string var_type_str = var_type->get_head()->to_string();
         if (var_type->is_simple_type()) {
             if (var_type_str == "File") {
+#ifdef USE_GENERIC_FILE
                 assert(var_val_type == SL::generic_file_val_type);
-//                assert(var_val_type == SL::file_val_type);
+#else
+                assert(var_val_type == SL::file_val_type);
+#endif
             } else if (var_type_str == "int") {
                 assert(var_val_type == SL::int_val_type);
             } else if (var_type_str == "string") {
@@ -1274,8 +1283,11 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
             } else if (var_type_str == "Program") {
                 assert(var_val_type == SL::skfunc_val_type);
             } else if (var_type_str == "Input") {
+#ifdef USE_GENERIC_FILE
                 assert(var_val_type == SL::string_val_type);
-//                assert(var_val_type == SL::input_val_type);
+#else
+                assert(var_val_type == SL::input_val_type);
+#endif
             } else if (var_type_str == "bool") {
                 assert(var_val_type == SL::bool_val_type);
             }
