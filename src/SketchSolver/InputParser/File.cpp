@@ -27,7 +27,7 @@ void File::relabel(BooleanDagLightUtility *harness) {
     cloned_inlined_harness->clear();
 }
 
-File::File(BooleanDagLightUtility *harness, const string &file, FloatManager &floats, int seed) {
+File::File(BooleanDagLightUtility *harness, const string &file_name, FloatManager &floats, int seed) {
     generator = std::mt19937(seed);
     BooleanDAG* problem = harness->get_dag()->clone();
     harness->get_env()->doInline(*problem);
@@ -35,7 +35,7 @@ File::File(BooleanDagLightUtility *harness, const string &file, FloatManager &fl
     redeclareInputsAndAngelics(input_store, problem);
     auto inputs = problem->getNodesByType(bool_node::SRC);
 
-    File::Result res = parseFile(file, floats, inputs, input_store);
+    File::Result res = parseFile(file_name, floats, inputs, input_store);
     const int max_num_bits = 64;
 
     const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
@@ -66,7 +66,7 @@ File::File(BooleanDagLightUtility *harness, const string &file, FloatManager &fl
             }
         }
 
-        res = parseFile(file, floats, inputs, input_store);
+        res = parseFile(file_name, floats, inputs, input_store);
     }
     assert(res == File::DONE);
 #ifdef CHECK_FILE_INVARIANT
@@ -103,6 +103,103 @@ File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
 #endif
     return ret;
 }
+
+File::File(BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed) {
+    generator = std::mt19937(seed);
+    BooleanDAG* problem = harness->get_dag()->clone();
+    harness->get_env()->doInline(*problem);
+    VarStore input_store;
+    redeclareInputsAndAngelics(input_store, problem);
+    auto inputs = problem->getNodesByType(bool_node::SRC);
+
+    File::Result res = parseFile(generic_file, floats, inputs, input_store);
+    const int max_num_bits = 64;
+
+    const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
+    while (res == File::MOREBITS) {
+        int at_int_size = problem->getIntSize();
+        AssertDebug(at_int_size < max_num_bits, "TOO MANY BITS, CHECK THE INPUT TYPES OF YOUR HARNESS. OTHERWISE PROBABLY WRONG CODE/INPUT/OUTPUT.");
+        growInputs(input_store, problem);
+        if(true){
+            assert(harness->get_dag()->getIntSize() == at_int_size);
+            bool harness_in_function_map = false;
+            for(auto it: *bool_dag_map) {
+                assert(it.second->getIntSize() == at_int_size);
+                it.second->growInputIntSizes();
+                if(it.second->get_name() == harness->get_dag()->get_name()) {
+                    assert(!harness_in_function_map);
+                    assert(it.second == harness->get_dag());
+                    harness_in_function_map = true;
+                }
+            }
+            if(!harness_in_function_map)
+            {
+                assert(harness->get_dag()->getIntSize() == at_int_size);
+                harness->get_dag()->growInputIntSizes();
+            }
+            else
+            {
+                assert(harness->get_dag()->getIntSize() == at_int_size+1);
+            }
+        }
+
+        res = parseFile(generic_file, floats, inputs, input_store);
+    }
+    assert(res == File::DONE);
+#ifdef CHECK_FILE_INVARIANT
+    used = vector<int>(size(), 0);
+#endif
+    delete bool_dag_map;
+    bool_dag_map = nullptr;
+    problem->clear();
+}
+
+#include "GenericFile.h"
+
+File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, vector<bool_node *> &inputNodes,
+                             const VarStore &inputs)  {
+    light_clear();
+
+    bool allow_new_iter = true;
+    for(int i = 0; i<generic_file->size(); i++){
+        assert(allow_new_iter);
+        VarStore* new_row = inputs.clone();
+        parseLineOut ok;
+        try {
+            ok = parseLine(generic_file->at(i), floats, inputNodes, new_row);
+        }
+        catch (BasicError& e) {
+            assert(false);
+            throw e;
+        }
+
+
+
+        if (ok == more_bits) {
+            new_row->clear();
+            return MOREBITS;
+        }
+        else if(ok == complete_row)
+        {
+            push_back(new_row);
+        }
+        else if(ok == end_of_file__empty_row)
+        {
+            new_row->clear();
+            assert(i == generic_file->size()-1);
+            allow_new_iter = false;
+        }
+        else
+        {
+            Assert(false, "missing case for parseLineOut.")
+        }
+        if (PARAMS->verbosity > 12) {
+            new_row->printContent(cout);
+        }
+    }
+    return DONE;
+}
+
 
 File::File() = default;
 

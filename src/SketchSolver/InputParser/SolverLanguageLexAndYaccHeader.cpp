@@ -7,11 +7,13 @@
 #include "SolverLanguageLexAndYaccHeader.h"
 #include "SketchFunction.h"
 
-void SL::Var::run(ProgramState *state)  {
+template<typename StateType>
+void SL::Var::run(StateType *state)  {
     state->add_var(this);
 }
 
-SL::VarVal* SL::Var::eval(ProgramState *state) {
+template<typename StateType>
+SL::VarVal* SL::Var::eval(StateType *state) {
     return state->get_var_val(this);
 }
 
@@ -20,7 +22,8 @@ SL::SLType * SL::Var::get_type() {
 }
 
 
-void SL::While::run(ProgramState* state)
+template<typename StateType>
+void SL::While::run(StateType* state)
 {
     int iteration_count = 0;
     while(expression->eval(state)->get_bool(true, false))
@@ -46,7 +49,8 @@ SL::While::While(While* to_copy){
     body = new CodeBlock(to_copy->body);
 }
 
-void SL::For::run(ProgramState* state)
+template<typename StateType>
+void SL::For::run(StateType* state)
 {
     state->open_subframe();
     def->run(state);
@@ -80,7 +84,8 @@ SL::For::For(SL::For *to_copy)
     body = new CodeBlock(to_copy->body);
 }
 
-void SL::If::run(ProgramState *state) {
+template<typename StateType>
+void SL::If::run(StateType *state) {
     if(expression->eval(state)->get_bool(true, false))
     {
         body->run(state);
@@ -112,7 +117,8 @@ SL::If::If(SL::If *to_copy) {
     }
 }
 
-void SL::Return::run(ProgramState *state){
+template<typename StateType>
+void SL::Return::run(StateType *state){
     state->set_return_var_val(expression->eval(state));
 }
 
@@ -122,7 +128,8 @@ void SL::Return::clear() {
     delete this;
 }
 
-void SL::Assignment::run(ProgramState *state)
+template<typename StateType>
+void SL::Assignment::run(StateType *state)
 {
     Var* to_var = nullptr;
     switch (dest_type) {
@@ -207,7 +214,8 @@ SL::Assignment::Assignment(SL::Assignment *to_copy) : dest_type(to_copy->dest_ty
 
 int SL::Identifier::global_identifier_id = 0;
 
-SL::VarVal* SL::Identifier::eval(ProgramState *state)  {
+template<typename StateType>
+SL::VarVal* SL::Identifier::eval(StateType *state)  {
     return state->get_var_val(state->name_to_var(this));
 }
 
@@ -260,8 +268,8 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(ProgramState* state)
     assert(false);
 }
 
-template<>
-SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, ProgramState* state, const SL::VarVal* const the_var_val)
+template<typename StateType>
+SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, const SL::VarVal* const the_var_val)
 {
     assert(poly_vec == the_var_val->get_poly_vec_const(false));
     switch (method_id) {
@@ -308,9 +316,17 @@ SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, Program
 #include "GenericFile.h"
 #include "SolverLanguagePrimitives.h"
 
-template<>
-SL::VarVal *SL::FunctionCall::eval<GenericFile*>(GenericFile*& file, ProgramState *state, const SL::VarVal* const the_var_val) {
-    assert(file == the_var_val->get_file_const(false));
+template<typename StateType, typename FileType>
+SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::VarVal* const the_var_val) {
+    if(is_same<FileType, File>::value) {
+        assert((File*)file == the_var_val->get_file_const(false));
+    }
+    else if(is_same<FileType, GenericFile>::value) {
+        assert((GenericFile*)file == the_var_val->get_generic_file_const(false));
+    }
+    else {
+        AssertDebug(false, "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
+    }
     switch (method_id) {
         case _produce_subset_file:
         {
@@ -329,7 +345,15 @@ SL::VarVal *SL::FunctionCall::eval<GenericFile*>(GenericFile*& file, ProgramStat
         {
             assert(params.size() == 1);
             int row_id = params[0]->eval(state)->get_int();
-            return new SL::VarVal(new InputVarStore(*file->at(row_id)));
+            if(is_same<FileType, File>::value) {
+                return new SL::VarVal(new InputVarStore(*((File*)file)->at(row_id)));
+            }
+            else if(is_same<FileType, GenericFile>::value) {
+                return new SL::VarVal(((GenericFile*)file)->at(row_id));
+            }
+            else {
+                AssertDebug(false, "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
+            }
             break;
         }
         case _clear:
@@ -349,45 +373,75 @@ SL::VarVal *SL::FunctionCall::eval<GenericFile*>(GenericFile*& file, ProgramStat
             assert(condition_method->get_params()->size() == 1);
             assert(condition_method->get_params()->at(0)->get_var()->accepts_type("bool"));
 
-            std::function<bool(VarStore*) > lambda_condition = [&state, &condition_method](VarStore* x) {
-                vector<SL::VarVal*> local_inputs;
-                local_inputs.push_back(new VarVal(new InputVarStore(*x)));
-                auto var_val = condition_method->eval(state, local_inputs);
-                auto ret = var_val->get_bool(true, false);
-                return ret;
-            };
+            if(is_same<FileType, File>::value) {
+                std::function<bool(VarStore*) > lambda_condition = [&state, &condition_method](VarStore* x) {
+                    vector<SL::VarVal*> local_inputs;
+                    local_inputs.push_back(new VarVal(new InputVarStore(*x)));
+                    auto var_val = condition_method->eval(state, local_inputs);
+                    auto ret = var_val->get_bool(true, false);
+                    return ret;
+                };
 
-            GenericFile* ret = file->produce_filter(lambda_condition);
+                File* ret = ((File*)file)->produce_filter(lambda_condition);
 
-            method_var_val->decrement_shared_ptr();
-            return new VarVal(ret);
+                method_var_val->decrement_shared_ptr();
+                return new VarVal(ret);
+            }
+            else if(is_same<FileType, GenericFile>::value) {
+                std::function<bool(string) > lambda_condition = [&state, &condition_method](string x) {
+                    vector<SL::VarVal*> local_inputs;
+                    local_inputs.push_back(new VarVal(std::move(x)));
+                    auto var_val = condition_method->eval(state, local_inputs);
+                    auto ret = var_val->get_bool(true, false);
+                    return ret;
+                };
+
+                GenericFile* ret = ((GenericFile*)file)->produce_filter(lambda_condition);
+
+                method_var_val->decrement_shared_ptr();
+                return new VarVal(ret);
+            }
+            else {
+                AssertDebug(false, "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
+            }
+
+
         }
-        case _relabel:
-        {
-            assert(params.size() == 1);
-            VarVal* skfunc_var_val = params[0]->eval(state);
-            skfunc_var_val->increment_shared_ptr();
-            file->relabel(skfunc_var_val->get_function());
-            skfunc_var_val->decrement_shared_ptr();
-            return new VarVal();
-        }
+//        case _relabel:
+//        {
+//            assert(params.size() == 1);
+//            VarVal* skfunc_var_val = params[0]->eval(state);
+//            skfunc_var_val->increment_shared_ptr();
+//            file->relabel(skfunc_var_val->get_function());
+//            skfunc_var_val->decrement_shared_ptr();
+//            return new VarVal();
+//        }
         default:
             assert(false);
     }
     assert(false);
 }
 
-SL::VarVal* SL::FunctionCall::eval_global(ProgramState *state)
+template<>
+SL::VarVal* SL::FunctionCall::eval_global<ProgramState>(ProgramState *state) {
+    AssertDebug(false, "NOT DEFINED.")
+}
+
+#include "SolverLanguageYaccHeader.h"
+#include "File.h"
+
+template<>
+SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
 {
     switch (method_id) {
         case _file: {
-            if(false) {
-                AssertDebug(false, "REFACTORING...")
-//                assert(params.size() == 2);
-//                string file_name = params[0]->eval(state)->get_string();
-//                SketchFunction *harness = params[1]->eval(state)->get_function();
-//                SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
-//                return ret;
+            if(true) {
+//                AssertDebug(false, "REFACTORING...")
+                assert(params.size() == 2);
+                string file_name = params[0]->eval(state)->get_string();
+                SketchFunction *harness = params[1]->eval(state)->get_function();
+                SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
+                return ret;
             }
             else
             {
@@ -421,7 +475,7 @@ SL::VarVal* SL::FunctionCall::eval_global(ProgramState *state)
             sort(after_holes.begin(), after_holes.end());
             assert(prev_holes.size() == after_holes.size());
 
-            GenericFile* file = params[1]->eval(state)->get_file();
+            File* file = params[1]->eval(state)->get_file();
             assert(file->like_unused());
 
             using namespace SolverLanguagePrimitives;
@@ -517,9 +571,9 @@ SL::VarVal* SL::FunctionCall::eval_global(ProgramState *state)
     assert(false);
 }
 
-template<>
-SL::VarVal *SL::FunctionCall::eval<HoleVarStore *>(
-        HoleVarStore* & the_solution, ProgramState *state, const SL::VarVal* const the_var_val) {
+template<typename StateType>
+SL::VarVal *SL::FunctionCall::eval(
+        HoleVarStore* & the_solution, StateType *state, const SL::VarVal* const the_var_val) {
     assert(the_solution == the_var_val->get_solution_const(false));
     switch (method_id) {
         case _join: {
@@ -540,8 +594,8 @@ SL::VarVal *SL::FunctionCall::eval<HoleVarStore *>(
     assert(false);
 }
 
-template<>
-SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, ProgramState* state, const SL::VarVal* const the_var_val)
+template<typename StateType>
+SL::VarVal* SL::FunctionCall::eval(SL::PolyPair*& poly_pair, StateType* state, const SL::VarVal* const the_var_val)
 {
     assert(poly_pair == the_var_val->get_poly_pair_const(false));
     switch (method_id) {
@@ -561,7 +615,8 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Prog
     assert(false);
 }
 
-SL::VarVal* SL::FunctionCall::eval(ProgramState *state)
+template<typename StateType>
+SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
 //    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
@@ -627,7 +682,8 @@ SL::VarVal* SL::FunctionCall::eval(ProgramState *state)
     assert(false);
 }
 
-void SL::FunctionCall::run(ProgramState *state) {
+template<typename StateType>
+void SL::FunctionCall::run(StateType *state) {
     SL::VarVal* ret = eval(state);
     assert(ret->is_void());
     ret->clear_assert_0_shared_ptrs();
@@ -772,7 +828,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("append", _append, "vector");
     add_to_method_str_to_method_id_map("size", _size, "File", "vector");
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
-    add_to_method_str_to_method_id_map("relabel", _relabel, "File");
+//    add_to_method_str_to_method_id_map("relabel", _relabel, "File");
     add_to_method_str_to_method_id_map("produce_subset_file", _produce_subset_file, "File");
 
     add_to_method_str_to_method_id_map("clear", _clear, "SketchFunction", "File");
@@ -904,8 +960,8 @@ eval__sketch_function_replace(const SL::VarVal * const ret_var_val, SketchFuncti
     to_replace_with_var_val->decrement_shared_ptr();
 }
 
-template<>
-SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, ProgramState *state, const VarVal* const the_var_val) {
+template<typename StateType>
+SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, const VarVal* const the_var_val) {
 
     assert(skfunc == the_var_val->get_function_const(false));
     switch (method_id) {
@@ -1046,13 +1102,17 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Pro
     return nullptr;
 }
 
-template<typename T>
-SL::VarVal* SL::Method::eval(ProgramState *state, vector<T>& inputs)  {
+template<typename StateType, typename T>
+SL::VarVal* SL::Method::eval(StateType *state, vector<T>& inputs)  {
     run(state, inputs);
     return state->get_return_var_val();
 }
 
-void SL::Method::run(ProgramState *state, vector<Param *> &input_params)  {
+template void SL::Method::run<SolverProgramState>(SolverProgramState *state, vector<Param *> &input_params);
+
+template<typename StateType>
+void SL::Method::run(StateType *state, vector<Param *> &input_params)
+{
     assert(var != nullptr);
     assert(body != nullptr);
 
@@ -1063,7 +1123,8 @@ void SL::Method::run(ProgramState *state, vector<Param *> &input_params)  {
     state->pop_stack_frame();
 }
 
-void SL::Method::run(ProgramState *state, vector<SL::VarVal *> &input_params)  {
+template<typename StateType>
+void SL::Method::run(StateType *state, vector<SL::VarVal *> &input_params)  {
     assert(var != nullptr);
     assert(body != nullptr);
 
@@ -1114,7 +1175,8 @@ const vector<SL::Param*>* SL::Method::get_params() {
     return params;
 }
 
-SL::VarVal* SL::Param::eval(ProgramState *state)  {
+template<typename StateType>
+SL::VarVal* SL::Param::eval(StateType *state)  {
     switch (meta_type) {
         case is_expression:
             return expression->eval(state);
@@ -1323,7 +1385,8 @@ void SL::PolyPair::clear() {
 SL::PolyPair::PolyPair(SL::PolyPair *to_copy): PolyType(to_copy), pair<SL::VarVal*, SL::VarVal*>(
         new SL::VarVal(to_copy->first()), new SL::VarVal(to_copy->second())) {};
 
-SL::VarVal* SL::Expression::eval(ProgramState *state)
+template<typename StateType>
+SL::VarVal* SL::Expression::eval(StateType *state)
 {
     SL::VarVal* ret = nullptr;
     switch (expression_meta_type) {
@@ -1426,9 +1489,9 @@ string SL::Expression::to_string() {
     assert(false);
 }
 
-
 SL::VarVal::VarVal(float _float_val) : float_val(_float_val) , var_val_type(float_val_type){}
-SL::VarVal::VarVal(GenericFile* _file) : file(_file) , var_val_type(file_val_type){}
+SL::VarVal::VarVal(GenericFile* _generic_file) : generic_file(_generic_file) , var_val_type(generic_file_val_type){}
+SL::VarVal::VarVal(File* _file) : file(_file) , var_val_type(file_val_type){}
 SL::VarVal::VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
 SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){
     skfunc->increment_shared_ptr();
@@ -1448,8 +1511,8 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
         case int_val_type:
             i = _to_copy->get_int(false);
             break;
-        case file_val_type:
-            file = new File(_to_copy->get_file(false));
+        case generic_file_val_type:
+            generic_file = new GenericFile(_to_copy->get_generic_file(false));
             break;
         case method_val_type:
             method = new Method(_to_copy->get_method(false));
@@ -1481,6 +1544,8 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
             break;
         case no_type:
             break;
+        default:
+            AssertDebug(false, "TODO")
     }
 }
 
@@ -1509,34 +1574,36 @@ bool SL::VarVal::get_is_return() const {
     return is_return;
 }
 
-SL::VarVal *SL::VarVal::eval(ProgramState *state, SL::FunctionCall *func_call) {
+template<typename StateType>
+SL::VarVal *SL::VarVal::eval(StateType *state, SL::FunctionCall *func_call) {
     switch (var_val_type) {
         case string_val_type:
             AssertDebug(false, "string has no methods (yet).");
-//            eval<Identifier*>(s, state, func_call);
+            //do nothing
             break;
         case int_val_type:
             AssertDebug(false, "int has no methods (yet).");
             //do nothing
             break;
+        case generic_file_val_type:
+            return eval<StateType, GenericFile*>(generic_file, state, func_call);
+            break;
         case file_val_type:
-            return eval<GenericFile*>(file, state, func_call);
+            return eval<StateType, File*>(file, state, func_call);
             break;
         case method_val_type:
             AssertDebug(false, "method has no methods (yet).");
             //nothing to do yet
-//            eval<Method*>(method, state, func_call);
             break;
         case skfunc_val_type:
-            return eval<SketchFunction*>(skfunc, state, func_call);
+            return eval<StateType, SketchFunction*>(skfunc, state, func_call);
             break;
         case solution_val_type:
-            return eval<HoleVarStore*>(solution, state, func_call);
+            return eval<StateType, HoleVarStore*>(solution, state, func_call);
             break;
         case input_val_type:
             AssertDebug(false, "input has no methods (yet).");
             //nothing to do yet
-//            eval<SolverLanguagePrimitives::InputAssignment*>(input_holder, state, func_call);
             break;
         case bool_val_type:
             AssertDebug(false, "bool has no methods (yet).");
@@ -1554,10 +1621,10 @@ SL::VarVal *SL::VarVal::eval(ProgramState *state, SL::FunctionCall *func_call) {
             //do nothing
             break;
         case poly_pair_type:
-            return eval<SL::PolyPair*>(poly_pair, state, func_call);
+            return eval<StateType, PolyPair*>(poly_pair, state, func_call);
             break;
         case poly_vec_type:
-            return eval<SL::PolyVec*>(poly_vec, state, func_call);
+            return eval<StateType, PolyVec*>(poly_vec, state, func_call);
             break;
         default:
             assert(false);
@@ -1565,13 +1632,13 @@ SL::VarVal *SL::VarVal::eval(ProgramState *state, SL::FunctionCall *func_call) {
     AssertDebug(false, "MISSING CASES OR WRONG INPUT.");
 }
 
-template<typename T>
-SL::VarVal *SL::VarVal::eval(T& val, ProgramState *state, SL::FunctionCall *function_call)
+template<typename StateType, typename T>
+SL::VarVal *SL::VarVal::eval(T& val, StateType *state, SL::FunctionCall *function_call)
 {
     assert_type_invariant<T>();
     assert(val != nullptr);
     increment_shared_ptr();
-    SL::VarVal* ret = function_call->eval<T>(val, state, this);
+    SL::VarVal* ret = function_call->eval(val, state, this);
     decrement_shared_ptr();
     return ret;
 }
@@ -1688,7 +1755,9 @@ SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)
     }
 }
 
-void SL::UnitLine::run(ProgramState *state) {
+
+template<typename StateType>
+void SL::UnitLine::run(StateType *state) {
     switch (line_type) {
         case var_line:
             var->run(state);
@@ -1758,6 +1827,45 @@ SL::BinaryExpression::BinaryExpression(SL::BinaryExpression *to_copy): op(to_cop
 {
     left_operand = new SL::Expression(to_copy->left_operand);
     right_operand = new SL::Expression(to_copy->right_operand);
+}
+
+template<typename StateType>
+SL::VarVal *SL::BinaryExpression::eval(StateType *state)
+{
+    VarVal* left_var_val = left_operand->eval(state);
+    VarVal* right_var_val = right_operand->eval(state);
+
+    assert(left_var_val->get_type() == right_var_val->get_type());
+
+    switch (op) {
+        case _lt:
+            return left_var_val->lt_op(right_var_val);
+            break;
+        case _gt:
+            return left_var_val->gt_op(right_var_val);
+            break;
+        case _eq:
+            return left_var_val->eq_op(right_var_val);
+            break;
+        case _geq:
+            return left_var_val->geq_op(right_var_val);
+            break;
+        case _plus:
+            return left_var_val->plus_op(right_var_val);
+            break;
+        case _minus:
+            return left_var_val->minus_op(right_var_val);
+            break;
+        case _mult:
+            return left_var_val->mult_op(right_var_val);
+            break;
+        case _div:
+            return left_var_val->div_op(right_var_val);
+            break;
+        default:
+            assert(false);
+    }
+    assert(false);
 }
 
 SL::SLType::SLType(SL::Identifier *_name, SL::TypeParams *_type_params) : name(_name),
@@ -1855,7 +1963,8 @@ bool SL::SLType::is_simple_type() {
     }
 }
 
-void SL::CodeBlock::run(ProgramState *state)  {
+template<typename StateType>
+void SL::CodeBlock::run(StateType *state)  {
     assert(head != nullptr);
     CodeBlock* at = this;
     state->open_subframe();
@@ -1876,7 +1985,8 @@ void SL::CodeBlock::run(ProgramState *state)  {
 SL::LambdaExpression::LambdaExpression(SL::LambdaExpression *to_copy) :
 code_block(new SL::CodeBlock(to_copy->code_block)), params(copy_params(to_copy->params)), meta_params(copy_params(to_copy->meta_params)) {}
 
-SL::VarVal *SL::LambdaExpression::eval(ProgramState *state) {
+template<typename StateType>
+SL::VarVal *SL::LambdaExpression::eval(StateType *state) {
     return new VarVal(
             new Method(
                     new Var(new SL::SLType(new Identifier("any")), new Identifier("lambda")),

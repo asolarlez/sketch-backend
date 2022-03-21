@@ -12,21 +12,26 @@
 #include "BasicError.h"
 #include <random>
 #include <algorithm>
+#include <functional>
 
 using namespace std;
 
 class GenericFile: public vector<string> {
-
+    string file_name;
 public:
     explicit GenericFile(std::mt19937 _generator): generator(_generator){}
 
-    explicit GenericFile(const string& file_name) {
+    explicit GenericFile(const string& _file_name): file_name(_file_name) {
         ifstream file(file_name);
         AssertDebug(file.is_open(), "FILE " + file_name + " WASN'T SUCCESSFULLY OPENED");
         string line;
         while(getline(file, line)) {
             push_back(line);
         }
+    }
+
+    const string& get_file_name() {
+        return file_name;
     }
 
     std::mt19937 generator;
@@ -75,6 +80,8 @@ public:
             return new_file;
         }
     }
+
+    GenericFile *produce_filter(std::function< bool(string) >& lambda_condition);
 
 };
 

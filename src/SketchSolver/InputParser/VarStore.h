@@ -491,8 +491,6 @@ public:
 
     VarStore() = default;
 
-//    VarStore(const LightInliningTree* _inlining_tree);
-
     VarStore(const VarStore& to_copy, bool deep_clone = false);
     VarStore(const VarStore& to_copy, LightInliningTree* _inlining_tree);
 
@@ -757,7 +755,6 @@ public:
 
 typedef GenericVarStore<bool_node::SRC> InputVarStore;
 typedef GenericVarStore<bool_node::CTRL> HoleVarStore;
-
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
 {

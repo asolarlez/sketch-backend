@@ -18,6 +18,7 @@ using namespace std;
 
 class SketchFunction;
 class GenericFile;
+class File;
 
 class ProgramState;
 
@@ -53,7 +54,7 @@ namespace SL
             delete this;
         }
 
-        SL::VarVal* eval(ProgramState *state);
+        template<typename StateType> VarVal* eval(StateType* state);
 
         bool operator<(const Identifier &other) const {
             assert(defined);
@@ -75,7 +76,7 @@ namespace SL
     class Param;
 
     enum VarValType {
-        string_val_type, int_val_type, file_val_type,
+        string_val_type, int_val_type, generic_file_val_type, file_val_type,
         method_val_type, skfunc_val_type, solution_val_type,
         input_val_type, bool_val_type, void_val_type,
         float_val_type, poly_vec_type,
@@ -105,7 +106,8 @@ namespace SL
             int i;
             bool b;
             float float_val;
-            GenericFile* file;
+            GenericFile* generic_file;
+            File* file;
             Method* method;
             SketchFunction* skfunc;
             HoleVarStore* solution;
@@ -133,7 +135,8 @@ namespace SL
             }
         }
         explicit VarVal(float _float_val);
-        explicit VarVal(GenericFile* _file);
+        explicit VarVal(GenericFile* _generic_file);
+        explicit VarVal(File* _file);
         explicit VarVal(Method* _method);
         explicit VarVal(SketchFunction* _harness);
         explicit VarVal(PolyVec* _poly_vec);
@@ -373,6 +376,9 @@ namespace SL
             else if(std::is_same<PolyVec*,T>::value){
                 assert(var_val_type == poly_vec_type);
             }
+            else if(std::is_same<File*,T>::value){
+                assert(var_val_type == file_val_type);
+            }
             else {
                 assert(false);
             }
@@ -434,17 +440,30 @@ namespace SL
             return get<string>(s->to_string(), do_count, do_assert);
         }
 
-        GenericFile *get_file(bool do_count = true, bool do_assert = true) {
-            assert(var_val_type == file_val_type);
+        GenericFile *get_generic_file(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == generic_file_val_type);
             assert(do_assert);
-            return get<GenericFile *>(file, do_count, do_assert);
+            return get<GenericFile *>(generic_file, do_count, do_assert);
         }
 
-        GenericFile *get_file_const(bool do_count) const {
+        GenericFile *get_generic_file_const(bool do_count) const {
+            assert(!do_count);
+            assert(var_val_type == generic_file_val_type);
+            return generic_file;
+        }
+
+        File *get_file(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == file_val_type);
+            assert(do_assert);
+            return get<File *>(file, do_count, do_assert);
+        }
+
+        File *get_file_const(bool do_count) const {
             assert(!do_count);
             assert(var_val_type == file_val_type);
             return file;
         }
+
         HoleVarStore *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
             if(do_count) {
@@ -576,8 +595,8 @@ namespace SL
         template<typename T>
         void clear(T& val, bool do_delete = true);
 
-        template<typename T>
-        VarVal* eval(T& val, ProgramState* state, FunctionCall* function_call);
+        template<typename StateType, typename T>
+        VarVal* eval(T& val, StateType* state, FunctionCall* function_call);
 
         void _clear() {
             assert(num_shared_ptr == 0);
@@ -588,8 +607,11 @@ namespace SL
                 case int_val_type:
                     //do nothing
                     break;
+                case generic_file_val_type:
+                    clear<GenericFile*>(generic_file, false);
+                    break;
                 case file_val_type:
-                    clear<GenericFile*>(file, false);
+                    clear<File*>(file, false);
                     break;
                 case method_val_type:
                     clear<Method*>(method, false);
@@ -641,9 +663,7 @@ namespace SL
 
         bool get_is_return() const;
 
-        VarVal *eval(ProgramState *pState, SL::FunctionCall *pCall);
-
-        VarVal *clone();
+        template<typename StateType> VarVal* eval(StateType* state, SL::FunctionCall *pCall);
 
         bool is_input_holder();
 
@@ -821,7 +841,8 @@ namespace SL
             return name->to_string() + " : " + type->to_string();
         }
 
-        void run(ProgramState *state);
+        template<typename StateType>
+void run(StateType* state);
 
         bool defined() const
         {
@@ -856,7 +877,7 @@ namespace SL
             return *name < *other.name;
         }
 
-        SL::VarVal* eval(ProgramState *pState);
+        template<typename StateType> VarVal* eval(StateType* state);
 
         SLType * get_type();
 
@@ -1137,23 +1158,23 @@ public:
 
 };
 
-
 class ProgramState
 {
+
+protected:
+    vector<NestedFrame> frames;
+    Frame global;
 
 public:
 
     FunctionMap& function_map;
 
-    Frame global;
+    explicit ProgramState(FunctionMap& _function_map):
+        function_map(_function_map), global() {}
 
-    vector<NestedFrame> frames;
-
-    virtual void clear()
+    virtual void clear(bool conscious_call = false)
     {
-//        console_output.close();
-//        init_root->clear();
-        AssertDebug(false, "METHOD NOT IMPLEMENTED IN DERIVED CLASS.");
+        AssertDebug(conscious_call, "METHOD NOT IMPLEMENTED IN DERIVED CLASS.");
 
         assert(global.is_empty());
         for(auto it: frames) {
@@ -1162,12 +1183,12 @@ public:
         frames.clear();
     }
 
-    virtual void add_var(SL::Var *var) {
+    void add_var(SL::Var *var) {
         assert(!frames.empty());
         frames.rbegin()->add_var(var);
     }
 
-    virtual SL::VarVal* get_var_val(SL::Var *var) {
+    SL::VarVal* get_var_val(SL::Var *var) {
         assert(!frames.empty());
         try {
             return frames.rbegin()->get_var_val_throws(var);
@@ -1182,14 +1203,14 @@ public:
         }
     }
 
-    virtual void set_var_val(SL::Var *var, SL::VarVal* var_val);
+    void set_var_val(SL::Var *var, SL::VarVal* var_val);
 
-    virtual void add_and_set_var_val(SL::Var *var, SL::VarVal* var_val) {
+    void add_and_set_var_val(SL::Var *var, SL::VarVal* var_val) {
         add_var(var);
         set_var_val(var, var_val);
     }
 
-    virtual SL::Var* name_to_var_throws(SL::Identifier* name)
+    SL::Var* name_to_var_throws(SL::Identifier* name)
     {
         assert(!frames.empty());
         try {
@@ -1210,7 +1231,7 @@ public:
         }
     }
 
-    virtual SL::Var* name_to_var(SL::Identifier* name)
+    SL::Var* name_to_var(SL::Identifier* name)
     {
         assert(!frames.empty());
         try {
@@ -1224,18 +1245,18 @@ public:
 
     SL::VarVal* return_var_val = nullptr;
 
-    virtual bool has_return()
+    bool has_return()
     {
         return return_var_val != nullptr;
     }
 
-    virtual void set_return_var_val(SL::VarVal* var_val) {
+    void set_return_var_val(SL::VarVal* var_val) {
         assert(return_var_val == nullptr);
         var_val->set_return();
         return_var_val = var_val;
     }
 
-    virtual SL::VarVal* get_return_var_val() {
+    SL::VarVal* get_return_var_val() {
         if(return_var_val != nullptr) {
             assert(return_var_val->get_is_return());
             return_var_val->complete_return();
@@ -1249,38 +1270,38 @@ public:
         return ret;
     }
 
-    virtual void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals, vector<SL::Param *>* meta_vals = nullptr);
-    virtual void new_stack_frame(vector<SL::Param *> &vars, vector<SL::VarVal *> &vals, vector<SL::Param *>* meta_vals = nullptr);
+    void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals, vector<SL::Param *>* meta_vals = nullptr);
+    void new_stack_frame(vector<SL::Param *> &vars, vector<SL::VarVal *> &vals, vector<SL::Param *>* meta_vals = nullptr);
 
-    virtual void new_stack_frame() {
+    void new_stack_frame() {
         frames.emplace_back(NestedFrame());
         open_subframe();
     }
 
-    virtual void pop_stack_frame() {
+    void pop_stack_frame() {
         assert(!frames.empty());
         close_subframe();
         assert(frames.rbegin()->is_empty());
         frames.pop_back();
     }
 
-    virtual SL::Var *method_name_to_var(SL::Identifier *name) {
+    SL::Var *method_name_to_var(SL::Identifier *name) {
         SL::Var* ret = global.name_to_var(name);
         assert(global.get_var_val(ret)->is_method());
         return ret;
     }
 
-    virtual void open_subframe() {
+    void open_subframe() {
         assert(!frames.empty());
         frames.rbegin()->open_subframe();
     }
 
-    virtual void close_subframe(){
+    void close_subframe(){
         assert(!frames.empty());
         frames.rbegin()->close_subframe();
     }
 
-    virtual void add_to_function_map(const string &skfunc_name, SketchFunction *skfunc);
+    void add_to_function_map(const string &skfunc_name, SketchFunction *skfunc);
 
 };
 
@@ -1495,7 +1516,9 @@ namespace SL {
         _to_float, _sort_vec,
         _assert, _reverse,
         _produce_filter,
-        _not, _relabel, _reset,
+        _not,
+//        _relabel,
+        _reset,
         _produce_deep_concretize,
 //        TODO: produce_unit_concretize
         _inplace_deep_concretize,
@@ -1536,7 +1559,8 @@ namespace SL {
 
         MethodId get_method_id();
 
-        SL::VarVal* eval_global(ProgramState *state);
+        template<typename StateType>
+        SL::VarVal* eval_global(StateType *state);
 
         pair<Var*, SL::VarVal*> get_var_and_var_val_and_assert_type(ProgramState* state, vector<string> type_names);
 
@@ -1575,16 +1599,33 @@ namespace SL {
         };
         explicit FunctionCall(FunctionCall* to_copy);
 
-        SL::VarVal* eval(ProgramState* state);
+        template<typename StateType>
+        SL::VarVal* eval(StateType* state);
 
-        template<typename VarType>
-        SL::VarVal* eval(VarType& var, ProgramState* state, const VarVal* const the_var_val);
-
-        void run(ProgramState *pState);
+        template<typename StateType>
+        void run(StateType* state);
 
         void clear();
 
         string to_string();
+
+        template<typename StateType>
+        VarVal *eval(PolyVec *&poly_vec, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType>
+        VarVal *eval(PolyPair *&poly_pair, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType>
+        VarVal *eval(InputVarStore *&input_var_store, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType>
+        VarVal *eval(HoleVarStore *&hole_var_store, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType, typename FileType>
+        VarVal *eval(FileType *&generic_file, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType>
+        VarVal *eval(SketchFunction *&sk_func, StateType *state, const VarVal *const the_var_val);
     };
 
     class Assignment
@@ -1612,7 +1653,8 @@ namespace SL {
             assert(dest_type == var_dest_type);
             return dest_var;
         }
-        void run(ProgramState* state);
+        template<typename StateType>
+        void run(StateType* state);
 
         bool has_assignment();
 
@@ -1635,7 +1677,7 @@ namespace SL {
         };
         explicit Param(Param* to_copy);
 
-        SL::VarVal* eval(ProgramState *state);
+        template<typename StateType> VarVal* eval(StateType* state);
 
         Var *get_var() {
             switch (meta_type) {
@@ -1678,9 +1720,10 @@ namespace SL {
         explicit Expression(SL::VarVal* _var_val): var_val(_var_val), expression_meta_type(var_val_meta_type){};
         explicit Expression(Expression* to_copy);
 
-        SL::VarVal* eval(ProgramState* state);
+        template<typename StateType> VarVal* eval(StateType* state);
 
-        void run(ProgramState* state) {
+        template<typename StateType>
+        void run(StateType* state) {
             SL::VarVal* ret = eval(state);
             if(!ret->is_void())
             {
@@ -1725,43 +1768,7 @@ namespace SL {
 
         explicit BinaryExpression(BinaryExpression* to_copy);
 
-        VarVal* eval(ProgramState* state)
-        {
-            VarVal* left_var_val = left_operand->eval(state);
-            VarVal* right_var_val = right_operand->eval(state);
-
-            assert(left_var_val->get_type() == right_var_val->get_type());
-
-            switch (op) {
-                case _lt:
-                    return left_var_val->lt_op(right_var_val);
-                    break;
-                case _gt:
-                    return left_var_val->gt_op(right_var_val);
-                    break;
-                case _eq:
-                    return left_var_val->eq_op(right_var_val);
-                    break;
-                case _geq:
-                    return left_var_val->geq_op(right_var_val);
-                    break;
-                case _plus:
-                    return left_var_val->plus_op(right_var_val);
-                    break;
-                case _minus:
-                    return left_var_val->minus_op(right_var_val);
-                    break;
-                case _mult:
-                    return left_var_val->mult_op(right_var_val);
-                    break;
-                case _div:
-                    return left_var_val->div_op(right_var_val);
-                    break;
-                default:
-                    assert(false);
-            }
-            assert(false);
-        }
+        template<typename StateType> VarVal* eval(StateType* state);
 
         void clear()
         {
@@ -1791,7 +1798,7 @@ namespace SL {
 
         void clear();
 
-        VarVal *eval(ProgramState *state);
+        template<typename StateType> VarVal* eval(StateType* state);
     };
 
     class While
@@ -1802,7 +1809,8 @@ namespace SL {
         While(Expression* _expression, CodeBlock* _body): expression(_expression), body(_body) {}
         explicit While(While* to_copy);
 
-        void run(ProgramState* state);
+        template<typename StateType>
+        void run(StateType* state);
 
         void clear();
     };
@@ -1820,7 +1828,7 @@ namespace SL {
             def(_def), expression(_expression), plus_plus(_plus_plus), body(_body) {}
         explicit For(For* to_copy);
 
-        void run(ProgramState* state);
+        template<typename StateType> void run(StateType* state);
 
         void clear();
     };
@@ -1836,7 +1844,7 @@ namespace SL {
         If(Expression* _expression, CodeBlock* _body, CodeBlock* _else_body): expression(_expression), body(_body), else_body(_else_body) {}
         explicit If(If* to_copy);
 
-        void run(ProgramState* state);
+        template<typename StateType> void run(StateType* state);
 
         void clear();
     };
@@ -1848,7 +1856,8 @@ namespace SL {
         explicit Return(Expression* _expression) : expression(_expression) {}
         explicit Return(Return* to_copy): expression(new Expression(to_copy->expression)){};
 
-        void run(ProgramState* state);
+        template<typename StateType>
+        void run(StateType* state);
 
         void clear();
     };
@@ -1878,7 +1887,8 @@ namespace SL {
         explicit UnitLine(CodeBlock* _code_block): code_block(_code_block), line_type(code_block_line){}
         explicit UnitLine(UnitLine* to_copy);
 
-        void run(ProgramState *state);
+        template<typename StateType>
+        void run(StateType *state);
 
         void clear();
     };
@@ -1897,7 +1907,8 @@ namespace SL {
             }
         }
 
-        void run(ProgramState *state);
+        template<typename StateType>
+        void run(StateType *state);
 
         void clear()
         {
@@ -1934,12 +1945,14 @@ namespace SL {
 
         void clear();
 
-        void run(ProgramState* state, vector<Param*>& input_params);
+        template<typename StateType>
+        void run(StateType* state, vector<Param*>& input_params);
+        
+        template<typename StateType>
+        void run(StateType* state, vector<VarVal*>& input_params);
 
-        template<typename T>
-        SL::VarVal* eval(ProgramState* state, vector<T>& params);
+        template<typename StateType, typename T> VarVal* eval(StateType* state, vector<T>& params);
 
-        void run(ProgramState* state, vector<VarVal*>& input_params);
 
         Var* get_var()
         {
@@ -1972,11 +1985,8 @@ namespace SL {
     };
 };
 
-
 typedef void* yyscan_t;
-void yyerror(yyscan_t scanner, ProgramState* state, string s);
-
-
-//using namespace SL;
+class SolverProgramState;
+void yyerror(yyscan_t scanner, SolverProgramState* state, string s);
 
 #endif //SOLVERLANGUAGEPARSER_LEXANDYACCHEADER_H

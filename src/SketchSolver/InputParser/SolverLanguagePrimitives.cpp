@@ -3,3 +3,107 @@
 //
 
 #include "SolverLanguagePrimitives.h"
+#include "GenericFile.h"
+
+HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePrimitives::ProblemAE *problem)
+{
+//            cout << endl;
+//            cout << "ENTERING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+
+    File* file = nullptr;
+    if(false) {
+        File *predicted_file = new File(problem->get_harness(), problem->get_generic_file(), floats, params.seed);
+        File *ground_truth_file = new File(problem->get_harness(), problem->get_generic_file()->get_file_name(), floats,
+                                           params.seed);
+
+        file = predicted_file;
+
+        assert(*predicted_file == *ground_truth_file);
+        assert(false);
+    }
+    else
+    {
+        file = problem->get_file();
+    }
+
+    assert(file != nullptr);
+
+    solver->addProblem(problem->get_harness(), file);
+
+    SATSolverResult ret_result = SAT_UNDETERMINED;
+    HoleVarStore* holes_to_sk_val = nullptr;
+    //copied from InterpreterEnviroment::assertDAG
+    {
+        bool ret_result_determined = false;
+        int solveCode = 0;
+        try {
+
+            solveCode = solver->solve();
+            if (solveCode || !hasGoodEnoughSolution) {
+                holes_to_sk_val = recordSolution();
+            }
+        }
+        catch (SolverException *ex) {
+//                    needs InterpreterEnviroment::basename
+//                    cout << "ERROR " << basename() << ": " << ex->code << "  " << ex->msg << endl;
+            ret_result = ex->code;
+            ret_result_determined = true;
+        }
+        catch (BasicError &be) {
+            if (!hasGoodEnoughSolution) {
+                holes_to_sk_val = recordSolution();
+            }
+//                    needs InterpreterEnviroment::basename
+//                    cout << "ERROR: " << basename() << endl;
+            ret_result = SAT_ABORTED;
+            ret_result_determined = true;
+        }
+
+        if (!ret_result_determined)
+        {
+            if (!solveCode) {
+                ret_result = SAT_UNSATISFIABLE;
+            }
+            else {
+                ret_result = SAT_SATISFIABLE;
+            }
+        }
+    }
+
+    VarStore* tmp_var_store = new VarStore(*holes_to_sk_val);
+    auto tmp_dag = problem->get_harness()->produce_concretization(tmp_var_store, bool_node::CTRL);
+    tmp_var_store->clear();
+    tmp_dag->increment_shared_ptr();
+    int num_passing_inputs = tmp_dag->count_passing_inputs(file);
+    if(ret_result == SAT_SATISFIABLE)
+    {
+        assert(num_passing_inputs == file->size());
+    }
+    else
+    {
+        assert(num_passing_inputs < file->size());
+    }
+    tmp_dag->clear();
+
+//            HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
+    HoleVarStore * ret = holes_to_sk_val;
+
+//            cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+//            cout << "failing assert: " << problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->get_dag()->get_failed_assert() << endl;
+//            cout << "returns " << ret->to_string() << endl << endl;
+
+
+    assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
+    if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
+    {
+        auto tmp_local_var_store = new VarStore(*ret);//;->to_var_store(false);
+        auto tmp = problem->get_harness()->produce_concretization(tmp_local_var_store, bool_node::CTRL);
+        tmp_local_var_store->clear();
+        assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
+        assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
+        tmp->increment_shared_ptr();
+        tmp->clear();
+    }
+
+    return ret;
+}

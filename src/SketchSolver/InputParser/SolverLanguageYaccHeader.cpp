@@ -135,7 +135,7 @@ void ProgramState::set_var_val(SL::Var *var, SL::VarVal *var_val) {
 }
 
 
-void SolverProgramState::add_to_function_map(const string &skfunc_name, SketchFunction *skfunc) {
+void ProgramState::add_to_function_map(const string &skfunc_name, SketchFunction *skfunc) {
     assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
     FunctionMap& _function_map = skfunc->get_env()->function_map;
     assert(&_function_map == &function_map);
