@@ -587,6 +587,27 @@ const vector<string> &SketchFunction::get_unit_holes() {
 
 #include "SolverLanguageLexAndYaccHeader.h"
 
+#include "GenericFile.h"
+#include "File.h"
+
+VarStore* string_to_var_store(const string& _line, SketchFunction *skfunc)
+{
+    GenericFile generic_file = GenericFile();
+    generic_file.push_back(_line);
+    File file = File(skfunc, &generic_file, skfunc->get_env()->get_floats(), skfunc->get_env()->params.seed);
+    assert(file.size() == 1);
+    return file[0];
+}
+
+SL::VarVal *SketchFunctionEvaluator::eval(SketchFunction *skfunc, const string& _line)
+{
+    VarStore* var_store = string_to_var_store(_line, skfunc);
+    auto ret = new_passes(skfunc, var_store);
+    var_store->clear();
+    return ret;
+}
+
+
 SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, const VarStore* _the_var_store) {
     BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
@@ -670,6 +691,14 @@ SketchFunctionEvaluator::passes(const SketchFunction *skfunc,  const VarStore* i
     concretized_dag->clear();
 
     return new SL::VarVal(ret);
+}
+
+SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc, const string& _line)
+{
+    VarStore* var_store = string_to_var_store(_line, skfunc);
+    auto ret = new_passes(skfunc, var_store);
+    var_store->clear();
+    return ret;
 }
 
 SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc, const VarStore* _the_var_store)

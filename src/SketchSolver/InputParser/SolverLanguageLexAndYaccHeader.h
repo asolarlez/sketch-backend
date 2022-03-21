@@ -284,12 +284,14 @@ namespace SL
         string get_type_string()
         {
             switch (var_val_type) {
-
                 case string_val_type:
                     return "string";
                     break;
                 case int_val_type:
                     return "int";
+                    break;
+                case generic_file_val_type:
+                    return "File";
                     break;
                 case file_val_type:
                     return "File";
@@ -359,7 +361,7 @@ namespace SL
                 assert(is_sketch_function());
             }
             else if(std::is_same<GenericFile*,T>::value){
-                assert(var_val_type == file_val_type);
+                assert(var_val_type == generic_file_val_type);
             }
             else if(std::is_same<HoleVarStore *,T>::value){
                 assert(var_val_type == solution_val_type);
@@ -665,11 +667,13 @@ namespace SL
 
         template<typename StateType> VarVal* eval(StateType* state, SL::FunctionCall *pCall);
 
-        bool is_input_holder();
+        bool is_input_holder() const;
 
-        bool is_solution_holder();
+        bool is_string() const;
 
-        void clear_assert_0_shared_ptrs();
+        bool is_solution_holder() const;
+
+        void clear_assert_0_shared_ptrs() ;
 
     };
 
@@ -1625,7 +1629,7 @@ namespace SL {
         VarVal *eval(FileType *&generic_file, StateType *state, const VarVal *const the_var_val);
 
         template<typename StateType>
-        VarVal *eval(SketchFunction *&sk_func, StateType *state, const VarVal *const the_var_val);
+        VarVal *eval(SketchFunction *&skfunc, StateType *state, const VarVal *const the_var_val);
     };
 
     class Assignment

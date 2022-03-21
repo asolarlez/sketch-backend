@@ -34,7 +34,6 @@ class TopologyMatcher;
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
 class VarStore{
 private:
-	
 
 public:
 	class objP{
@@ -493,6 +492,26 @@ public:
 
     VarStore(const VarStore& to_copy, bool deep_clone = false);
     VarStore(const VarStore& to_copy, LightInliningTree* _inlining_tree);
+
+    bool operator == (const VarStore& other) const
+    {
+        AssertDebug(other.synths.empty(), "TODO: implement eq logic for synths and synthouths.");
+        AssertDebug(other.synthouts.empty(), "TODO: implement eq logic for synths and synthouths.");
+
+        if(objs.size() != other.objs.size()) {
+            return false;
+        }
+
+        for(int i = 0;i<objs.size();i++) {
+            if(!(objs[i] == other.objs[i])) {
+                return false;
+            }
+        }
+
+        assert(bitsize == other.bitsize);
+
+        return true;
+    }
 
     void operator = (const VarStore& to_copy);
 

@@ -1,17 +1,6 @@
-#include "timerclass.h"
-#include <queue>
-#include "CommandLineArgs.h"
-#include "Tvalue.h"
-#include "DagOptim.h"
 #include "NodesToSolver.h"
-#include "NodesToEuclid.h"
-#include "NodeSlicer.h"
-#include "BackwardsAnalysis.h"
-#include "MiniSATSolver.h"
 #include "CEGISChecker.h"
-#include "NodeHardcoder.h"
-
-
+#include "File.h"
 
 int CEGISChecker::valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 			int retval = 0;
@@ -406,7 +395,7 @@ class CheckControl{
 public:
 	typedef enum {POP_LEVEL, GROW_IN, SOLVE, DONE, NEXT_PROBLEM} decision;
 	CheckControl(CEGISparams& p_params, int p_toVerify):params(p_params),state(CSOLVE), wn(GROW), toVerify(p_toVerify){}
-	decision actionDecide(int level, BooleanDAG* dag){
+	decision actionDecide(int level, BooleanDAG* dag, bool from_file){
 		if(params.simplifycex==CEGISparams::SIMSIM  && level != 1){
 			return POP_LEVEL;
 		}
@@ -418,7 +407,7 @@ public:
 			state = CSOLVE;
 			if((wn==GROW && dag->getIntSize() < params.NINPUTS) || (level == 1)){
 				wn = POP;
-				if(dag->getIntSize() < params.NINPUTS){
+				if(dag->getIntSize() < params.NINPUTS && !from_file){
 					return GROW_IN;
 				}else{
 					toVerify--;
@@ -451,7 +440,8 @@ public:
 // check verifies that controls satisfies all asserts
 // and if there is a counter-example, it will be put to input
 BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
-	if(problemStack.empty())
+
+    if(problemStack.empty())
 	{
 		pushProblem((*problems.rbegin())->clone());
 	}	
@@ -485,7 +475,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 //    cout<<"After hard code"<<endl;
 	// getProblemDag()->lprint(std::cout);
 	do{
-		switch(cc.actionDecide(problemLevel() - 1, getProblemDag())){
+		switch(cc.actionDecide(problemLevel() - 1, getProblemDag(), files.count(curProblem) > 0)){
 			case CheckControl::POP_LEVEL:{
 				// must save the int size! tbd will be deleted by popProblem()
 				int tbdIntSize = getProblemDag()->getIntSize();
@@ -502,6 +492,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
 //					pushProblem(hardCodeINode(getProblemDag(), controls, bool_node::CTRL, floats));
 				}
+
 				continue;
 			}
 			case CheckControl::DONE:{
@@ -516,6 +507,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					cout<<"CONTROL: growing l="<<problemLevel()<<" inputs to size "<< (dag->getIntSize()+1) <<endl;
 				}				
 				growInputs(input, dag, oriProblem, (problemLevel() - 1) == 1 );
+
 				continue;
 			}
 			case CheckControl::SOLVE:{
@@ -553,6 +545,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 						}
 					}
 					rv = (res == CounterexampleFinder::FOUND);
+
 					continue;
 				}
 
@@ -562,6 +555,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 				}else{
 					rv = (baseCheck(controls, input)==l_True);
 				}
+
 				continue;
 			}
 			case CheckControl::NEXT_PROBLEM:{
@@ -581,6 +575,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
 				pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
 //				pushProblem(hardCodeINode(oriProblem, controls, bool_node::CTRL, floats));
+
 				continue;
 			}
             default:
@@ -744,4 +739,67 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	//cout << "setNewControls: problem=";
 	//getProblemDag()->lprint(cout);
 	NodesToSolver::createConstraints(*getProblemDag(), dirCheck, node_values, check_node_ids, floats, params.sparseArray);
+}
+
+void CEGISChecker::addProblem(BooleanDagLightUtility *harness, File *file)
+{
+    curProblem = (int) problems.size();
+    problems.push_back(harness);
+    if (file != nullptr) {
+        files[curProblem] = file;
+    }
+
+    BooleanDagLightUtility* inlined_harness = harness;
+    bool new_clone = false;
+    if(new_clone) {
+        //BE CAREFUL, THIS RENAMES THE SOURCE DAG OF THE HOLES.
+        inlined_harness = inlined_harness->produce_inlined_dag();
+        inlined_harness->increment_shared_ptr();
+        new_clone = true;
+    }
+    else
+    {
+        //ASSERT THAT THE DAG WAS ALREADY INLINED.
+        //IF THIS FAILS THE DAG WASN'T INLINED.
+        if(!inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty()) {
+            for(auto it: inlined_harness->get_dag()->getNodesByType(bool_node::UFUN)) {
+                string ufname = ((UFUN_node*)it)->get_ufname();
+                assert(inlined_harness->get_env()->function_map.find(ufname) == inlined_harness->get_env()->function_map.end());
+            }
+        }
+        for(auto it:inlined_harness->get_dag()->getNodesByType(bool_node::CTRL)) {
+            assert(it->get_name() != "#PC");
+        }
+    }
+
+    redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
+
+    // IS THIS DEBUG CODE? YES
+    Dout( cout << "problem->get_n_controls() = " << root_dag->get_n_controls() << "  " << root_dag << endl );
+    {
+        auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
+        if(PARAMS->verbosity > 2){
+            cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
+        }
+        int cints = 0;
+        int cbits = 0;
+        int cfloats = 0;
+        for(int i=0; i<problemIn.size(); ++i){
+            CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
+            if(ctrlnode->getOtype() == OutType::BOOL){
+                cbits++;
+            } else if (ctrlnode->getOtype() == OutType::FLOAT) {
+                cfloats++;
+            } else{
+                cints++;
+            }
+        }
+        if(PARAMS->verbosity > 2){
+            cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
+        }
+    }
+
+    if(new_clone) {
+        inlined_harness->clear();
+    }
 }

@@ -74,9 +74,25 @@ public:
         return true;
     }
 
+    bool operator == (const File& other) const
+    {
+        if(other.size() != size()) {
+            return false;
+        }
+        for(int i = 0;i<size();i++)
+        {
+            if(!(*at(i) == *other.at(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     explicit File(std::mt19937 _generator): generator(_generator){}
 
     File(BooleanDagLightUtility *harness, const string& file_name, FloatManager& floats, int seed);
+
+    void init(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed);
 
     File(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed);
 
@@ -276,8 +292,8 @@ public:
     }
 
     parseLineOut parseLine(string _line, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
-
-        AssertDebug(false, "IF YOU GET TO HERE IT SHOULD MEAN THAT YOU HAVE INTEGRATED THIS FUNCTION IN THE EXPECTED WAY.");
+//
+//        AssertDebug(false, "IF YOU GET TO HERE IT SHOULD MEAN THAT YOU HAVE INTEGRATED THIS FUNCTION IN THE EXPECTED WAY.");
 
         auto vsi = inputs->begin();
         VarStore::objP* arrit = nullptr;
@@ -449,18 +465,18 @@ public:
 //        in.get(ch);
 //            cout << ch << "("<<(int)ch<<")'''";
 //        if (in.eof())
-            if(at_ch_id == _line.size())
-            {
-                regval();
-                assert(!outOfRange);
-                if(vsi == inputs->end()){
-                    return complete_row;
-                }
-                else {
-                    AssertDebug(false, "INCOMPLETE LINE: " + _line);
-                    return incomplete_row;
-                }
-            }
+//            if(at_ch_id == _line.size())
+//            {
+//                regval();
+//                assert(!outOfRange);
+//                if(vsi == inputs->end()){
+//                    return complete_row;
+//                }
+//                else {
+//                    AssertDebug(false, "INCOMPLETE LINE: " + _line);
+//                    return incomplete_row;
+//                }
+//            }
         }
         regval();
         if(outOfRange){

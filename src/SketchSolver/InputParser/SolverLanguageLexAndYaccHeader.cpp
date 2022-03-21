@@ -315,6 +315,7 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
 
 #include "GenericFile.h"
 #include "SolverLanguagePrimitives.h"
+#include "File.h"
 
 template<typename StateType, typename FileType>
 SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::VarVal* const the_var_val) {
@@ -427,15 +428,19 @@ SL::VarVal* SL::FunctionCall::eval_global<ProgramState>(ProgramState *state) {
 }
 
 #include "SolverLanguageYaccHeader.h"
-#include "File.h"
 
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
 {
     switch (method_id) {
         case _file: {
-            if(true) {
-//                AssertDebug(false, "REFACTORING...")
+#ifdef USE_GENERIC_FILE
+            const bool use_generic_file = true;
+#else
+            const bool use_generic_file = false;
+#endif
+
+            if(!use_generic_file) {
                 assert(params.size() == 2);
                 string file_name = params[0]->eval(state)->get_string();
                 SketchFunction *harness = params[1]->eval(state)->get_function();
@@ -444,7 +449,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             }
             else
             {
-                assert(params.size() == 1);
+                assert(params.size() == 1 || params.size() == 2);
                 string file_name = params[0]->eval(state)->get_string();
                 SL::VarVal *ret = new SL::VarVal(new GenericFile(file_name));
                 return ret;
@@ -474,8 +479,15 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             sort(after_holes.begin(), after_holes.end());
             assert(prev_holes.size() == after_holes.size());
 
-            File* file = params[1]->eval(state)->get_file();
+            FILE_TYPE* file = nullptr;
+
+#ifdef USE_GENERIC_FILE
+            file = params[1]->eval(state)->get_generic_file();
+#else
+            file = params[1]->eval(state)->get_file();
             assert(file->like_unused());
+#endif
+            assert(file != nullptr);
 
             using namespace SolverLanguagePrimitives;
             auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
@@ -499,8 +511,10 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
                 param_var_val->decrement_shared_ptr();
             }
 
+#ifndef USE_GENERIC_FILE
             file->reset();
             assert(file->like_unused());
+#endif
             harness->clear();
             solver->clear();
             delete problem;
@@ -508,13 +522,6 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             return new SL::VarVal(sol);
             break;
         }
-//        case _Solution:
-//        {
-//            assert(params.empty());
-//            using namespace SolverLanguagePrimitives;
-//            const HoleAssignment* ret = new HoleAssignment(false);
-//            return new VarVal(ret);
-//        }
         case _print:
         {
             assert(!params.empty());
@@ -657,10 +664,12 @@ SL::VarVal* SL::FunctionCall::eval(StateType *state)
                     assert(params.size() == 1);
                     VarVal* input_val = params[0]->eval(state);
                     input_val->increment_shared_ptr();
-                    assert(input_val->is_input_holder());
+//                    assert(input_val->is_input_holder());
+                    assert(input_val->is_string());
 
                     SketchFunction* skfunc = method_var_val->get_function();
-                    InputVarStore *input_assignment = input_val->get_input_holder();
+//                    InputVarStore *input_assignment = input_val->get_input_holder();
+                    string input_assignment = input_val->get_string();
                     ret = SketchFunctionEvaluator::eval(skfunc, input_assignment);
                     assert(ret != nullptr);
 
@@ -1009,7 +1018,8 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             assert(params.size() == 1);
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
-            InputVarStore* input_holder = input_holder_var_val->get_input_holder();
+//            InputVarStore* input_holder = input_holder_var_val->get_input_holder();
+            string input_holder = input_holder_var_val->get_string();
             auto ret_predicted = SketchFunctionEvaluator::new_passes(skfunc, input_holder);
             input_holder_var_val->decrement_shared_ptr();
             return ret_predicted;
@@ -1249,7 +1259,8 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
         string var_type_str = var_type->get_head()->to_string();
         if (var_type->is_simple_type()) {
             if (var_type_str == "File") {
-                assert(var_val_type == SL::file_val_type);
+                assert(var_val_type == SL::generic_file_val_type);
+//                assert(var_val_type == SL::file_val_type);
             } else if (var_type_str == "int") {
                 assert(var_val_type == SL::int_val_type);
             } else if (var_type_str == "string") {
@@ -1263,7 +1274,8 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
             } else if (var_type_str == "Program") {
                 assert(var_val_type == SL::skfunc_val_type);
             } else if (var_type_str == "Input") {
-                assert(var_val_type == SL::input_val_type);
+                assert(var_val_type == SL::string_val_type);
+//                assert(var_val_type == SL::input_val_type);
             } else if (var_type_str == "bool") {
                 assert(var_val_type == SL::bool_val_type);
             }
@@ -1489,8 +1501,16 @@ string SL::Expression::to_string() {
 }
 
 SL::VarVal::VarVal(float _float_val) : float_val(_float_val) , var_val_type(float_val_type){}
-SL::VarVal::VarVal(GenericFile* _generic_file) : generic_file(_generic_file) , var_val_type(generic_file_val_type){}
-SL::VarVal::VarVal(File* _file) : file(_file) , var_val_type(file_val_type){}
+SL::VarVal::VarVal(GenericFile* _generic_file) : generic_file(_generic_file) , var_val_type(generic_file_val_type){
+#ifndef USE_GENERIC_FILE
+    AssertDebug(false, "NOT USING GENERIC_FILE");
+#endif
+}
+SL::VarVal::VarVal(File* _file) : file(_file) , var_val_type(file_val_type){
+#ifdef USE_GENERIC_FILE
+    AssertDebug(false, "USING ONLY GENERIC_FILE");
+#endif
+}
 SL::VarVal::VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
 SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){
     skfunc->increment_shared_ptr();
@@ -1642,11 +1662,15 @@ SL::VarVal *SL::VarVal::eval(T& val, StateType *state, SL::FunctionCall *functio
     return ret;
 }
 
-bool SL::VarVal::is_input_holder() {
+bool SL::VarVal::is_input_holder()  const{
     return var_val_type == input_val_type;
 }
 
-bool SL::VarVal::is_solution_holder() {
+bool SL::VarVal::is_string()  const{
+    return var_val_type == string_val_type;
+}
+
+bool SL::VarVal::is_solution_holder()  const{
     return var_val_type == solution_val_type;
 }
 

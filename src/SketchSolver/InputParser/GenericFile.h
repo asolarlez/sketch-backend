@@ -16,35 +16,33 @@
 
 using namespace std;
 
+#define USE_GENERIC_FILE
+#ifdef USE_GENERIC_FILE
+#define FILE_TYPE GenericFile
+#else
+#define FILE_TYPE File
+#endif
+
 class GenericFile: public vector<string> {
     string file_name;
+    std::mt19937 generator;
+
 public:
+
+    GenericFile() = default;
+
     explicit GenericFile(std::mt19937 _generator): generator(_generator){}
 
     explicit GenericFile(const string& _file_name): file_name(_file_name) {
         ifstream file(file_name);
-        AssertDebug(file.is_open(), "FILE " + file_name + " WASN'T SUCCESSFULLY OPENED");
+        AssertDebug(file.is_open(), "FILE " + file_name + " WASN'T SUCCESSFULLY OPENED.");
         string line;
         while(getline(file, line)) {
+            assert(line[line.size()-1] != '\n');
+            line+="\n";
             push_back(line);
         }
-    }
-
-    const string& get_file_name() {
-        return file_name;
-    }
-
-    std::mt19937 generator;
-
-    void light_clear()
-    {
-        vector<string>::clear();
-    }
-public:
-
-    void clear() {
-        light_clear();
-        delete this;
+        file.close();
     }
 
     explicit GenericFile(GenericFile* to_copy)
@@ -55,6 +53,20 @@ public:
         }
     }
 
+
+    const string& get_file_name() {
+        return file_name;
+    }
+
+    void light_clear() {
+        vector<string>::clear();
+    }
+
+    void clear() {
+        light_clear();
+        delete this;
+    }
+
     GenericFile *sample_sub_file(int num_rows) {
         if(false) {
             //DEBUG VERSION TO SEE WHICH IDs ARE CHOSEN
@@ -63,9 +75,12 @@ public:
                 ids.push_back(i);
             }
             vector<int> sample_ids;
-            sample(ids.begin(), ids.end(), back_inserter(sample_ids),
-                   num_rows, generator);
+            sample(ids.begin(), ids.end(), back_inserter(sample_ids),num_rows, generator);
             GenericFile *new_file = new GenericFile(generator);
+            for(int i = 0;i< sample_ids.size();i++) {
+                assert(sample_ids[i] < size());
+                new_file->push_back(at(sample_ids[i]));
+            }
 
             return new_file;
         }

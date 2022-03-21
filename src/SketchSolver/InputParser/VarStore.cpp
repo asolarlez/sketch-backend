@@ -331,7 +331,7 @@ void VarStore::newVar(const string &name, int nbits, OutType *otype, bool_node::
 }
 
 void VarStore::setVarVal(const string &name, int val, OutType *otype, bool_node::Type type) {
-    AssertDebug(contains(name), "IF THIS FAILS, REWRITE THIS FUNCTION TO USE newVar first.");
+    AssertDebug(contains(name), "IF THIS FAILS, REWRITE THIS FUNCTION TO USE newVar FIRST.");
     if(inlining_tree != nullptr) {
         auto obj = getObjConst(name);
         assert(!obj.get_is_array());

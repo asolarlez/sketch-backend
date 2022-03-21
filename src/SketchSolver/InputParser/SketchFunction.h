@@ -181,9 +181,13 @@ public:
 
 namespace SketchFunctionEvaluator
 {
+    SL::VarVal* eval(SketchFunction *skfunc, const string& _line);
+
     SL::VarVal* eval(SketchFunction* skfunc, const VarStore *input_var_store);
 
     SL::VarVal* passes(const SketchFunction *skfunc, const VarStore *input_var_store);
+
+    SL::VarVal* new_passes(SketchFunction *skfunc, const string& _line);
 
     SL::VarVal* new_passes(SketchFunction* skfunc, const VarStore *input_var_store);
 

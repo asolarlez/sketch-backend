@@ -1,17 +1,17 @@
 #pragma once
 
-#include "BooleanToCNF.h"
-#include "FindCheckSolver.h"
+//#include "BooleanToCNF.h"
+//#include "FindCheckSolver.h"
 #include "BooleanDAG.h"
-#include "Tvalue.h"
-#include "Checkpointer.h"
-#include "VarStore.h"
+//#include "Tvalue.h"
+//#include "Checkpointer.h"
+//#include "VarStore.h"
 #include "CommandLineArgs.h"
-#include "SolverTypes.h"
+//#include "SolverTypes.h"
 #include "HoleHardcoder.h"
 #include <stack>
 #include <ctime>
-#include "FloatSupport.h"
+//#include "FloatSupport.h"
 #include "CEGISParams.h"
 #include "CounterexampleFinder.h"
 
@@ -128,70 +128,7 @@ public:
     }
 
 
-	void addProblem(BooleanDagLightUtility *harness, File *file)
-	{
-		curProblem = (int) problems.size();
-		problems.push_back(harness);
-        if (file != nullptr) {
-            files[curProblem] = file;
-        }
-
-        BooleanDagLightUtility* inlined_harness = harness;
-        bool new_clone = false;
-        if(new_clone) {
-            //BE CAREFUL, THIS RENAMES THE SOURCE DAG OF THE HOLES.
-            inlined_harness = inlined_harness->produce_inlined_dag();
-            inlined_harness->increment_shared_ptr();
-            new_clone = true;
-        }
-        else
-        {
-            //ASSERT THAT THE DAG WAS ALREADY INLINED.
-            //IF THIS FAILS THE DAG WASN'T INLINED.
-            if(!inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty()) {
-                for(auto it: inlined_harness->get_dag()->getNodesByType(bool_node::UFUN)) {
-                    string ufname = ((UFUN_node*)it)->get_ufname();
-                    assert(inlined_harness->get_env()->function_map.find(ufname) == inlined_harness->get_env()->function_map.end());
-                }
-            }
-            for(auto it:inlined_harness->get_dag()->getNodesByType(bool_node::CTRL)) {
-                assert(it->get_name() != "#PC");
-            }
-        }
-
-
-        redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
-
-        // IS THIS DEBUG CODE? YES
-        Dout( cout << "problem->get_n_controls() = " << root_dag->get_n_controls() << "  " << root_dag << endl );
-        {
-            auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
-            if(PARAMS->verbosity > 2){
-                cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
-            }
-            int cints = 0;
-            int cbits = 0;
-            int cfloats = 0;
-            for(int i=0; i<problemIn.size(); ++i){
-                CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
-                if(ctrlnode->getOtype() == OutType::BOOL){
-                    cbits++;
-                } else if (ctrlnode->getOtype() == OutType::FLOAT) {
-                    cfloats++;
-                } else{
-                    cints++;
-                }
-            }
-            if(PARAMS->verbosity > 2){
-                cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
-            }
-        }
-
-        if(new_clone) {
-            inlined_harness->clear();
-        }
-    }
-
+	void addProblem(BooleanDagLightUtility *harness, File *file);
 
 	bool problemStack_is_empty()
 	{

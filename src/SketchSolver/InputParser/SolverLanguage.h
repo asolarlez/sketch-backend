@@ -26,6 +26,8 @@
 #include "SketchFunction.h"
 #include "FunctionMapTransformerLanguage.h"
 
+#include "File.h"
+#include "GenericFile.h"
 
 using namespace std;
 
@@ -39,6 +41,7 @@ public:
     void eval(string solver_program_file_name, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {
+
         SolverProgramState state_abs =
                 SolverProgramState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
 
@@ -53,6 +56,14 @@ public:
 
             BooleanDagLightUtility* local_harness = ((BooleanDagUtility*)state->function_map["sketch_main__Wrapper"])->clone();
             local_harness->increment_shared_ptr();
+
+            const bool test_generic_file = false;
+            if(test_generic_file) {
+                File *ground_truth_file = new File(local_harness, file_name, state->floats, state->args.seed);
+                File *predicted_file = new File(local_harness, new GenericFile(file_name), state->floats, state->args.seed);
+                assert(*ground_truth_file == *predicted_file);
+                assert(false);
+            }
 
             FunctionMap& function_map = local_harness->get_env()->function_map;
 
