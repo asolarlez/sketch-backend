@@ -1517,7 +1517,7 @@ namespace SL {
         _assert, _reverse,
         _produce_filter,
         _not,
-//        _relabel,
+        _relabel,
         _reset,
         _produce_deep_concretize,
 //        TODO: produce_unit_concretize

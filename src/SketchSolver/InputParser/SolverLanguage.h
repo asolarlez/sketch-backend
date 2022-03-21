@@ -111,8 +111,11 @@ public:
 
                 //print function_map_transformer_program, parse it, and check that it's the same.
 
+                bool save_and_test_fmtl_program = false;
+
                 const string fmtl_program_file_name = "fmtl_program_file.fmtl";
 
+                if(save_and_test_fmtl_program)
                 {
                     string fmtl_program_str = concretized_function->get_rep()->pretty_print(function_map);
                     cout << "pretty_print FMTL program:" << endl;
@@ -130,6 +133,7 @@ public:
                 var_val_ret->clear_assert_0_shared_ptrs();
                 state->clear();
 
+                if(save_and_test_fmtl_program)
                 {
 
                     function_map.print();

@@ -404,18 +404,17 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
             else {
                 AssertDebug(false, "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
             }
-
-
         }
-//        case _relabel:
-//        {
-//            assert(params.size() == 1);
-//            VarVal* skfunc_var_val = params[0]->eval(state);
-//            skfunc_var_val->increment_shared_ptr();
-//            file->relabel(skfunc_var_val->get_function());
-//            skfunc_var_val->decrement_shared_ptr();
-//            return new VarVal();
-//        }
+        case _relabel:
+        {
+            assert((is_same<FileType, File>::value));
+            assert(params.size() == 1);
+            VarVal* skfunc_var_val = params[0]->eval(state);
+            skfunc_var_val->increment_shared_ptr();
+            ((File*)file)->relabel(skfunc_var_val->get_function());
+            skfunc_var_val->decrement_shared_ptr();
+            return new VarVal();
+        }
         default:
             assert(false);
     }
@@ -828,7 +827,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("append", _append, "vector");
     add_to_method_str_to_method_id_map("size", _size, "File", "vector");
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
-//    add_to_method_str_to_method_id_map("relabel", _relabel, "File");
+    add_to_method_str_to_method_id_map("relabel", _relabel, "File");
     add_to_method_str_to_method_id_map("produce_subset_file", _produce_subset_file, "File");
 
     add_to_method_str_to_method_id_map("clear", _clear, "SketchFunction", "File");
