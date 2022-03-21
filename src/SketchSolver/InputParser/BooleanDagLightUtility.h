@@ -11,8 +11,6 @@
 
 class File;
 
-static bool new_way = false;
-
 class BooleanDagUtility;
 
 class LightSkFuncSetter
@@ -662,6 +660,7 @@ class BooleanDagLightUtility
     const long long dag_id;
 
 public:
+    static bool new_way;
 
     const int get_dag_id() const {
         return dag_id;

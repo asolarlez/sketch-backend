@@ -16,7 +16,13 @@
 
 using namespace std;
 
-class SolverProgramState;
+//class SolverProgramState;
+
+class ProgramState
+{
+
+};
+
 class Frame;
 
 class SketchFunction;

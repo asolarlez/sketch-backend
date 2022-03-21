@@ -808,10 +808,11 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_solver_program = false;
+        bool do_solver_program = params.solver_program_file_name != "";
 
         if(do_solver_program)
         {
+            BooleanDagLightUtility::new_way = true; // indicates using InlinedAndConcretizer for concretization, rather than inlining ahead of time.
             assert(howmany == 1);
             //TODO: Incorporate: hardcoder.setCurHarness((int)i);
             assert(spskpairs.size() >= 1);
@@ -836,7 +837,7 @@ int InterpreterEnvironment::doallpairs() {
                 bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
 
                 SketchFunction* local_harness = nullptr;
-                if(new_way) {
+                if(BooleanDagLightUtility::new_way) {
                     bool inline_ahead_of_time = true;
                     if(inline_ahead_of_time) {
                         local_harness = new SketchFunction(bd, program_env);
@@ -978,8 +979,11 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
             ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     SolverLanguage solver_language = SolverLanguage();
-    solver_language.eval(program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
-    for(auto it: program_env.function_map)
+
+//    string solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
+
+    solver_language.eval(params.solver_program_file_name, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+    for(const auto& it: program_env.function_map)
     {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.
     }
@@ -1711,6 +1715,151 @@ diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | se
 echo "END OF LIST"
 END OF LIST
 rm cur
+
+ running with 0.2min timeout
+ failing: 34
+
+ LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+183a184,186
+> miniTestb180.output
+> miniTestb181.output
+> miniTestb182.output
+229a233
+> miniTestb228.output
+258a263,264
+> miniTestb258.output
+> miniTestb259.output
+259a266,267
+> miniTestb261.output
+> miniTestb262.output
+266a275
+> miniTestb270.output
+344a354
+> miniTestb358.output
+345a356
+> miniTestb360.output
+354a366
+> miniTestb370.output
+360a373
+> miniTestb377.output
+371a385
+> miniTestb389.output
+381a396
+> miniTestb400.output
+394a410
+> miniTestb414.output
+412a429
+> miniTestb433.output
+413a431,432
+> miniTestb435.output
+> miniTestb436.output
+542a562
+> miniTestb567_angelic.output
+652a673
+> miniTestb678.output
+769a791
+> miniTestb795.output
+771a794
+> miniTestb798.output
+814a838
+> miniTestb841.output
+823a848
+> miniTestb851.output
+831a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+836a865,866
+> miniTestb868.output
+> miniTestb869.output
+842a873
+> miniTestb876.output
+845a877
+> miniTestb880.output
+859a892
+> miniTestb895.output
+872a906
+> miniTestBigInts2.output
+    22     64    343 miniTestb180.sk
+    26     68    369 miniTestb181.sk
+    26     75    385 miniTestb182.sk
+   128    447   3012 miniTestb228.sk
+    33     85    624 miniTestb258.sk
+    40    114    805 miniTestb259.sk
+    24     80    573 miniTestb261.sk
+    18     66    403 miniTestb262.sk
+    14     37    229 miniTestb270.sk
+    32    123    729 miniTestb358.sk
+    19     61    358 miniTestb360.sk
+    20     84    634 miniTestb370.sk
+   212    745   4630 miniTestb377.sk
+    15     48    363 miniTestb389.sk
+    88    226   1973 miniTestb400.sk
+   185    428   3057 miniTestb414.sk
+    17     53    313 miniTestb433.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+   140    499   2695 miniTestb567_angelic.sk
+  2894   9528 146863 miniTestb678.sk
+   102    379   2260 miniTestb795.sk
+   147    549   2937 miniTestb798.sk
+   588   6967  35372 miniTestb841.sk
+  1626   5939  45424 miniTestb851.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    46    170    949 miniTestb868.sk
+    75    314   1743 miniTestb869.sk
+    65    266   1590 miniTestb876.sk
+    35    104    687 miniTestb880.sk
+   204    527   4831 miniTestb895.sk
+    30     85    460 miniTestBigInts2.sk
+   876    876  17624 cur
+  7927  29395 285179 total
+echo "END OF LIST"
+END OF LIST
+
+running with 10 minute timeout
+ failing: 10
+
+ runtime: less than 4 hours.
+
+ LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+353a354
+> miniTestb358.output
+371a373
+> miniTestb377.output
+428a431,432
+> miniTestb435.output
+> miniTestb436.output
+668a673
+> miniTestb678.output
+832a838
+> miniTestb841.output
+850a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+856a866
+> miniTestb869.output
+    32    123    729 miniTestb358.sk
+   212    745   4630 miniTestb377.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+  2894   9528 146863 miniTestb678.sk
+   588   6967  35372 miniTestb841.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    75    314   1743 miniTestb869.sk
+   900    900  18116 cur
+  4881  18965 210397 total
+echo "END OF LIST"
+END OF LIST
+rm cur
+
 
  */
 

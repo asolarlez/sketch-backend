@@ -287,47 +287,22 @@ public:
 
     void clear()
     {
-//        FloatManager& floats;
-//        CommandLineArgs& args;
-//        HoleHardcoder& hc;
-//        bool hasGoodEnoughSolution;
-
-//        FunctionMap& function_map;
-
-//        SketchFunction* harness_ = nullptr;
-
-//        const string& file_name;
-
-//        ofstream console_output = ofstream("console_output.out");
         console_output.close();
-
         init_root->clear();
-
         assert(global.is_empty());
-
-        for(auto it: frames)
-        {
+        for(auto it: frames) {
             assert(it.is_empty());
         }
-
         frames.clear();
-
     }
 
-//    SolverProgramState(SketchFunction* _harness, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
-//                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution, FunctionMap& _function_map):
-//            harness_(_harness), file_name(_file_name),
-//            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
-//            function_map(_function_map),
-//            global() {}
     SolverProgramState(FunctionMap& _function_map, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
             function_map(_function_map), file_name(_file_name),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),// harness_(nullptr),
             global() {}
 
-    void add_root(SL::Methods* _init_root)
-    {
+    void add_root(SL::Methods* _init_root) {
         init_root = _init_root;
     }
 
@@ -382,8 +357,7 @@ public:
         }
     }
 
-    void add_and_set_var_val(SL::Var *var, SL::VarVal* var_val)
-    {
+    void add_and_set_var_val(SL::Var *var, SL::VarVal* var_val) {
         add_var(var);
         set_var_val(var, var_val);
     }

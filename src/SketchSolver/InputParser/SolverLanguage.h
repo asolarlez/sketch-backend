@@ -24,6 +24,8 @@
 #include "CounterexampleFinder.h"
 #include "SolverLanguageYaccHeader.h"
 #include "SketchFunction.h"
+#include "FunctionMapTransformerLanguage.h"
+
 
 using namespace std;
 
@@ -214,7 +216,7 @@ public:
     {
 
     }
-    void eval(FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
+    void eval(string solver_program_file_name, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {
         SolverProgramState state_abs =
@@ -224,12 +226,7 @@ public:
 
         {
 
-            string solver_program_file_name;
-
             assert(!state->function_map.empty());
-
-            solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
-
 
             int init_num_global_dags = BooleanDAG::get_allocated().size();
             int init_num_global_nodes = bool_node::get_allocated().size();
@@ -246,6 +243,7 @@ public:
             SL::VarVal *var_val_ret = state->eval();
 
             if(var_val_ret->is_solution_holder()) {
+                AssertDebug(false, "TODO: add printing of FMTL program.")
                 const SL::HoleVarStore * solution_holder = var_val_ret->get_solution(false);
 
                 delete var_val_ret;
@@ -291,8 +289,42 @@ public:
 
                 file->clear();
 
+                //print function_map_transformer_program, parse it, and check that it's the same.
+
+                FMTL::FunctionMapTransformerState* fmtl_state = nullptr;
+                {
+                    string fmtl_program_str = concretized_function->get_rep()->pretty_print(function_map);
+                    cout << "pretty_print FMTL program:" << endl;
+                    cout << fmtl_program_str << endl;
+                    cout << endl;
+
+                    const string fmtl_program_file_name = "fmtl_program_file.fmtl";
+
+                    ofstream fmtl_program_file(fmtl_program_file_name);
+
+                    fmtl_program_file << fmtl_program_str;
+
+                    fmtl_program_file.close();
+
+                    fmtl_state = new FMTL::FunctionMapTransformerState();
+
+                    FMTL::parse_function_map_transformer_program(fmtl_state, fmtl_program_file_name);
+
+                }
+
                 var_val_ret->clear_assert_0_shared_ptrs();
                 state->clear();
+
+                {
+
+                    function_map.print();
+
+                    function_map.clear_erased_root_dag_reps();
+
+                    fmtl_state->eval(&function_map);
+
+                    assert(false);
+                }
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
@@ -306,7 +338,7 @@ public:
                 function_map.check_consistency();
                 assert(function_map.contains_only_necessary());
 
-                cout << LightSkFuncSetter::max_count <<endl;
+                cout << "LightSkFuncSetter::max_count: " << LightSkFuncSetter::max_count <<endl;
                 assert(LightSkFuncSetter::max_count <= 3);
 
 //                if(transformer_size_diff != 0){

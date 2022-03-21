@@ -27,7 +27,7 @@ const FMTL::TransformPrimitive* FunctionMap::insert(const string &name, SketchFu
     auto it = find(name);
     if(it == end()) {
         map<string, SketchFunction *>::operator[](name) = sketch_function;
-        return FunctionMapTransformer::insert(sketch_function->get_dag()->get_name(), sketch_function->get_dag()->get_ufun_names());
+        return FunctionMapTransformer::insert(sketch_function->get_dag()->get_name(), sketch_function->get_dag()->get_ufun_names(), sketch_function->get_unit_holes());
     }
     else
     {
@@ -98,4 +98,12 @@ FunctionMap::FunctionMap(ProgramEnvironment *_program_environment) : __program_e
 ProgramEnvironment *FunctionMap::get_env() {
     assert(&__program_environment->function_map == this);
     return __program_environment;
+}
+
+void FunctionMap::print() {
+    for(const auto& it : *this) {
+        assert(it.first == it.second->get_dag_name());
+        cout << it.first << endl;
+    }
+    FMTL::FunctionMapTransformer::print();
 }

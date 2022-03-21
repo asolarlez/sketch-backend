@@ -294,6 +294,8 @@ public:
     bool get_is_clone();
 
     vector<string> get_ufun_names() const;
+
+    map<string, string> get_hole_assignment_map();
 };
 
 

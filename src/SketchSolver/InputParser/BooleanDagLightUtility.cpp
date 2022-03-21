@@ -5,6 +5,8 @@
 #include "BooleanDagLightUtility.h"
 
 long long LightInliningTree::global_clear_id = 0;
+bool BooleanDagLightUtility::new_way = false;
+
 
 bool BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0()
 {

@@ -8,7 +8,7 @@
 #include <string>
 #include <map>
 #include "BooleanDAG.h"
-#include "FunctionMapTransformerLanguage.h"
+#include "FunctionMapTransformerDag.h"
 
 using namespace std;
 
@@ -72,6 +72,10 @@ public:
     const VarStore *get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_var);
 
     void soft_clear_transformer();
+
+    string pretty_print();
+
+    void print();
 };
 
 

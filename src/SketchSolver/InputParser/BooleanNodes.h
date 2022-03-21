@@ -1545,7 +1545,7 @@ public:
         is_pcond_active = true;
     }
 
-    const string &get_original_name() {
+    const string &get_original_name() const {
         if(!original_name.empty()) {
             return original_name;
         }

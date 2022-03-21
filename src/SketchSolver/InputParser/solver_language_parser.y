@@ -1,6 +1,5 @@
 %{
 
-//#include "SolverLanguageLexAndYaccHeader.h"
 #include "SolverLanguageYaccHeader.h"
 
 int yylex_init (yyscan_t* scanner);

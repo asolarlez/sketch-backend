@@ -151,7 +151,9 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
         }
     }
 
-    const FMTL::TransformPrimitive * new_primitive = get_env()->function_map.clone(get_dag_name(), cloned_dag->get_name());
+    const FMTL::TransformPrimitive * new_primitive = get_env()->function_map.clone(get_dag_name(),
+                                                                                   cloned_dag->get_name(),
+                                                                                   cloned_dag->get_hole_assignment_map());
 
     return new SketchFunction(
             cloned_dag, get_env(),
@@ -571,6 +573,16 @@ void SketchFunction::set_dependencies(const FunctionMap* fmap) {
             assert(original_labels[ufun_name] == ufun_name);
         }
     }
+}
+
+const vector<string> &SketchFunction::get_unit_holes() {
+    vector<string>* ret = new vector<string>();
+    for (auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
+        if (it->get_name() != "#PC") {
+            ret->push_back(it->get_name());
+        }
+    }
+    return *ret;
 }
 
 #include "SolverLanguageLexAndYaccHeader.h"

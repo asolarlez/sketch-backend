@@ -1541,3 +1541,19 @@ vector<string> BooleanDAG::get_ufun_names() const {
     }
     return ret;
 }
+
+map<string, string> BooleanDAG::get_hole_assignment_map() {
+    map<string, string> hole_assignment_map;
+    for(const auto& _it: getNodesByType(bool_node::CTRL))
+    {
+        const CTRL_node* ctrl_node = (CTRL_node*)_it;
+        if(ctrl_node->get_name() != "#PC")
+        {
+            const string& var_name = ctrl_node->get_original_name();
+            const string& val_name = ctrl_node->get_name();
+            assert(hole_assignment_map.find(var_name) == hole_assignment_map.end());
+            hole_assignment_map[var_name] = val_name;
+        }
+    }
+    return hole_assignment_map;
+}
