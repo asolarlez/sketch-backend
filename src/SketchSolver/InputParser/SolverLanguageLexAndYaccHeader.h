@@ -1296,7 +1296,7 @@ public:
     }
 
     void open_subframe() {
-        assert(!frames.empty());
+        AssertDebug(!frames.empty(), "A FRAME IS REQUIRED TO BE ABLE TO OPEN A SUBFRAME.");
         frames.rbegin()->open_subframe();
     }
 
@@ -1322,6 +1322,13 @@ namespace SL {
     {
         vector<SL::SLType*>* type_params = nullptr;
 
+        static vector<SL::SLType*>* one_type_param(string type_name)
+        {
+            vector<SL::SLType*>* ret = new vector<SL::SLType*>();
+            ret->push_back(new SL::SLType(new Identifier(type_name)));
+            return ret;
+        }
+
     public:
         explicit PolyType(TypeParams* _type_params){
             type_params = new vector<SL::SLType*>();
@@ -1329,6 +1336,7 @@ namespace SL {
             _type_params->clear();
         }
         explicit PolyType(vector<SLType*>* _type_params): type_params(_type_params) {}
+//        explicit PolyType(string any_str): type_params(one_type_param(any_str)) {assert(any_str == "any");}
         explicit PolyType(PolyType* to_copy): type_params(copy_type_params(to_copy->type_params)) {};
 
         SL::SLType* at(int idx)
@@ -1438,7 +1446,7 @@ namespace SL {
         }
         explicit PolyVec(PolyVec* to_copy);
 
-        void emplace_back(SL::VarVal* new_element);
+        void push_back(SL::VarVal* new_element);
 
         void sort();
 
@@ -1536,7 +1544,13 @@ namespace SL {
         _inplace_unit_replace, // _inline_unit_replace
         //_produce_deep_replace,
         _produce_unit_replace, // _produce_unit_replace
-        _get_solution};
+        _get_solution,
+
+        //FMTL primitives:
+        _init,
+//        _vector
+
+    };
 
     static bool method_str_to_method_id_map_is_defined = false;
     static map<string, MethodId> method_str_to_method_id_map;

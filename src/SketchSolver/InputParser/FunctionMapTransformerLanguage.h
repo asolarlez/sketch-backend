@@ -11,20 +11,37 @@
 
 namespace FMTL{
 
-    class FunctionMapTransformerState
+    class FunctionMapTransformerState: public ProgramState
     {
         SL::CodeBlock* root = nullptr;
     public:
-        FunctionMap& function_map;
-        explicit FunctionMapTransformerState(FunctionMap& _function_map): function_map(_function_map) {};
+        explicit FunctionMapTransformerState(FunctionMap& _function_map): ProgramState(_function_map) {};
 
         void add_root(SL::CodeBlock* code_block) {
             root = code_block;
         }
 
-        FunctionMap *eval() {
-            AssertDebug(false, "TODO: implement state-polymorphic implementation of the AST.")
-//            root->run(this);
+        void eval() {
+//            AssertDebug(false, "TODO: implement state-polymorphic implementation of the AST.")
+
+            assert(!function_map.empty());
+            for(const auto& it: function_map){
+                global.add_var_and_set_var_val_and_clear_var(
+                        new SL::Var(new SL::Identifier("SketchFunction"),
+                                    new SL::Identifier(it.first)),
+                        new SL::VarVal(function_map[it.first]));
+            }
+
+            new_stack_frame();
+            assert(frames.size() == 1);
+
+            root->run(this);
+
+            assert(frames.size() == 1);
+            pop_stack_frame();
+            assert(frames.empty());
+
+            global.clear(true);
         }
     };
 

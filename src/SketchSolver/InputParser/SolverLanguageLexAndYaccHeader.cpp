@@ -7,6 +7,14 @@
 #include "SolverLanguageLexAndYaccHeader.h"
 #include "SketchFunction.h"
 
+#include "GenericFile.h"
+#include "SolverLanguagePrimitives.h"
+#include "File.h"
+
+#include "SolverLanguageYaccHeader.h"
+#include "FunctionMapTransformerLanguage.h"
+
+
 template<typename StateType>
 void SL::Var::run(StateType *state)  {
     state->add_var(this);
@@ -290,7 +298,7 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
             assert(params.size() == 1);
             SL::VarVal* ret_param = params[0]->eval(state);
             ret_param->increment_shared_ptr();
-            poly_vec->emplace_back(ret_param);
+            poly_vec->push_back(ret_param);
             return new VarVal();
             break;
         }
@@ -313,9 +321,6 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
     assert(false);
 }
 
-#include "GenericFile.h"
-#include "SolverLanguagePrimitives.h"
-#include "File.h"
 
 template<typename StateType, typename FileType>
 SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::VarVal* const the_var_val) {
@@ -424,10 +429,13 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
 
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<ProgramState>(ProgramState *state) {
-    AssertDebug(false, "NOT DEFINED.")
+    AssertDebug(false, "SHOULD NOT BE NECESSARY.")
 }
 
-#include "SolverLanguageYaccHeader.h"
+template<>
+SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMTL::FunctionMapTransformerState *state) {
+    AssertDebug(false, "SHOULD NOT BE NECESSARY.")
+}
 
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
@@ -563,6 +571,16 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             bool val = params[0]->eval(state)->get_bool(true, false);
             return new VarVal((bool)!val);
         }
+//        case _vector:
+//        {
+//            assert(false);
+////            PolyVec* ret = new PolyVec(new PolyType("any"));
+////            for(int i = 0; i<params.size();i++)
+////            {
+////                ret->push_back(params[i]->eval(state));
+////            }
+////            return new VarVal(ret);
+//        }
         default:
             assert(false);
     }
@@ -702,7 +720,7 @@ pair<SL::Var *, SL::VarVal* > SL::FunctionCall::get_var_and_var_val_and_assert_t
     //if expression is nullptr, then one of the possible type_names must be "namespace"
     if(expression == nullptr) {
         bool one_possible_type_is_namespace = false;
-        for (auto it: type_names) {
+        for (const auto& it: type_names) {
             if (it == "namespace") {
                 one_possible_type_is_namespace = true;
             }
@@ -875,6 +893,11 @@ void SL::init_method_str_to_method_id_map()
         //_produce_deep_replace,
         _produce_replace, // _produce_unit_replace
  */
+
+    //FMTL Primitives:
+
+    add_to_method_str_to_method_id_map("init", _init, "SketchFunction");
+//    add_to_method_str_to_method_id_map("vector", _vector, "namespace");
 
 
 method_str_to_method_id_map_is_defined = true;
@@ -1102,6 +1125,23 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             skfunc->reset(subfunc_name);
             return new VarVal();
         }
+        case _init:
+        {
+            assert(params.size() == 2);
+            assert(state->function_map.find(skfunc->get_dag_name()) != state->function_map.end());
+
+            VarVal* holes_vec_var_val = params[0]->eval(state);
+            holes_vec_var_val->increment_shared_ptr();
+            PolyVec* holes = holes_vec_var_val->get_poly_vec();
+
+//            VarVal* ports_map_var_val = params[0]->eval(state);
+//            ports_map_var_val->increment_shared_ptr();
+//            PolyMap* holes = ports_map_var_val->get_poly_map();
+
+            assert(false);
+
+            return new VarVal();
+        }
         default:
             assert(false);
     }
@@ -1115,7 +1155,7 @@ SL::VarVal* SL::Method::eval(StateType *state, vector<T>& inputs)  {
     return state->get_return_var_val();
 }
 
-template void SL::Method::run<SolverProgramState>(SolverProgramState *state, vector<Param *> &input_params);
+//template void SL::Method::run<SolverProgramState>(SolverProgramState *state, vector<Param *> &input_params);
 
 template<typename StateType>
 void SL::Method::run(StateType *state, vector<Param *> &input_params)
@@ -1291,7 +1331,9 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
                 assert(var_val_type == SL::poly_vec_type);
                 PolyType* type_params = var_type->get_type_params();
                 assert(type_params->size() == 1);
-                assert(*type_params->at(0) == *var_val->get_poly_vec(false)->get_type_params()->at(0));
+                auto type_param = *type_params->at(0);
+                auto var_param = *var_val->get_poly_vec(false)->get_type_params()->at(0);
+                assert(type_param == var_param);
             } else if (var_type_str == "pair") {
                 assert(var_val_type == SL::poly_pair_type);
                 PolyType* type_params = var_type->get_type_params();
@@ -1316,7 +1358,7 @@ bool SL::var_val_invariant(SL::Var *var, SL::VarVal* var_val)
 }
 
 
-void SL::PolyVec::emplace_back(SL::VarVal* new_element)
+void SL::PolyVec::push_back(SL::VarVal* new_element)
 {
     assert(SL::var_val_invariant(get_type_params()->at(0), new_element));
     vector<SL::VarVal* >::emplace_back(new_element);
@@ -1989,6 +2031,9 @@ bool SL::SLType::is_simple_type() {
         return false;
     }
 }
+
+template
+void SL::CodeBlock::run<FMTL::FunctionMapTransformerState>(FMTL::FunctionMapTransformerState *state);
 
 template<typename StateType>
 void SL::CodeBlock::run(StateType *state)  {

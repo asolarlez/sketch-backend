@@ -122,7 +122,7 @@ public:
 
                 //print function_map_transformer_program, parse it, and check that it's the same.
 
-                bool save_and_test_fmtl_program = false;
+                bool save_and_test_fmtl_program = true;
 
                 const string fmtl_program_file_name = "fmtl_program_file.fmtl";
 

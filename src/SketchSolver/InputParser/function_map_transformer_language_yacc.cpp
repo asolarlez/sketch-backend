@@ -1292,7 +1292,7 @@ yyreduce:
 
   case 10:
 #line 61 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
-    {(yyval.func_call) = new SL::FunctionCall(new SL::Identifier("Vector"), (yyvsp[-1].params));}
+    {(yyval.func_call) = new SL::FunctionCall(new SL::SLType(new SL::Identifier("vector"), new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))), (yyvsp[-1].params));}
 #line 1297 "y.tab.c" /* yacc.c:1646  */
     break;
 

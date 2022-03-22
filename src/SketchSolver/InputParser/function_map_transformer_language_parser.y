@@ -58,7 +58,7 @@ expression:
 
 function_call :
 	expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);} |
-	'[' params ']' {$$ = new SL::FunctionCall(new SL::Identifier("Vector"), $2);} |
+	'[' params ']' {$$ = new SL::FunctionCall(new SL::SLType(new SL::Identifier("vector"), new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))), $2);} |
 	'{' params '}' {$$ = new SL::FunctionCall(new SL::Identifier("Map"), $2);} |
 	param ':' param {$$ = new SL::FunctionCall(new SL::Identifier("Pair"), new SL::Params($1, new SL::Params($3)));}
 
