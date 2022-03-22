@@ -304,6 +304,8 @@ namespace FMTL {
         }
     };
 
+    static bool print_quotes = false;
+
     class InitPrimitive : public TransformPrimitive {
 
         const vector<string> hole_names;
@@ -354,7 +356,13 @@ namespace FMTL {
                 if (assign_map_str != init_assign_map_str) {
                     assign_map_str += ", ";
                 }
-                assign_map_str += it.first + " : " + it.second;
+                if(print_quotes) {
+                    assign_map_str += "\"" + it.first + "\"" + " : " + it.second;
+                }
+                else
+                {
+                    assign_map_str += it.first + " : " + it.second;
+                }
             }
             assign_map_str += "}";
 
@@ -408,7 +416,13 @@ namespace FMTL {
                 if (hole_renaming_map_str != init_hole_renaming_map_str) {
                     hole_renaming_map_str += ", ";
                 }
-                hole_renaming_map_str += it.first + " : " + it.second;
+                if(print_quotes) {
+                    hole_renaming_map_str += "\"" + it.first + "\"" + " : " + it.second;
+                }
+                else
+                {
+                    hole_renaming_map_str += it.first + " : " + it.second;
+                }
             }
             hole_renaming_map_str += "}";
 

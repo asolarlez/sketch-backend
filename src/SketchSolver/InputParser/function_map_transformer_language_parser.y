@@ -19,6 +19,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 
 
 %union{
+	SL::VarVal* var_val;
 	SL::FunctionCall* func_call;
 	SL::Identifier* identifier_;
 	SL::Params* params;
@@ -30,9 +31,10 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 	}
 
 %start root
+%token <var_val> var_val_rule
+%token <identifier_> identifier
 %type <unit_line> unit_line
 %type <assignment> assignment
-%token <identifier_> identifier
 %type <param> param
 %type <func_call> function_call
 %type <params> params
@@ -51,16 +53,35 @@ unit_line: assignment {$$ = new SL::UnitLine($1);} |
 //	return_token expression {$$ = new SL::UnitLine(new SL::Return($2));} |
 	expression {$$ = new SL::UnitLine($1);}
 
-
 expression:
 	identifier {$$ = new SL::Expression($1);} |
-	function_call {$$ = new SL::Expression($1);}
+	function_call {$$ = new SL::Expression($1);} |
+	var_val_rule {$$ = new SL::Expression($1);}
 
 function_call :
 	expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);} |
-	'[' params ']' {$$ = new SL::FunctionCall(new SL::SLType(new SL::Identifier("vector"), new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))), $2);} |
-	'{' params '}' {$$ = new SL::FunctionCall(new SL::Identifier("Map"), $2);} |
-	param ':' param {$$ = new SL::FunctionCall(new SL::Identifier("Pair"), new SL::Params($1, new SL::Params($3)));}
+	'[' params ']' {$$ = new SL::FunctionCall(
+				new SL::SLType(new SL::Identifier("vector"),
+				new SL::TypeParams(
+					new SL::SLType(new SL::Identifier("any"))
+				)
+			), $2);} |
+	'{' params '}' {$$ = new SL::FunctionCall(
+				new SL::SLType(new SL::Identifier("map"),
+				new SL::TypeParams(
+					new SL::SLType(new SL::Identifier("string")),
+					new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))
+				)
+			), $2);} |
+	param ':' param {
+			SL::Params* params = new SL::Params($1, new SL::Params($3));
+			$$ = new SL::FunctionCall(
+					new SL::SLType(new SL::Identifier("pair"),
+					new SL::TypeParams(
+						new SL::SLType(new SL::Identifier("string")),
+						new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))
+					)
+				), params);}
 
 assignment:
  	identifier '=' expression {$$ = new SL::Assignment($1, $3);}

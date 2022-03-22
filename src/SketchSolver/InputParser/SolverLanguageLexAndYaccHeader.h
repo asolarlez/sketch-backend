@@ -70,17 +70,18 @@ namespace SL
     };
 
     class Method;
-    class PolyVec;
     class PolyPair;
+    class PolyVec;
+    class PolyMap;
     class FunctionCall;
     class Param;
 
     enum VarValType {
-        string_val_type, int_val_type, generic_file_val_type, file_val_type,
-        method_val_type, skfunc_val_type, solution_val_type,
-        input_val_type, bool_val_type, void_val_type,
-        float_val_type, poly_vec_type,
-        poly_pair_type,
+        void_val_type, string_val_type, int_val_type, bool_val_type, float_val_type,
+        generic_file_val_type, file_val_type,
+        method_val_type, skfunc_val_type,
+        solution_val_type, input_val_type,
+        poly_vec_type, poly_pair_type, poly_map_type,
         no_type};
 
     template <typename T>
@@ -114,6 +115,7 @@ namespace SL
             InputVarStore* input_holder;
             PolyVec* poly_vec;
             PolyPair* poly_pair;
+            PolyMap* poly_map;
         };
         const VarValType var_val_type;
         mutable int num_shared_ptr = 0;
@@ -139,8 +141,9 @@ namespace SL
         explicit VarVal(File* _file);
         explicit VarVal(Method* _method);
         explicit VarVal(SketchFunction* _harness);
-        explicit VarVal(PolyVec* _poly_vec);
         explicit VarVal(PolyPair* _poly_pair);
+        explicit VarVal(PolyVec* _poly_vec);
+        explicit VarVal(PolyMap* _poly_map);
         explicit VarVal(HoleVarStore* _solution);
         explicit VarVal(InputVarStore* _input_holder);
         explicit VarVal(VarVal* _to_copy);
@@ -317,11 +320,14 @@ namespace SL
                 case float_val_type:
                     return "float";
                     break;
+                case poly_pair_type:
+                    return "pair";
+                    break;
                 case poly_vec_type:
                     return "vector";
                     break;
-                case poly_pair_type:
-                    return "pair";
+                case poly_map_type:
+                    return "map";
                     break;
                 case no_type:
                     assert(false);
@@ -377,6 +383,9 @@ namespace SL
             }
             else if(std::is_same<PolyVec*,T>::value){
                 assert(var_val_type == poly_vec_type);
+            }
+            else if(std::is_same<PolyMap*,T>::value){
+                assert(var_val_type == poly_map_type);
             }
             else if(std::is_same<File*,T>::value){
                 assert(var_val_type == file_val_type);
@@ -505,7 +514,6 @@ namespace SL
             return get<float>(float_val, do_count, do_assert);
         }
 
-
         PolyVec *get_poly_vec(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == poly_vec_type);
             assert(do_assert);
@@ -516,6 +524,18 @@ namespace SL
             assert(!do_count);
             assert(var_val_type == poly_vec_type);
             return poly_vec;
+        }
+
+        PolyMap *get_poly_map(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == poly_map_type);
+            assert(do_assert);
+            return get<PolyMap *>(poly_map, do_count, do_assert);
+        }
+
+        PolyMap *get_poly_map_const(bool do_count) const {
+            assert(!do_count);
+            assert(var_val_type == poly_map_type);
+            return poly_map;
         }
 
         PolyPair *get_poly_pair(bool do_count = true, bool do_assert = true) {
@@ -573,9 +593,13 @@ namespace SL
                 case poly_vec_type:
                     assert(false);
                     break;
-                default:
+                case poly_map_type:
                     assert(false);
+                    break;
+                default:
+                    AssertDebug(false, "MISSING CASE");
             }
+            AssertDebug(false, "MISSING CASE");
         }
 
         bool decrement_shared_ptr()
@@ -646,8 +670,11 @@ namespace SL
                 case poly_vec_type:
                     clear<SL::PolyVec*>(poly_vec, false);
                     break;
+                case poly_map_type:
+                    clear<SL::PolyMap*>(poly_map, false);
+                    break;
                 default:
-                    assert(false);
+                    AssertDebug(false, "MISSING CASE");
             }
             delete this;
         }
@@ -1346,7 +1373,7 @@ namespace SL {
             return type_params->at(idx);
         }
 
-        int size()
+        virtual size_t size()
         {
             assert(type_params != nullptr);
             if(type_params == nullptr)
@@ -1437,6 +1464,25 @@ namespace SL {
         }
     };
 
+    class PolyPair: public PolyType, private pair<SL::VarVal*, SL::VarVal*>
+    {
+    public:
+        explicit PolyPair(PolyType* _type_params, SL::VarVal* left, SL::VarVal* right);
+
+        explicit PolyPair(PolyPair* to_copy);
+
+        SL::VarVal* first() const {
+            return pair<SL::VarVal*, SL::VarVal*>::first;
+        }
+        SL::VarVal* second() const {
+            return pair<SL::VarVal*, SL::VarVal*>::second;
+        }
+
+        void clear() override;
+
+        bool operator < (const PolyPair& other) const;
+    };
+
     class PolyVec: public PolyType, private vector<SL::VarVal*>
     {
     public:
@@ -1465,23 +1511,35 @@ namespace SL {
         void reverse();
     };
 
-    class PolyPair: public PolyType, private pair<SL::VarVal*, SL::VarVal*>
+    class PolyMap: public PolyType, private map<string, SL::VarVal*>
     {
     public:
-        explicit PolyPair(PolyType* _type_params, SL::VarVal* left, SL::VarVal* right);
-
-        explicit PolyPair(PolyPair* to_copy);
-
-        SL::VarVal* first() const {
-            return pair<SL::VarVal*, SL::VarVal*>::first;
+        explicit PolyMap(PolyType* _type_params): PolyType(_type_params){
+            assert(get_type_params()->size() == 2);
+            assert(*get_type_params()->at(0) == SL::SLType(new SL::Identifier("string")));
+            _type_params->clear();
         }
-        SL::VarVal* second() const {
-            return pair<SL::VarVal*, SL::VarVal*>::second;
-        }
+
+        explicit PolyMap(PolyMap* to_copy);
 
         void clear() override;
 
-        bool operator < (const PolyPair& other) const;
+        void insert(string key, VarVal* element)
+        {
+            assert(find(key) == end());
+            element->increment_shared_ptr();
+            (*this)[key] = element;
+        }
+
+        size_t size(){
+            return map<string, SL::VarVal*>::size();
+        }
+
+        SL::VarVal* at(string idx)
+        {
+            assert((find(idx)) != (end()));
+            return map<string, SL::VarVal*>::at(idx);
+        }
     };
 
     class Method;

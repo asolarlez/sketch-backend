@@ -45,11 +45,13 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    identifier = 258
+    var_val_rule = 258,
+    identifier = 259
   };
 #endif
 /* Tokens.  */
-#define identifier 258
+#define var_val_rule 258
+#define identifier 259
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -58,6 +60,7 @@ union YYSTYPE
 {
 #line 21 "function_map_transformer_language_parser.y" /* yacc.c:1909  */
 
+	SL::VarVal* var_val;
 	SL::FunctionCall* func_call;
 	SL::Identifier* identifier_;
 	SL::Params* params;
@@ -68,7 +71,7 @@ union YYSTYPE
 	SL::Expression* expression;
 	
 
-#line 72 "y.tab.h" /* yacc.c:1909  */
+#line 75 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

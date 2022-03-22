@@ -235,27 +235,24 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(ProgramState* state)
 {
     string root_type_name = type_constructor->get_head()->to_string();
 
-    enum RootType {vec, pair, do_predef};
+    enum RootType {vector, pair, map, do_predef};
 
     RootType root_type = do_predef;
 
-    if(root_type_name == "vector")
-    {
-        root_type = vec;
-    }
     if(root_type_name == "pair")
     {
         root_type = pair;
     }
+    else if(root_type_name == "vector")
+    {
+        root_type = vector;
+    }
+    else if(root_type_name == "map")
+    {
+        root_type = map;
+    }
 
     switch (root_type) {
-        case vec: {
-            PolyType* type_params = type_constructor->get_type_params();
-            assert(type_params->size() == 1);
-            assert(params.empty());
-            return new SL::VarVal(new PolyVec(new PolyType(type_params)));
-            break;
-        }
         case pair: {
             PolyType* type_params = type_constructor->get_type_params();
             assert(type_params->size() == 2);
@@ -265,6 +262,36 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(ProgramState* state)
             left->increment_shared_ptr();
             right->increment_shared_ptr();
             return new SL::VarVal(new PolyPair(type_params, left, right));
+            break;
+        }
+        case vector: {
+            PolyType* type_params = type_constructor->get_type_params();
+            assert(type_params->size() == 1);
+            assert(params.empty());
+            return new SL::VarVal(new PolyVec(new PolyType(type_params)));
+            break;
+        }
+        case map: {
+            PolyType* type_params = type_constructor->get_type_params();
+            assert(type_params->size() == 2);
+            assert(*type_params->at(0) == SL::SLType(new SL::Identifier("string")));
+
+            PolyMap* ret = new PolyMap(new PolyType(type_params));
+
+            for(int i = 0;i<params.size();i++)
+            {
+                VarVal* pair_var_val = params[i]->eval(state);
+                pair_var_val->increment_shared_ptr();
+                PolyPair* poly_pair = pair_var_val->get_poly_pair();
+                string key = poly_pair->first()->get_string();
+                VarVal* element = poly_pair->second();
+
+                ret->insert(key, element);
+
+                pair_var_val->decrement_shared_ptr();
+            }
+            assert(false);
+            return new SL::VarVal(ret);
             break;
         }
         case do_predef:
@@ -1134,9 +1161,9 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             holes_vec_var_val->increment_shared_ptr();
             PolyVec* holes = holes_vec_var_val->get_poly_vec();
 
-//            VarVal* ports_map_var_val = params[0]->eval(state);
-//            ports_map_var_val->increment_shared_ptr();
-//            PolyMap* holes = ports_map_var_val->get_poly_map();
+            VarVal* ports_map_var_val = params[1]->eval(state);
+            ports_map_var_val->increment_shared_ptr();
+            PolyMap* ports_map = ports_map_var_val->get_poly_map();
 
             assert(false);
 
@@ -1402,6 +1429,29 @@ SL::PolyVec::PolyVec(PolyVec* to_copy): PolyType(to_copy)
         push_back(new SL::VarVal(it));
     }
 }
+
+SL::PolyMap::PolyMap(SL::PolyMap* to_copy): PolyType(to_copy)
+{
+    for(auto it: *to_copy)
+    {
+        (*this)[it.first] = new VarVal(it.second);
+    }
+}
+
+void SL::PolyMap::clear()
+{
+    for(auto it: *this)
+    {
+        if(it.second != nullptr) {
+            it.second->decrement_shared_ptr();
+        }
+    }
+    map<string, SL::VarVal*>::clear();
+    PolyType::soft_clear();
+    delete this;
+}
+
+
 SL::PolyPair::PolyPair(PolyType* _type_params, SL::VarVal* left, SL::VarVal* right) :
         PolyType(_type_params), pair<SL::VarVal* , SL::VarVal* >(left, right){
     assert(get_type_params()->size() == 2);
@@ -1561,8 +1611,9 @@ SL::VarVal::VarVal(Method* _method) : method(_method) , var_val_type(method_val_
 SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){
     skfunc->increment_shared_ptr();
 }
-SL::VarVal::VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
 SL::VarVal::VarVal(PolyPair* _poly_pair) : poly_pair(_poly_pair) , var_val_type(poly_pair_type){}
+SL::VarVal::VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
+SL::VarVal::VarVal(PolyMap* _poly_map) : poly_map(_poly_map) , var_val_type(poly_map_type){}
 SL::VarVal::VarVal(HoleVarStore * _solution) : solution(_solution), var_val_type(solution_val_type){}
 SL::VarVal::VarVal(InputVarStore * _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
 SL::VarVal::VarVal(string  _s) : s(new Identifier(std::move(_s))), var_val_type(string_val_type) {}
