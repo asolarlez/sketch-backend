@@ -290,7 +290,7 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(ProgramState* state)
 
                 pair_var_val->decrement_shared_ptr();
             }
-            assert(false);
+
             return new SL::VarVal(ret);
             break;
         }
@@ -444,7 +444,7 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
             assert(params.size() == 1);
             VarVal* skfunc_var_val = params[0]->eval(state);
             skfunc_var_val->increment_shared_ptr();
-            ((File*)file)->relabel(skfunc_var_val->get_function());
+            ((File*)file)->relabel(skfunc_var_val->get_skfunc());
             skfunc_var_val->decrement_shared_ptr();
             return new VarVal();
         }
@@ -477,7 +477,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 #else
             assert(params.size() == 2);
             string file_name = params[0]->eval(state)->get_string();
-            SketchFunction *harness = params[1]->eval(state)->get_function();
+            SketchFunction *harness = params[1]->eval(state)->get_skfunc();
             SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
             return ret;
 #endif
@@ -489,7 +489,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
-            SketchFunction* skfunc = param_var_val->get_function();
+            SketchFunction* skfunc = param_var_val->get_skfunc();
 
             vector<string> prev_holes = skfunc->get_deep_holes();
             sort(prev_holes.begin(), prev_holes.end());
@@ -662,7 +662,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -709,7 +709,7 @@ SL::VarVal* SL::FunctionCall::eval(StateType *state)
                     InputVarStore *input_assignment = input_val->get_input_holder();
 #endif
 
-                    SketchFunction* skfunc = method_var_val->get_function();
+                    SketchFunction* skfunc = method_var_val->get_skfunc();
                     ret = SketchFunctionEvaluator::eval(skfunc, input_assignment);
                     assert(ret != nullptr);
 
@@ -998,12 +998,12 @@ eval__sketch_function_replace(const SL::VarVal * const ret_var_val, SketchFuncti
     string str_to_replace = params[0]->eval(state)->get_string(true, false);
     SL::VarVal* to_replace_with_var_val = params[1]->eval(state);
 
-//    assert(to_replace_with_var_val->get_function(false)->get_dag_name() != ret_skfunc->get_dag_name());
+//    assert(to_replace_with_var_val->get_skfunc(false)->get_dag_name() != ret_skfunc->get_dag_name());
 
 //    ret_var_val->add_dependency(str_to_replace, to_replace_with_var_val);
 
     to_replace_with_var_val->increment_shared_ptr();
-    SketchFunction* to_replace_with_skfunc = to_replace_with_var_val->get_function();
+    SketchFunction* to_replace_with_skfunc = to_replace_with_var_val->get_skfunc();
     const string& to_replace_with_name = to_replace_with_skfunc->get_dag()->get_name();
 
     state->add_to_function_map(to_replace_with_name, to_replace_with_skfunc);
@@ -1148,7 +1148,6 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         case _reset:
         {
             string subfunc_name = params[0]->eval(state)->get_string(true, false);
-//            the_var_val->remove_responsibility(subfunc_name);
             skfunc->reset(subfunc_name);
             return new VarVal();
         }
@@ -1157,15 +1156,33 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             assert(params.size() == 2);
             assert(state->function_map.find(skfunc->get_dag_name()) != state->function_map.end());
 
-            VarVal* holes_vec_var_val = params[0]->eval(state);
-            holes_vec_var_val->increment_shared_ptr();
-            PolyVec* holes = holes_vec_var_val->get_poly_vec();
+            { // assert holes invariant
+                VarVal *holes_vec_var_val = params[0]->eval(state);
+                holes_vec_var_val->increment_shared_ptr();
+                PolyVec *holes = holes_vec_var_val->get_poly_vec();
 
-            VarVal* ports_map_var_val = params[1]->eval(state);
-            ports_map_var_val->increment_shared_ptr();
-            PolyMap* ports_map = ports_map_var_val->get_poly_map();
+                vector<string> hole_names = skfunc->get_unit_holes();
+                assert(hole_names.size() == holes->size());
+                for (int i = 0; i < hole_names.size(); i++) {
+                    assert(hole_names[i] == holes->at(i)->get_string(false));
+                }
 
-            assert(false);
+                holes_vec_var_val->decrement_shared_ptr();
+            }
+
+            { // assert ports invariant
+                VarVal *ports_map_var_val = params[1]->eval(state);
+                ports_map_var_val->increment_shared_ptr();
+                PolyMap *ports_map = ports_map_var_val->get_poly_map();
+
+                auto ufuns_map = skfunc->get_unit_ufuns_map();
+                assert(ufuns_map.size() == ports_map->size());
+                for (const auto &it: ufuns_map) {
+                    assert(ports_map->at(it.first)->get_skfunc(false)->get_dag_name() == it.second);
+                }
+
+                ports_map_var_val->decrement_shared_ptr();
+            }
 
             return new VarVal();
         }
@@ -1635,7 +1652,7 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
             break;
         case skfunc_val_type:
             AssertDebug(false, "not sure how to handle this cloning, better leave it for later. (whether or not to make an exact clone, renamed clone / rename holes.");
-            skfunc = _to_copy->get_function(false)->unit_clone();
+            skfunc = _to_copy->get_skfunc(false)->unit_clone();
             break;
         case solution_val_type:
 //            solution = new SolverLanguagePrimitives::HoleAssignment(_to_copy->get_solution(false));

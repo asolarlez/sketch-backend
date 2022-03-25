@@ -1,9 +1,6 @@
-rm function_map_transformer_language_executable
-rm function_map_transformer_language_lex.cpp
 rm function_map_transformer_language_yacc.cpp
 rm function_map_transformer_language_yacc.h
 
-lex function_map_transformer_language_lexer.l && mv lex.yy.c function_map_transformer_language_lex.cpp
 yacc -d function_map_transformer_language_parser.y && mv y.tab.c function_map_transformer_language_yacc.cpp && mv y.tab.h function_map_transformer_language_yacc.h
-g++ function_map_transformer_language_lex.cpp function_map_transformer_language_yacc.cpp SolverLanguageLexAndYaccHeader.cpp -o function_map_transformer_language_executable
+g++ function_map_transformer_language_yacc.cpp SolverLanguageLexAndYaccHeader.cpp -o function_map_transformer_language_executable
 ./function_map_transformer_language_executable < function_map_transformer_language_program.txt

@@ -175,6 +175,8 @@ public:
     void set_dependencies(const FunctionMap* fmap);
 
     const vector<string> &get_unit_holes();
+
+    const map<string, string> &get_unit_ufuns_map();
 };
 
 #include "NodeEvaluator.h"

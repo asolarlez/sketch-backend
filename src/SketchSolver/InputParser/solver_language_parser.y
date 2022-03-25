@@ -58,11 +58,13 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %token <identifier_> op_geq
 %token <identifier_> op_plus_plus
 %token <var_val> var_val_rule
-%type <var_val> constant
+//%type <var_val> constant
 %type <param> param
+%type <param> key_col_val
 %type <func_call> function_call
 %type <func_call> constructor_call
 %type <params> params
+%type <params> key_col_vals
 %type <params> signature_params
 %type <method> method
 %type <bool_expr> binary_expression
@@ -91,20 +93,20 @@ binary_op:
 	'*' {$$ = SL::BinaryOp::_mult;} |
 	'/' {$$ = SL::BinaryOp::_div;}
 
-constant: '[' ']' {
-	auto e = new SL::Identifier("any");
-	auto d = new SL::SLType(e);
-	auto c = new vector<SL::SLType*>(1, d);
-	auto b = new SL::PolyType(c);
-	auto a = new SL::PolyVec(b);
-	$$ = new SL::VarVal(a);}
+//constant: '[' ']' {
+//	auto e = new SL::Identifier("any");
+//	auto d = new SL::SLType(e);
+//	auto c = new vector<SL::SLType*>(1, d);
+//	auto b = new SL::PolyType(c);
+//	auto a = new SL::PolyVec(b);
+//	$$ = new SL::VarVal(a);}
 
 expression:
 	identifier {$$ = new SL::Expression($1);} |
 	function_call {$$ = new SL::Expression($1);} |
 	binary_expression {$$ = new SL::Expression($1);} |
 	var_val_rule {$$ = new SL::Expression($1);} |
-	constant {$$ = new SL::Expression($1);} |
+//	constant {$$ = new SL::Expression($1);} |
 	lambda_expression {$$ = new SL::Expression($1);} |
 	'(' expression ')' {$$ = $2;}
 
@@ -135,6 +137,18 @@ macro_unit:
 function_call : expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);}
 	     | identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3);}
 	     | expression '[' params ']' {$$ = new SL::FunctionCall($1, new SL::Identifier("get"), $3);}
+	     | '[' params ']' {$$ = new SL::FunctionCall(
+               				new SL::SLType(new SL::Identifier("vector"),
+               				new SL::TypeParams(
+               					new SL::SLType(new SL::Identifier("any"))
+               				)), $2);}
+	     | '{' key_col_vals '}' {$$ = new SL::FunctionCall(
+               				new SL::SLType(new SL::Identifier("map"),
+               				new SL::TypeParams(
+               					new SL::SLType(new SL::Identifier("string")),
+               					new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))
+               				)), $2);}
+
 
 constructor_call:
 	type_rule '(' params ')' {$$ = new SL::FunctionCall($1, $3);}
@@ -162,6 +176,27 @@ param : expression {$$ = new SL::Param($1);} | constuctor_call_expression {$$ = 
 
 params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
 	| param ',' params {$$ = new SL::Params($1, $3);}
+
+key_col_val: '(' identifier ':' identifier ')' {
+             			SL::Params* params =
+             				new SL::Params(
+             					new SL::Param(new SL::Expression($2)),
+             					new SL::Params(new SL::Param(new SL::Expression($4))));
+             			SL::Expression* almost_ret = new SL::Expression(
+             				new SL::FunctionCall(
+             					new SL::SLType(new SL::Identifier("pair"),
+             					new SL::TypeParams(
+             						new SL::SLType(new SL::Identifier("string")),
+             						new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))
+             					)
+             				), params)
+				);
+				$$ = new SL::Param(almost_ret);}
+
+key_col_vals:
+  	{$$ = new SL::Params();} |
+	key_col_val {$$ = new SL::Params($1);} |
+	key_col_val ',' key_col_vals {$$ = new SL::Params($1, $3);}
 
 parameter_declaration:
 	type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}

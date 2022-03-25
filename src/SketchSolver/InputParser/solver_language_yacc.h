@@ -78,7 +78,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 23 "solver_language_parser.y" /* yacc.c:1909  */
+#line 22 "solver_language_parser.y" /* yacc.c:1909  */
 
 	SL::Var* var;
 	SL::VarVal* var_val;

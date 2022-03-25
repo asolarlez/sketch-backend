@@ -492,7 +492,7 @@ namespace SL
             assert(do_assert);
             return get<InputVarStore *>(input_holder, do_count, do_assert);
         }
-        SketchFunction *get_function(bool do_count = true, bool do_assert = true) {
+        SketchFunction *get_skfunc(bool do_count = true, bool do_assert = true) {
             assert(is_sketch_function());
             assert(do_assert);
             return get<SketchFunction *>(skfunc, do_count, do_assert);
@@ -712,7 +712,9 @@ namespace SL
         Head* head = nullptr;
         LinkedList* rest = nullptr;
     public:
-        LinkedList() = default;
+        LinkedList(){
+            cout << "HERE creating empty linked list" << endl;
+        };
         explicit LinkedList(Head* _head): head(_head) {}
         LinkedList(Head* _head, LinkedList* _rest): head(_head), rest(_rest) {}
 
@@ -968,7 +970,7 @@ public:
 //                if(it.second->is_sketch_function())
 //                {
 //                    is_skfunc = true;
-//                    SketchFunction* skfunc = it.second->get_function(false);
+//                    SketchFunction* skfunc = it.second->get_skfunc(false);
 //                    if(skfunc != nullptr) {
 //                        skfunc_name = skfunc->get_dag()->get_name();
 //                    }
@@ -1524,20 +1526,24 @@ namespace SL {
 
         void clear() override;
 
-        void insert(string key, VarVal* element)
+        void insert(const string& key, VarVal* element)
         {
             assert(find(key) == end());
             element->increment_shared_ptr();
             (*this)[key] = element;
         }
 
+        bool has(string key) {
+            return find(key) != end();
+        }
+
         size_t size(){
             return map<string, SL::VarVal*>::size();
         }
 
-        SL::VarVal* at(string idx)
+        SL::VarVal* at(const string& idx)
         {
-            assert((find(idx)) != (end()));
+            assert(has(idx));
             return map<string, SL::VarVal*>::at(idx);
         }
     };
@@ -1908,7 +1914,6 @@ namespace SL {
 
         void clear();
     };
-
 
     class If
     {

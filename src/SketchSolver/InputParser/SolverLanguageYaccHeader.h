@@ -73,7 +73,7 @@ public:
 //            if(var_type_str == "SketchFunction") {
 //                global.set_var_val(var, var_val);
 //                string var_name = var->get_name()->to_string();
-//                SketchFunction* skfunc = var_val->get_function(false);
+//                SketchFunction* skfunc = var_val->get_skfunc(false);
 //                FunctionMap& _function_map = skfunc->get_env()->function_map;
 //                assert(&_function_map == &function_map);
 //                auto new_primitive = function_map.insert(var_name, skfunc);

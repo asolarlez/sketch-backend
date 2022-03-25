@@ -585,6 +585,10 @@ const vector<string> &SketchFunction::get_unit_holes() {
     return *ret;
 }
 
+const map<string, string> &SketchFunction::get_unit_ufuns_map() {
+    return replaced_labels;
+}
+
 #include "SolverLanguageLexAndYaccHeader.h"
 
 #include "GenericFile.h"

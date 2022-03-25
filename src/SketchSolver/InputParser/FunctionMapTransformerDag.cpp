@@ -997,7 +997,7 @@ string ReplacePrimitive::pretty_print(
     string ret =
             main_parent->pretty_print(fmt, running_assignment_map, visited) + "\n" +
             root_dag_reps.at(assign_map.begin()->second)->pretty_print(fmt, running_assignment_map, visited) + "\n" +
-            function_name + ".replace(" + assign_map.begin()->first + ", " + assign_map.begin()->second + ");";
+            function_name + ".replace(" + "\"" + assign_map.begin()->first + "\"" + ", " + assign_map.begin()->second + ");";
 //    cout << "HERE: " << ret << endl;
     return ret;
 }

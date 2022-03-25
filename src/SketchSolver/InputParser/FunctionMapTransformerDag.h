@@ -304,7 +304,8 @@ namespace FMTL {
         }
     };
 
-    static bool print_quotes = false;
+    static bool print_quotes = true;
+    static bool print_brackets = true;
 
     class InitPrimitive : public TransformPrimitive {
 
@@ -356,13 +357,23 @@ namespace FMTL {
                 if (assign_map_str != init_assign_map_str) {
                     assign_map_str += ", ";
                 }
+                string key_col_val_str;
+
                 if(print_quotes) {
-                    assign_map_str += "\"" + it.first + "\"" + " : " + it.second;
+                    key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
                 }
                 else
                 {
-                    assign_map_str += it.first + " : " + it.second;
+                    key_col_val_str = it.first + " : " + it.second;
                 }
+
+                if(print_brackets)
+                {
+                    key_col_val_str = "(" + key_col_val_str + ")";
+                }
+
+                assign_map_str += key_col_val_str;
+
             }
             assign_map_str += "}";
 
@@ -416,13 +427,21 @@ namespace FMTL {
                 if (hole_renaming_map_str != init_hole_renaming_map_str) {
                     hole_renaming_map_str += ", ";
                 }
+                string key_col_val_str;
                 if(print_quotes) {
-                    hole_renaming_map_str += "\"" + it.first + "\"" + " : " + it.second;
+                    key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
                 }
                 else
                 {
-                    hole_renaming_map_str += it.first + " : " + it.second;
+                    key_col_val_str = it.first + " : " + it.second;
                 }
+
+                if(print_brackets)
+                {
+                    key_col_val_str = "(" + key_col_val_str + ")";
+                }
+
+                hole_renaming_map_str += key_col_val_str;
             }
             hole_renaming_map_str += "}";
 

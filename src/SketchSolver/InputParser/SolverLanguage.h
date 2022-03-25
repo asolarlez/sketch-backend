@@ -107,7 +107,7 @@ public:
 
                 assert(var_val_ret->is_sketch_function());
 
-                SketchFunction* concretized_function = var_val_ret->get_function(false);
+                SketchFunction* concretized_function = var_val_ret->get_skfunc(false);
 
                 File* file = new File(concretized_function, file_name, state->floats, state->args.seed);
 

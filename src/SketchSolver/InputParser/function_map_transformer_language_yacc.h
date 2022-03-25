@@ -45,13 +45,33 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    var_val_rule = 258,
-    identifier = 259
+    identifier = 258,
+    solver_token = 259,
+    while_token = 260,
+    for_token = 261,
+    if_token = 262,
+    else_token = 263,
+    return_token = 264,
+    lambda_token = 265,
+    op_eq = 266,
+    op_geq = 267,
+    op_plus_plus = 268,
+    var_val_rule = 269
   };
 #endif
 /* Tokens.  */
-#define var_val_rule 258
-#define identifier 259
+#define identifier 258
+#define solver_token 259
+#define while_token 260
+#define for_token 261
+#define if_token 262
+#define else_token 263
+#define return_token 264
+#define lambda_token 265
+#define op_eq 266
+#define op_geq 267
+#define op_plus_plus 268
+#define var_val_rule 269
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -60,18 +80,23 @@ union YYSTYPE
 {
 #line 21 "function_map_transformer_language_parser.y" /* yacc.c:1909  */
 
+	SL::Var* var;
 	SL::VarVal* var_val;
 	SL::FunctionCall* func_call;
 	SL::Identifier* identifier_;
 	SL::Params* params;
 	SL::Param* param;
+	SL::CodeBlock* code_block;
 	SL::UnitLine* unit_line;
 	SL::Assignment* assignment;
-	SL::CodeBlock* code_block;
+	SL::BinaryExpression* bool_expr;
+	SL::BinaryOp my_operator;
+	SL::SLType* my_type;
+	SL::TypeParams* type_params;
 	SL::Expression* expression;
-	
+	SL::LambdaExpression* lambda_expr;
 
-#line 75 "y.tab.h" /* yacc.c:1909  */
+#line 100 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
