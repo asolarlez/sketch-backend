@@ -24,7 +24,7 @@ set<BooleanDAG*> BooleanDAG::allocated;
 long long BooleanDAG::global_boolean_dag_id = 0;
 #endif
 
-string BooleanDAG::get_suffix(bool modify_name, long long int dag_id)
+string BooleanDAG::create_suffix(bool modify_name, long long int dag_id)
 {
     if(modify_name) {
         return "__id"+std::to_string(dag_id);
@@ -38,7 +38,7 @@ string construct_name(const string& name_, const string& explicit_name, bool _is
 {
     if(explicit_name.empty())
     {
-        return name_ + BooleanDAG::get_suffix(_is_clone, global_boolean_dag_id);
+        return name_ + BooleanDAG::create_suffix(_is_clone, global_boolean_dag_id);
     }
     else
     {
@@ -1382,9 +1382,21 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 
 
-BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_holes){
+BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_holes, const map<string, string>* _hole_renaming_map){
 
-    for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
+    if(!rename_holes) {
+        AssertDebug(_hole_renaming_map == nullptr, "IF YOU ARE NOT RENAME HOLES, YOU MUSTN'T PASS A _hole_renaming_map");
+    }
+    if(_hole_renaming_map != nullptr) {
+        AssertDebug(rename_holes, "IF YOU ARE PASSING A _hole_renaming_map, YOU MUST rename_holes");
+        set<string> all_hole_names;
+        for (const auto& it: *_hole_renaming_map) {
+            AssertDebug(all_hole_names.find(it.second) == all_hole_names.end(), "ALL NEW HOLE NAMES MUST BE UNIQUE.");
+            all_hole_names.insert(it.second);
+        }
+    }
+
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
         it != nodesByType.end(); ++it){
         for(int i=0; i<it->second.size(); ++i){
             assert(nodes[it->second[i]->id] == it->second[i]);
@@ -1396,7 +1408,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 	relabel();
 
 
-    for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
         it != nodesByType.end(); ++it){
         for(int i=0; i<it->second.size(); ++i){
             assert(nodes[it->second[i]->id] == it->second[i]);
@@ -1412,14 +1424,14 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 	bdag->intSize = intSize;
 	bdag->useSymbolicSolver = useSymbolicSolver;
 
-    for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
         it != nodesByType.end(); ++it){
         for(int i=0; i<it->second.size(); ++i){
             assert(nodes[it->second[i]->id] == it->second[i]);
         }
     }
 	
-	for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin(); 
+	for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
 					it != nodesByType.end(); ++it){
 		vector<bool_node*>& tmp = bdag->nodesByType[it->first];
 		Assert( tmp.size() == 0, "This can't happen. This is an invariant.");
@@ -1433,11 +1445,38 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 
     map<string, string> prev_name_to_new_name;
     {
+
         auto ctrls = bdag->getNodesByType(bool_node::CTRL);
-        for (auto &ctrl: ctrls) {
+
+        map<string, string> hole_renaming_map;
+
+        if(rename_holes) {
+
+            if(_hole_renaming_map == nullptr) {
+                //_hole_renaming_map not specified, so use default.
+                for (auto &node: ctrls) {
+                    CTRL_node *ctrl = (CTRL_node *) node;
+                    string original_name = ctrl->get_original_name();
+                    if(original_name != "#PC") {
+                        assert(hole_renaming_map.find(original_name) == hole_renaming_map.end());
+                        hole_renaming_map[original_name] = ctrl->get_name() + create_suffix(true, bdag->dag_id);
+                    }
+                }
+            }
+            else {
+                //_hole_renaming_map specified, so use that.
+                hole_renaming_map = *_hole_renaming_map;
+            }
+        }
+        else {
+            assert(_hole_renaming_map == nullptr);
+        }
+
+        for (auto &node: ctrls) {
+            CTRL_node* ctrl = (CTRL_node*)node;
             assert(ctrl->type == bool_node::CTRL);
             string ctrl_name = ctrl->get_name();
-            if (((CTRL_node *) ctrl)->get_Pcond()) {
+            if (ctrl->get_Pcond()) {
                 assert(ctrl_name == "#PC");
             } else {
                 assert(ctrl_name != "#PC");
@@ -1445,16 +1484,23 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
                     assert(ctrl_name.substr(0, 3) != "#PC");
                 }
                 if (rename_holes) {
-                    string prev_name = ((CTRL_node *) ctrl)->get_name();
-                    ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(
-                            bdag->get_name(), get_suffix(true, bdag->dag_id));
-                    string new_name = ((CTRL_node *) ctrl)->get_name();
+                    string prev_name = ctrl->get_name();
+                    string new_name = prev_name + create_suffix(true, bdag->dag_id);
+                    string original_name = ctrl->get_original_name();
+
+                    assert(hole_renaming_map.find(original_name) != hole_renaming_map.end());
+                    assert(new_name == hole_renaming_map[original_name]);
+
+                    ctrl->save_dag_name_and_update_ctrl_name(
+                            bdag->get_name(), new_name);
+                    assert(new_name == ctrl->get_name());
                     assert(prev_name_to_new_name.find(prev_name) == prev_name_to_new_name.end());
                     prev_name_to_new_name[prev_name] = new_name;
-//                    cout << "RENAMED HOLE: " << prev_name <<" "<< new_name << endl;
+
                 } else {
-                    ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(
-                            bdag->get_name(), "");
+                    string prev_name = ctrl->get_name();
+                    ctrl->save_dag_name_and_update_ctrl_name(
+                            bdag->get_name(), prev_name);
                 }
             }
         }

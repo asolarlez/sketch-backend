@@ -401,6 +401,9 @@ namespace SL
             assert_type_invariant<T>();
 
             if(do_count) {
+                if(is_pointer<T>::value) {
+                    assert(do_assert);
+                }
                 if(do_assert) {
                     assert(get_num_shared_ptr() >= 1);
                 }
@@ -1546,6 +1549,9 @@ namespace SL {
             assert(has(idx));
             return map<string, SL::VarVal*>::at(idx);
         }
+
+        template<typename OutType>
+        map<string, OutType> get_cpp_map();
     };
 
     class Method;

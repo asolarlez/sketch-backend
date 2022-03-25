@@ -136,7 +136,7 @@ public:
     SketchFunction *_inplace_concretize(const VarStore *var_store, const bool_node::Type var_type);
 
     SketchFunction* unit_clone_and_insert_in_function_map();
-    SketchFunction *unit_clone(const string& explicit_name = "");
+    SketchFunction *unit_clone(const string& explicit_name = "", const map<string, string>* hole_rename_map = nullptr);
     SketchFunction *deep_clone(bool only_tail = false);
     void deep_clone_tail();
 

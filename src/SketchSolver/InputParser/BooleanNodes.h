@@ -1384,17 +1384,16 @@ private:
 
     string original_name;
     string source_dag_name;
-    bool has_new_suffix = false;
+    bool has_new_name = false;
 public:
-    void save_dag_name_and_add_suffix_to_name(const string& _dag_name, const string& _suffix) {
-        assert(!has_new_suffix);
-        has_new_suffix = true;
+    void save_dag_name_and_update_ctrl_name(const string& _dag_name, const string& _new_ctrl_name) {
+        assert(!has_new_name);
+        has_new_name = true;
         if(original_name.empty()) {
             original_name = name;
         }
         source_dag_name = _dag_name;
-//        assert(source_dag_name != "sketch_main__Wrapper__id27__id29__id30__id41");
-        name+=_suffix;
+        name = _new_ctrl_name;
     }
 
     void set_dag_name(const string& _dag_name) {

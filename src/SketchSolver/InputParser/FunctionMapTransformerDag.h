@@ -446,7 +446,7 @@ namespace FMTL {
             hole_renaming_map_str += "}";
 
             string ret = main_parent->pretty_print(fmt, running_assignment_map, visited) + "\n" +
-                         function_name + " = " + main_parent->get_function_name() + ".clone(" + hole_renaming_map_str +
+                         function_name + " = " + main_parent->get_function_name() + ".unit_clone(" + "\"" + function_name + "\"" + ", " + hole_renaming_map_str +
                          ");";
 //            cout << "HERE: <<" << ret << ">>" << endl;
             return ret;

@@ -1098,14 +1098,43 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         }
         case _unit_clone:
         {
-            assert(params.empty());
-            SketchFunction* ret = skfunc->unit_clone();
-//            state->console_output << "SKFUNC:" << skfunc->get_dag_name() << endl;
-//            ((BooleanDagUtility*)skfunc)->produce_inlined_dag()->print_hole_names(state->console_output);
-//            state->console_output << "SKFUNC.CLONE:" << ret->get_dag_name() <<  endl;
-//            ((BooleanDagUtility*)ret)->produce_inlined_dag()->print_hole_names(state->console_output);
-//            state->console_output << "--" << endl;
-            return new VarVal(ret);
+            if(params.empty()) {
+                SketchFunction* ret = skfunc->unit_clone();
+                return new VarVal(ret);
+            }
+            else if(params.size() == 2) {
+                string clone_name = params[0]->eval(state)->get_string(true, false);
+
+                VarVal* hole_rename_poly_map_var_val = params[1]->eval(state);
+                hole_rename_poly_map_var_val->increment_shared_ptr();
+
+                PolyMap* hole_rename_poly_map = hole_rename_poly_map_var_val->get_poly_map();
+
+                map<string, string> hole_rename_map = hole_rename_poly_map->get_cpp_map<string>();
+
+                SketchFunction* ret = skfunc->unit_clone(clone_name, &hole_rename_map);
+
+                hole_rename_poly_map_var_val->decrement_shared_ptr();
+
+                assert(ret->get_dag_name() == clone_name);
+
+                for(auto node: ret->get_dag()->getNodesByType(bool_node::CTRL))
+                {
+                    CTRL_node* ctrl = (CTRL_node*)node;
+                    string original_name = ctrl->get_original_name();
+                    string new_name = ctrl->get_name();
+
+                    if(original_name != "#PC") {
+                        assert(hole_rename_map.find(original_name) != hole_rename_map.end());
+                        assert(hole_rename_map[original_name] == new_name);
+                    }
+                }
+
+                return new VarVal(ret);
+            }
+            else {
+                AssertDebug(false, "WRONG NUMBER OF PARAMETERS.");
+            }
             break;
         }
         case _produce_unit_replace:
@@ -1466,6 +1495,16 @@ void SL::PolyMap::clear()
     map<string, SL::VarVal*>::clear();
     PolyType::soft_clear();
     delete this;
+}
+
+
+template<>
+map<string, string> SL::PolyMap::get_cpp_map<string>() {
+    map<string, string> ret;
+    for(auto it: *this) {
+        ret[it.first] = it.second->get_string();
+    }
+    return ret;
 }
 
 

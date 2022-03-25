@@ -42,6 +42,8 @@ namespace FMTL{
             assert(frames.empty());
 
             global.clear(true);
+
+            AssertDebug(false, "DONE! :D");
         }
     };
 

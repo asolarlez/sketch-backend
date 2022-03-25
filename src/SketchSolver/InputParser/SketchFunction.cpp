@@ -9,7 +9,6 @@
 
 const bool rename_holes = true;
 
-
 SketchFunction *SketchFunction::produce_concretization(
         const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
 
@@ -136,9 +135,10 @@ SketchFunction *SketchFunction::unit_clone_and_insert_in_function_map() {
     return ret_clone;
 }
 
-SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
+SketchFunction *SketchFunction::unit_clone(const string& explicit_name, const map<string, string>* hole_rename_map) {
+
     assert(rename_holes);
-    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, rename_holes);
+    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, rename_holes, hole_rename_map);
 
     if(rename_holes)
     for(auto it : cloned_dag->getNodesByType(bool_node::CTRL)) {

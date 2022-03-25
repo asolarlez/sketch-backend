@@ -64,7 +64,7 @@ public:
         return allocated;
     }
 #endif
-    static string get_suffix(bool modify_name, long long int dag_id);
+    static string create_suffix(bool modify_name, long long int dag_id);
     static long long get_global_boolean_dag_id()
     {
         return global_boolean_dag_id;
@@ -252,8 +252,8 @@ Dllist assertions;
 
   void repOK();
 
-  BooleanDAG* clone(const string& explict_name = "", const bool rename_holes = false);
-  void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=NULL);
+  BooleanDAG* clone(const string& explict_name = "", const bool rename_holes = false, const map<string, string>* = nullptr);
+  void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=nullptr);
 
   void print(ostream& out)const;
   void lprint(ostream& out);
