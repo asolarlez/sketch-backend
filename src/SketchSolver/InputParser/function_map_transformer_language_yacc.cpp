@@ -421,7 +421,7 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  19
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   30
+#define YYLAST   29
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  26
@@ -430,7 +430,7 @@ union yyalloc
 /* YYNRULES -- Number of rules.  */
 #define YYNRULES  21
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  38
+#define YYNSTATES  36
 
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
@@ -523,10 +523,10 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      -2,   -20,   -21,    -1,   -12,     6,   -21,    -9,    -7,   -21,
-     -21,    -1,   -21,    -9,   -15,   -10,     1,    -8,     2,   -21,
-      19,    -2,    -9,    -1,   -21,     3,   -12,   -21,     8,   -21,
-     -21,    20,   -21,    -1,     9,    11,   -21,   -21
+      -2,   -20,   -21,    -1,    -9,     6,   -21,    -8,    -6,   -21,
+     -21,    -1,   -21,    -8,   -17,   -10,    -3,     2,    -7,   -21,
+      13,    -2,    -8,    -1,   -21,    -1,    -9,   -21,     7,   -21,
+     -21,    -8,   -21,    -1,     5,   -21
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -537,14 +537,14 @@ static const yytype_uint8 yydefact[] =
        0,     5,     7,    15,    19,     0,     2,     9,     0,     6,
        8,     0,     5,    14,    16,     0,     0,    20,     0,     1,
        0,     3,    13,    15,    11,     0,    19,    12,     0,     4,
-      17,     0,    21,    15,     0,     0,    18,    10
+      17,    18,    21,    15,     0,    10
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -21,   -21,     5,     0,   -21,   -21,   -21,   -21,   -19,   -21,
-       4
+     -21,   -21,     8,     0,   -21,   -21,   -21,   -21,   -19,   -21,
+       1
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
@@ -559,18 +559,16 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-       7,     1,    12,    11,    30,    16,    19,    20,    21,    23,
-      24,    22,     2,     2,    35,    25,    26,     3,     3,     4,
-       4,     7,    28,    34,    27,    33,    29,    36,    31,    37,
-      32
+       7,     1,    12,    11,    30,    16,    19,    23,    20,    21,
+      24,    22,     2,     2,    34,    27,    28,     3,     3,     4,
+       4,     7,    25,    35,    33,    31,    26,    32,     0,    29
 };
 
-static const yytype_uint8 yycheck[] =
+static const yytype_int8 yycheck[] =
 {
-       0,     3,     3,    23,    23,    17,     0,    16,    15,    24,
-      20,    11,    14,    14,    33,    14,    24,    19,    19,    21,
-      21,    21,     3,     3,    22,    17,    21,    18,    25,    18,
-      26
+       0,     3,     3,    23,    23,    14,     0,    24,    16,    15,
+      20,    11,    14,    14,    33,    22,     3,    19,    19,    21,
+      21,    21,    25,    18,    17,    25,    24,    26,    -1,    21
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
@@ -578,9 +576,9 @@ static const yytype_uint8 yycheck[] =
 static const yytype_uint8 yystos[] =
 {
        0,     3,    14,    19,    21,    27,    28,    29,    30,    31,
-      32,    23,     3,    29,    33,    34,    17,    35,    36,     0,
-      16,    15,    29,    24,    20,    14,    24,    22,     3,    28,
-      34,    25,    36,    17,     3,    34,    18,    18
+      32,    23,     3,    29,    33,    34,    14,    35,    36,     0,
+      16,    15,    29,    24,    20,    25,    24,    22,     3,    28,
+      34,    29,    36,    17,    34,    18
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
@@ -595,7 +593,7 @@ static const yytype_uint8 yyr1[] =
 static const yytype_uint8 yyr2[] =
 {
        0,     2,     1,     2,     3,     1,     1,     1,     1,     1,
-       6,     3,     3,     3,     1,     0,     1,     3,     5,     0,
+       6,     3,     3,     3,     1,     0,     1,     3,     3,     0,
        1,     3
 };
 
@@ -1283,55 +1281,55 @@ yyreduce:
         case 2:
 #line 63 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {state->add_root((yyvsp[0].code_block));}
-#line 1287 "y.tab.c" /* yacc.c:1646  */
+#line 1285 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 3:
 #line 66 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.code_block) = new SL::CodeBlock((yyvsp[-1].unit_line));}
-#line 1293 "y.tab.c" /* yacc.c:1646  */
+#line 1291 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 4:
 #line 67 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.code_block) = new SL::CodeBlock((yyvsp[-2].unit_line), (yyvsp[0].code_block));}
-#line 1299 "y.tab.c" /* yacc.c:1646  */
+#line 1297 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 5:
 #line 70 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.expression) = new SL::Expression((yyvsp[0].identifier_));}
-#line 1305 "y.tab.c" /* yacc.c:1646  */
+#line 1303 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 6:
 #line 71 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.expression) = new SL::Expression((yyvsp[0].func_call));}
-#line 1311 "y.tab.c" /* yacc.c:1646  */
+#line 1309 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 7:
 #line 72 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.expression) = new SL::Expression((yyvsp[0].var_val));}
-#line 1317 "y.tab.c" /* yacc.c:1646  */
+#line 1315 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 8:
 #line 74 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.unit_line) = new SL::UnitLine((yyvsp[0].assignment));}
-#line 1323 "y.tab.c" /* yacc.c:1646  */
+#line 1321 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 9:
 #line 75 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.unit_line) = new SL::UnitLine((yyvsp[0].expression));}
-#line 1329 "y.tab.c" /* yacc.c:1646  */
+#line 1327 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 10:
 #line 77 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.func_call) = new SL::FunctionCall((yyvsp[-5].expression), (yyvsp[-3].identifier_), (yyvsp[-1].params));}
-#line 1335 "y.tab.c" /* yacc.c:1646  */
+#line 1333 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 11:
@@ -1341,7 +1339,7 @@ yyreduce:
                				new SL::TypeParams(
                					new SL::SLType(new SL::Identifier("any"))
                				)), (yyvsp[-1].params));}
-#line 1345 "y.tab.c" /* yacc.c:1646  */
+#line 1343 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 12:
@@ -1354,37 +1352,37 @@ yyreduce:
 							new SL::TypeParams(new SL::SLType(new SL::Identifier("any")))
 						)
 					), (yyvsp[-1].params));}
-#line 1358 "y.tab.c" /* yacc.c:1646  */
+#line 1356 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 13:
 #line 92 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.assignment) = new SL::Assignment((yyvsp[-2].identifier_), (yyvsp[0].expression));}
-#line 1364 "y.tab.c" /* yacc.c:1646  */
+#line 1362 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 14:
 #line 94 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.param) = new SL::Param((yyvsp[0].expression));}
-#line 1370 "y.tab.c" /* yacc.c:1646  */
+#line 1368 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 15:
 #line 96 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.params) = new SL::Params();}
-#line 1376 "y.tab.c" /* yacc.c:1646  */
+#line 1374 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 16:
 #line 96 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.params) = new SL::Params((yyvsp[0].param));}
-#line 1382 "y.tab.c" /* yacc.c:1646  */
+#line 1380 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 17:
 #line 97 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.params) = new SL::Params((yyvsp[-2].param), (yyvsp[0].params));}
-#line 1388 "y.tab.c" /* yacc.c:1646  */
+#line 1386 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 18:
@@ -1392,8 +1390,8 @@ yyreduce:
     {
              			SL::Params* params =
              				new SL::Params(
-             					new SL::Param(new SL::Expression((yyvsp[-3].var_val))),
-             					new SL::Params(new SL::Param(new SL::Expression((yyvsp[-1].identifier_)))));
+             					new SL::Param(new SL::Expression((yyvsp[-2].var_val))),
+             					new SL::Params(new SL::Param(new SL::Expression((yyvsp[0].expression)))));
 				SL::Expression* almost_ret = new SL::Expression(
              				new SL::FunctionCall(
              					new SL::SLType(new SL::Identifier("pair"),
@@ -1404,29 +1402,29 @@ yyreduce:
              				), params)
 				);
 				(yyval.param) = new SL::Param(almost_ret);}
-#line 1408 "y.tab.c" /* yacc.c:1646  */
+#line 1406 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 19:
 #line 116 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.params) = new SL::Params();}
-#line 1414 "y.tab.c" /* yacc.c:1646  */
+#line 1412 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 20:
 #line 117 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.params) = new SL::Params((yyvsp[0].param));}
-#line 1420 "y.tab.c" /* yacc.c:1646  */
+#line 1418 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 21:
 #line 118 "function_map_transformer_language_parser.y" /* yacc.c:1646  */
     {(yyval.params) = new SL::Params((yyvsp[-2].param), (yyvsp[0].params));}
-#line 1426 "y.tab.c" /* yacc.c:1646  */
+#line 1424 "y.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1430 "y.tab.c" /* yacc.c:1646  */
+#line 1428 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

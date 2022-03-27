@@ -96,11 +96,11 @@ param : expression {$$ = new SL::Param($1);}
 params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
 	| param ',' params {$$ = new SL::Params($1, $3);}
 
-key_col_val: '(' var_val_rule ':' identifier ')' {
+key_col_val: var_val_rule ':' expression {
              			SL::Params* params =
              				new SL::Params(
-             					new SL::Param(new SL::Expression($2)),
-             					new SL::Params(new SL::Param(new SL::Expression($4))));
+             					new SL::Param(new SL::Expression($1)),
+             					new SL::Params(new SL::Param(new SL::Expression($3))));
 				SL::Expression* almost_ret = new SL::Expression(
              				new SL::FunctionCall(
              					new SL::SLType(new SL::Identifier("pair"),

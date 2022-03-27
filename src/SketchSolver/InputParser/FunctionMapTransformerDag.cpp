@@ -1069,7 +1069,7 @@ InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<
         if (hole_names_str != init_hole_names_str) {
             hole_names_str += ", ";
         }
-        hole_names_str += it;
+        hole_names_str += "\"" + it + "\"";
     }
     hole_names_str += "]";
 
@@ -1080,16 +1080,7 @@ InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<
             assign_map_str += ", ";
         }
         string key_col_val_str;
-        if(print_quotes) {
-            key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
-        }
-        else {
-            key_col_val_str = it.first + " : " + it.second;
-        }
-
-        if(print_brackets) {
-            key_col_val_str = "(" + key_col_val_str + ")";
-        }
+        key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
 
         assign_map_str += key_col_val_str;
     }
@@ -1115,18 +1106,7 @@ void ClonePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt
             hole_renaming_map_str += ", ";
         }
         string key_col_val_str;
-        if(print_quotes) {
-            key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
-        }
-        else
-        {
-            key_col_val_str = it.first + " : " + it.second;
-        }
-
-        if(print_brackets)
-        {
-            key_col_val_str = "(" + key_col_val_str + ")";
-        }
+        key_col_val_str = "\"" + it.first + "\"" + " : " + "\"" + it.second + "\"";
 
         hole_renaming_map_str += key_col_val_str;
     }

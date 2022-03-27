@@ -1485,11 +1485,13 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
                 }
                 if (rename_holes) {
                     string prev_name = ctrl->get_name();
-                    string new_name = prev_name + create_suffix(true, bdag->dag_id);
                     string original_name = ctrl->get_original_name();
+                    string new_name = hole_renaming_map[original_name];
 
                     assert(hole_renaming_map.find(original_name) != hole_renaming_map.end());
-                    assert(new_name == hole_renaming_map[original_name]);
+                    if(_hole_renaming_map == nullptr) {
+                        assert(new_name == prev_name + create_suffix(true, bdag->dag_id));
+                    }
 
                     ctrl->save_dag_name_and_update_ctrl_name(
                             bdag->get_name(), new_name);

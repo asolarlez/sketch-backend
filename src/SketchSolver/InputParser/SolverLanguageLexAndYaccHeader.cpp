@@ -145,7 +145,7 @@ void SL::Assignment::run(StateType *state)
             try {
                 to_var = state->name_to_var_throws(dest_name);
             }
-            catch (exception e) {
+            catch (exception& e) {
                 SL::SLType* any_type = new SL::SLType(new SL::Identifier("any"));
                 SL::Identifier* copy_name = new SL::Identifier(dest_name);
                 SL::Var* var = new SL::Var(any_type, copy_name);
@@ -227,7 +227,7 @@ SL::VarVal* SL::Identifier::eval(StateType *state)  {
     return state->get_var_val(state->name_to_var(this));
 }
 
-bool SL::Identifier::is_defined() {
+bool SL::Identifier::is_defined() const {
     return defined;
 }
 
@@ -235,25 +235,25 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(ProgramState* state)
 {
     string root_type_name = type_constructor->get_head()->to_string();
 
-    enum RootType {vector, pair, map, do_predef};
+    enum RootType {_vector, _pair, _map, _unknown_type_constructor};
 
-    RootType root_type = do_predef;
+    RootType root_type = _unknown_type_constructor;
 
     if(root_type_name == "pair")
     {
-        root_type = pair;
+        root_type = _pair;
     }
     else if(root_type_name == "vector")
     {
-        root_type = vector;
+        root_type = _vector;
     }
     else if(root_type_name == "map")
     {
-        root_type = map;
+        root_type = _map;
     }
 
     switch (root_type) {
-        case pair: {
+        case _pair: {
             PolyType* type_params = type_constructor->get_type_params();
             assert(type_params->size() == 2);
             assert(params.size() == 2);
@@ -264,14 +264,17 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(ProgramState* state)
             return new SL::VarVal(new PolyPair(type_params, left, right));
             break;
         }
-        case vector: {
+        case _vector: {
             PolyType* type_params = type_constructor->get_type_params();
             assert(type_params->size() == 1);
-            assert(params.empty());
-            return new SL::VarVal(new PolyVec(new PolyType(type_params)));
+            PolyVec* ret = new PolyVec(new PolyType(type_params));
+            for(int i = 0;i<params.size();i++) {
+                ret->push_back(params[i]->eval(state));
+            }
+            return new SL::VarVal(ret);
             break;
         }
-        case map: {
+        case _map: {
             PolyType* type_params = type_constructor->get_type_params();
             assert(type_params->size() == 2);
             assert(*type_params->at(0) == SL::SLType(new SL::Identifier("string")));
@@ -294,7 +297,7 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(ProgramState* state)
             return new SL::VarVal(ret);
             break;
         }
-        case do_predef:
+        case _unknown_type_constructor:
             assert(false);
             break;
         default:
@@ -323,9 +326,7 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
         case _append:
         {
             assert(params.size() == 1);
-            SL::VarVal* ret_param = params[0]->eval(state);
-            ret_param->increment_shared_ptr();
-            poly_vec->push_back(ret_param);
+            poly_vec->push_back(params[0]->eval(state));
             return new VarVal();
             break;
         }
@@ -598,16 +599,6 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             bool val = params[0]->eval(state)->get_bool(true, false);
             return new VarVal((bool)!val);
         }
-//        case _vector:
-//        {
-//            assert(false);
-////            PolyVec* ret = new PolyVec(new PolyType("any"));
-////            for(int i = 0; i<params.size();i++)
-////            {
-////                ret->push_back(params[i]->eval(state));
-////            }
-////            return new VarVal(ret);
-//        }
         default:
             assert(false);
     }
@@ -924,7 +915,6 @@ void SL::init_method_str_to_method_id_map()
     //FMTL Primitives:
 
     add_to_method_str_to_method_id_map("init", _init, "SketchFunction");
-//    add_to_method_str_to_method_id_map("vector", _vector, "namespace");
 
 
 method_str_to_method_id_map_is_defined = true;
@@ -1193,7 +1183,8 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 vector<string> hole_names = skfunc->get_unit_holes();
                 assert(hole_names.size() == holes->size());
                 for (int i = 0; i < hole_names.size(); i++) {
-                    assert(hole_names[i] == holes->at(i)->get_string(false));
+                    string predicted_hole_name = holes->at(i)->get_string(false);
+                    assert(hole_names[i] == predicted_hole_name);
                 }
 
                 holes_vec_var_val->decrement_shared_ptr();
@@ -1431,9 +1422,9 @@ bool SL::var_val_invariant(SL::Var *var, SL::VarVal* var_val)
 }
 
 
-void SL::PolyVec::push_back(SL::VarVal* new_element)
-{
+void SL::PolyVec::push_back(SL::VarVal* new_element) {
     assert(SL::var_val_invariant(get_type_params()->at(0), new_element));
+    new_element->increment_shared_ptr();
     vector<SL::VarVal* >::emplace_back(new_element);
 }
 
@@ -2188,27 +2179,3 @@ void SL::LambdaExpression::clear() {
     code_block->clear();
     delete this;
 }
-
-//void SL::Params::populate_vector(vector<Param *> *params)
-//{
-//    assert(params != nullptr);
-//    assert(params->empty());
-//    Params* at = this;
-//    while(at != nullptr)
-//    {
-//        if(at->head != nullptr) {
-//            params->emplace_back(new Param(at->head));
-//        }
-//        at = at->rest;
-//    }
-//}
-//
-//void SL::Params::clear() {
-//    head->clear();
-//    head = nullptr;
-//    if(rest != nullptr) {
-//        rest->clear();
-//        rest = nullptr;
-//    }
-//    delete this;
-//}

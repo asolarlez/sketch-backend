@@ -66,7 +66,7 @@ namespace SL
             return identifier == other.identifier;
         }
 
-        bool is_defined();
+        bool is_defined() const;
     };
 
     class Method;

@@ -295,9 +295,6 @@ namespace FMTL {
                      set<TransformPrimitive *> *visited) const override;
     };
 
-    static bool print_quotes = true;
-    static bool print_brackets = true;
-
     class InitPrimitive : public TransformPrimitive {
 
         const vector<string> hole_names;
