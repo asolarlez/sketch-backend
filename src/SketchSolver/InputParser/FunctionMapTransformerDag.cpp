@@ -944,8 +944,8 @@ TransformPrimitive *TransformPrimitive::get_main_parent() {
     return main_parent;
 }
 
-string TransformPrimitive::pretty_print(const FunctionMapTransformer& fmt, map<string, map<string, string> >* running_assignment_map,
-                                        set<TransformPrimitive*>* visited) const {
+void TransformPrimitive::pretty_print(string& ret, const FunctionMapTransformer& fmt, map<string, map<string, string> >* running_assignment_map,
+                                        set<TransformPrimitive*>* _visited) const {
     assert(false);
 }
 
@@ -953,14 +953,15 @@ string TransformPrimitive::to_string() {
     return function_name + " | " + transform_primitive_meta_type_name[meta_type] + " | parents: " + parents_to_str() + " | children:" + children_to_str();
 }
 
-string ReplacePrimitive::pretty_print(
+void ReplacePrimitive::pretty_print(string& ret,
         const FunctionMapTransformer &fmt,
         map<string, map<string, string> >* running_assignment_map,
         set<TransformPrimitive*>* visited) const {
 
-    if(visited->find((TransformPrimitive*)this) != visited->end()) {
-        return "";
+    if(visited->find((TransformPrimitive *) this) != visited->end()) {
+        return;
     }
+
     visited->insert((TransformPrimitive*)this);
 
     assert(assign_map.size() == 1);
@@ -969,35 +970,168 @@ string ReplacePrimitive::pretty_print(
     string var_name = assign_map.begin()->first;
     string val_name = assign_map.begin()->second;
 
-//    if(function_name == "sketch_main__id14")
-//    {
-//        cout << "HERE" << endl;
-//    }
-
-    if(running_assignment_map->find(function_name) != running_assignment_map->end())
-    {
-        if(running_assignment_map->at(function_name).find(var_name) != running_assignment_map->at(function_name).end())
-        {
+    if(running_assignment_map->find(function_name) != running_assignment_map->end()) {
+        if(running_assignment_map->at(function_name).find(var_name) != running_assignment_map->at(function_name).end()) {
             //var_name has been updated on the path to here with another val_name in the function with function name.
             //meaning that the current val_name is superseded.
-            return main_parent->pretty_print(fmt, running_assignment_map, visited);
+            return main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
         }
-        else
-        {
+        else {
             running_assignment_map->at(function_name)[var_name] = val_name;
         }
     }
-    else
-    {
+    else {
         (*running_assignment_map)[function_name] = assign_map;
     }
 
-
     assert(root_dag_reps.find(assign_map.begin()->second) != root_dag_reps.end());
-    string ret =
-            main_parent->pretty_print(fmt, running_assignment_map, visited) + "\n" +
-            root_dag_reps.at(assign_map.begin()->second)->pretty_print(fmt, running_assignment_map, visited) + "\n" +
-            function_name + ".replace(" + "\"" + assign_map.begin()->first + "\"" + ", " + assign_map.begin()->second + ");";
-//    cout << "HERE: " << ret << endl;
-    return ret;
+
+    main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
+    root_dag_reps.at(assign_map.begin()->second)->pretty_print(ret, fmt, running_assignment_map, visited);
+    ret += function_name + ".replace(" + "\"" + assign_map.begin()->first + "\"" + ", " + assign_map.begin()->second + ");" + "\n";
+
+    assert(running_assignment_map->find(function_name) != running_assignment_map->end());
+    assert(assign_map.size() == 1);
+    assert(running_assignment_map->at(function_name).find(assign_map.begin()->first) != running_assignment_map->at(function_name).end());
+    running_assignment_map->at(function_name).erase(assign_map.begin()->first);
+    assert(running_assignment_map->at(function_name).find(assign_map.begin()->first) == running_assignment_map->at(function_name).end());
+    if(running_assignment_map->at(function_name).empty()) {
+        running_assignment_map->erase(function_name);
+    }
+}
+
+void ConcretizePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt,
+                                         map<string, map<string, string>> *running_assignment_map,
+                                         set<TransformPrimitive *> *visited) const  {
+
+    if(visited->find((TransformPrimitive *) this) != visited->end()) {
+        return;
+    }
+
+    visited->insert((TransformPrimitive *) this);
+
+
+    bool has_main_parent = false;
+    for (const auto &it: parents) {
+        if (it.second != main_parent) {
+            it.second->pretty_print(ret, fmt, running_assignment_map, visited);
+        } else {
+            assert(!has_main_parent);
+            has_main_parent = true;
+        }
+    }
+    assert(has_main_parent);
+    main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
+    ret += function_name + ".concretize();" + "\n";
+}
+
+void
+InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string>> *running_assignment_map,
+                            set<TransformPrimitive *> *visited) const {
+
+    if(visited->find((TransformPrimitive *) this) != visited->end()) {
+        return;
+    }
+
+    visited->insert((TransformPrimitive *) this);
+    assert(main_parent == nullptr);
+
+    auto root_dag_reps = fmt.get_root_dag_reps();
+
+    for(const auto& it: assign_map) {
+        string var_name = it.first;
+        string val_name = it.second;
+
+        bool print_parent = true;
+
+        if (running_assignment_map->find(function_name) != running_assignment_map->end()) {
+            if (running_assignment_map->at(function_name).find(var_name) !=
+                running_assignment_map->at(function_name).end()) {
+                //var_name has been updated on the path to here with another val_name in the function with function name.
+                //meaning that the current val_name is superseded.
+                //continue
+                print_parent = false;
+            }
+        }
+
+        if(print_parent) {
+            auto next = root_dag_reps.at(val_name);
+            next->pretty_print(ret, fmt, running_assignment_map, visited);
+        }
+        else {
+            ret += "//" + var_name + " -> " + val_name + " superseded in " + function_name + "\n";
+        }
+    }
+
+    const string init_hole_names_str = "[";
+    string hole_names_str = init_hole_names_str;
+    for (const auto &it: hole_names) {
+        if (hole_names_str != init_hole_names_str) {
+            hole_names_str += ", ";
+        }
+        hole_names_str += it;
+    }
+    hole_names_str += "]";
+
+    const string init_assign_map_str = "{";
+    string assign_map_str = init_assign_map_str;
+    for (const auto &it: assign_map) {
+        if (assign_map_str != init_assign_map_str) {
+            assign_map_str += ", ";
+        }
+        string key_col_val_str;
+        if(print_quotes) {
+            key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
+        }
+        else {
+            key_col_val_str = it.first + " : " + it.second;
+        }
+
+        if(print_brackets) {
+            key_col_val_str = "(" + key_col_val_str + ")";
+        }
+
+        assign_map_str += key_col_val_str;
+    }
+    assign_map_str += "}";
+
+    ret += function_name + ".init(" + hole_names_str + ", " + assign_map_str + ");" + "\n";
+}
+
+void ClonePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt,
+                                    map<string, map<string, string>> *running_assignment_map,
+                                    set<TransformPrimitive *> *visited) const {
+
+    if(visited->find((TransformPrimitive *) this) != visited->end()) {
+        return;
+    }
+
+    visited->insert((TransformPrimitive *) this);
+
+    const string init_hole_renaming_map_str = "{";
+    string hole_renaming_map_str = init_hole_renaming_map_str;
+    for (const auto &it: hole_renaming_map) {
+        if (hole_renaming_map_str != init_hole_renaming_map_str) {
+            hole_renaming_map_str += ", ";
+        }
+        string key_col_val_str;
+        if(print_quotes) {
+            key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
+        }
+        else
+        {
+            key_col_val_str = it.first + " : " + it.second;
+        }
+
+        if(print_brackets)
+        {
+            key_col_val_str = "(" + key_col_val_str + ")";
+        }
+
+        hole_renaming_map_str += key_col_val_str;
+    }
+    hole_renaming_map_str += "}";
+
+    main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
+    ret += function_name + " = " + main_parent->get_function_name() + ".unit_clone(" + "\"" + function_name + "\"" + ", " + hole_renaming_map_str + ");" + "\n";
 }

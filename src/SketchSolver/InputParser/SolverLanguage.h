@@ -34,10 +34,7 @@ using namespace std;
 
 class SolverLanguage {
 public:
-    SolverLanguage()
-    {
-
-    }
+    SolverLanguage() = default;
     void eval(string solver_program_file_name, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {

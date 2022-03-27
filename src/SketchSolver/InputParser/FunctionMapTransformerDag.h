@@ -34,10 +34,10 @@ namespace FMTL {
     protected:
         mutable bool is_erased = false;
     private:
+        int num_children_visited = 0;
         bool superseded = false;
 
         bool visited = false;
-        int num_children_visited = 0;
         int min_depth = -1;
         int max_depth = -1;
 
@@ -129,10 +129,13 @@ namespace FMTL {
         }
 
         void set_not_visited() {
+            //visited markers
             visited = false;
             num_children_visited = 0;
+            //depth markers
             min_depth = -1;
             max_depth = -1;
+            //cycle markers
             covered = false;
             assert(!in_path);
         }
@@ -248,7 +251,16 @@ namespace FMTL {
 
         TransformPrimitive *get_main_parent();
 
-        virtual string pretty_print(
+    public:
+
+        string pretty_print(const FunctionMapTransformer &fmt) const
+        {
+            string ret;
+            pretty_print(ret, fmt);
+            return ret;
+        }
+
+        virtual void pretty_print(string& ret,
                 const FunctionMapTransformer &fmt,
                 map<string, map<string, string> > *running_assignment_map = new map<string, map<string, string> >(),
                 set<TransformPrimitive *> *visited = new set<TransformPrimitive *>()) const;
@@ -279,29 +291,8 @@ namespace FMTL {
             return &concretization_type;
         }
 
-        string
-        pretty_print(const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
-                     set<TransformPrimitive *> *visited) const override {
-            if (visited->find((TransformPrimitive *) this) != visited->end()) {
-                return "";
-            }
-            visited->insert((TransformPrimitive *) this);
-            string ret;
-            bool has_main_parent = false;
-            for (const auto &it: parents) {
-                if (it.second != main_parent) {
-                    ret += it.second->pretty_print(fmt, running_assignment_map, visited) + "\n";
-                } else {
-                    assert(!has_main_parent);
-                    has_main_parent = true;
-                }
-            }
-            assert(has_main_parent);
-            ret += main_parent->pretty_print(fmt, running_assignment_map, visited) + "\n";
-            ret += function_name + ".concretize();";
-//            cout << "HERE: <<" << ret << ">>" << endl;
-            return ret;
-        }
+        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+                     set<TransformPrimitive *> *visited) const override;
     };
 
     static bool print_quotes = true;
@@ -332,55 +323,8 @@ namespace FMTL {
             return &assign_map;
         }
 
-        string
-        pretty_print(const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
-                     set<TransformPrimitive *> *visited) const override {
-            if (visited->find((TransformPrimitive *) this) != visited->end()) {
-                return "";
-            }
-            visited->insert((TransformPrimitive *) this);
-            assert(main_parent == nullptr);
-
-            const string init_hole_names_str = "[";
-            string hole_names_str = init_hole_names_str;
-            for (const auto &it: hole_names) {
-                if (hole_names_str != init_hole_names_str) {
-                    hole_names_str += ", ";
-                }
-                hole_names_str += it;
-            }
-            hole_names_str += "]";
-
-            const string init_assign_map_str = "{";
-            string assign_map_str = init_assign_map_str;
-            for (const auto &it: assign_map) {
-                if (assign_map_str != init_assign_map_str) {
-                    assign_map_str += ", ";
-                }
-                string key_col_val_str;
-
-                if(print_quotes) {
-                    key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
-                }
-                else
-                {
-                    key_col_val_str = it.first + " : " + it.second;
-                }
-
-                if(print_brackets)
-                {
-                    key_col_val_str = "(" + key_col_val_str + ")";
-                }
-
-                assign_map_str += key_col_val_str;
-
-            }
-            assign_map_str += "}";
-
-            string ret = function_name + ".init(" + hole_names_str + ", " + assign_map_str + ");";
-//            cout << "HERE: <<" << ret << ">>" << endl;
-            return ret;
-        }
+        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+                     set<TransformPrimitive *> *visited) const override;
     };
 
     class ReplacePrimitive : public TransformPrimitive {
@@ -400,8 +344,7 @@ namespace FMTL {
             return &assign_map;
         }
 
-        string
-        pretty_print(const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
                      set<TransformPrimitive *> *visited) const override;
     };
 
@@ -413,44 +356,8 @@ namespace FMTL {
                 const map<string, string> &_hole_renaming_map) :
                 TransformPrimitive(_new_function, _clone), hole_renaming_map(_hole_renaming_map) {}
 
-        string
-        pretty_print(const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
-                     set<TransformPrimitive *> *visited) const override {
-            if (visited->find((TransformPrimitive *) this) != visited->end()) {
-                return "";
-            }
-            visited->insert((TransformPrimitive *) this);
-
-            const string init_hole_renaming_map_str = "{";
-            string hole_renaming_map_str = init_hole_renaming_map_str;
-            for (const auto &it: hole_renaming_map) {
-                if (hole_renaming_map_str != init_hole_renaming_map_str) {
-                    hole_renaming_map_str += ", ";
-                }
-                string key_col_val_str;
-                if(print_quotes) {
-                    key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
-                }
-                else
-                {
-                    key_col_val_str = it.first + " : " + it.second;
-                }
-
-                if(print_brackets)
-                {
-                    key_col_val_str = "(" + key_col_val_str + ")";
-                }
-
-                hole_renaming_map_str += key_col_val_str;
-            }
-            hole_renaming_map_str += "}";
-
-            string ret = main_parent->pretty_print(fmt, running_assignment_map, visited) + "\n" +
-                         function_name + " = " + main_parent->get_function_name() + ".unit_clone(" + "\"" + function_name + "\"" + ", " + hole_renaming_map_str +
-                         ");";
-//            cout << "HERE: <<" << ret << ">>" << endl;
-            return ret;
-        }
+        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+                     set<TransformPrimitive *> *visited) const override;
     };
 
     class FunctionMapTransformer {
