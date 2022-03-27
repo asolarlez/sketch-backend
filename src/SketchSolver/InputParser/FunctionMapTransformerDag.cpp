@@ -1022,7 +1022,20 @@ void ConcretizePrimitive::pretty_print(string& ret, const FunctionMapTransformer
     }
     assert(has_main_parent);
     main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
-    ret += function_name + ".concretize();" + "\n";
+
+    const string init_var_store_string = "{";
+    string var_store_str = init_var_store_string;
+
+    for(auto it : *var_store)
+    {
+        if(var_store_str != init_var_store_string)
+        {
+            var_store_str += ", ";
+        }
+        var_store_str += it.name + " : " + it.
+    }
+
+    ret += function_name + ".inplace_unit_concretize();" + "\n";
 }
 
 void

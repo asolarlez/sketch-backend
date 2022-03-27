@@ -388,3 +388,27 @@ bool VarStore::contains(const VarStore::objP &obj, vector<string> *path) const
 
     return true;
 }
+
+map<string, string> &VarStore::to_map_str_str(FloatManager& floats) {
+    VarStore& ctrlStore = *this;
+    map<string, string> values;
+    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
+        stringstream str;
+        if(it->otype == OutType::FLOAT)
+        {
+            str << floats.getFloat(it->getInt());
+        }
+        else
+        {
+            str << it->getInt();
+        }
+        values[it->getName()] = str.str();
+    }
+    for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
+        //stringstream str;
+        Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
+        //it->second->print(str);
+        values[it->first] = ctrlStore.synthouts[it->first];
+    }
+    return values;
+}

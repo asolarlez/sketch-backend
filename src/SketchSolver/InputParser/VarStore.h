@@ -764,6 +764,8 @@ public:
     {
         append_join(*this, v2);
     }
+
+    map<string, string> &to_map_str_str(FloatManager& floats);
 };
 
 template<bool_node::Type type>

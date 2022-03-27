@@ -14,7 +14,6 @@
 #include "REASSolver.h"
 #include "SketchFunction.h"
 
-
 #include <sstream>
 
 extern timerclass solution;

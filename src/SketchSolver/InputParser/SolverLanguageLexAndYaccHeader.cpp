@@ -884,7 +884,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("produce_deep_concretize", _produce_deep_concretize, "SketchFunction");
 //    add_to_method_str_to_method_id_map("_produce_unit_concretize", _produce_unit_concretize, "SketchFunction");
     add_to_method_str_to_method_id_map("inplace_deep_concretize", _inplace_deep_concretize, "SketchFunction");
-//    add_to_method_str_to_method_id_map("_inplace_unit_concretize", _inplace_unit_concretize, "SketchFunction");
+    add_to_method_str_to_method_id_map("inplace_unit_concretize", _inplace_unit_concretize, "SketchFunction");
 
     add_to_method_str_to_method_id_map("deep_clone", _deep_clone, "SketchFunction");
     add_to_method_str_to_method_id_map("unit_clone", _unit_clone, "SketchFunction");
@@ -1008,6 +1008,17 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
 
     assert(skfunc == the_var_val->get_function_const(false));
     switch (method_id) {
+        case _inplace_unit_concretize:
+        {
+            assert(params.size() == 1);
+            VarVal* poly_map_var_val = params[0]->eval(state);
+            poly_map_var_val->increment_shared_ptr();
+            map<string, int> hole_assignment = poly_map_var_val->get_poly_map()->get_cpp_map<int>();
+
+//            HoleVarStore var_store = HoleVarStore();
+
+            assert(false);
+        }
         case _produce_executable:
         {
             if(params.size() == 1) {

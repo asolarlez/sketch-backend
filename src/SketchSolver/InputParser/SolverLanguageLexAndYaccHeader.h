@@ -1604,16 +1604,16 @@ namespace SL {
         _produce_deep_concretize,
 //        TODO: produce_unit_concretize
         _inplace_deep_concretize,
-//        TODO: inplace_unit_concretize,
+        _inplace_unit_concretize,
         _produce_executable,
         _make_executable,
         _clone,
         _deep_clone,
         _unit_clone,
         //_inline_deep_replace,
-        _inplace_unit_replace, // _inline_unit_replace
+        _inplace_unit_replace,
         //_produce_deep_replace,
-        _produce_unit_replace, // _produce_unit_replace
+        _produce_unit_replace,
         _get_solution,
 
         //FMTL primitives:
