@@ -220,7 +220,7 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
             }
         }
         if(!is_root && !has_been_concretized) {
-            skfunc->_inplace_concretize(var_store, bool_node::CTRL);
+            skfunc->_inplace_concretize__assert_subfuncts_are_concretized(var_store, bool_node::CTRL);
         }
     }
 
@@ -387,6 +387,7 @@ bool LightInliningTree::has_no_holes(set<const LightInliningTree*>* visited) con
 
 bool LightInliningTree::match_topology(const LightInliningTree *other) const
 {
+    assert(other != nullptr);
     TopologyMatcher topology_matcher(this, other);
     return true;
 }

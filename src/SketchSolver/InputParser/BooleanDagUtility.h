@@ -191,22 +191,19 @@ public:
             }
         }
 
-        vector<string> local_hole_names;
-        for(auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
-            if(it->get_name() != "#PC") {
-                assert(_var_store->contains(it->get_name()));
-                local_hole_names.push_back(it->get_name());
-            }
-        }
-
-        BooleanDagLightUtility::concretize_this_dag(_var_store, var_type, inlined_functions);
-
         if(is_being_concretized) {
+            vector<string> local_hole_names;
+            for (auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
+                if (it->get_name() != "#PC") {
+                    assert(_var_store != nullptr);
+                    assert(_var_store->contains(it->get_name()));
+                    local_hole_names.push_back(it->get_name());
+                }
+            }
+
+            BooleanDagLightUtility::concretize_this_dag(_var_store, var_type, inlined_functions);
+
             assert(!has_been_concretized);
-//            if(get_dag_id() == 33)
-//            {
-//                cout << "here" << endl;
-//            }
             has_been_concretized = true;
             assert(var_store_used_for_concretization == nullptr);
             if(_var_store != nullptr) {
@@ -220,6 +217,11 @@ public:
                     }
                 }
             }
+        }
+        else {
+            //only inlining; not concretizing;
+            assert(_var_store == nullptr);
+            BooleanDagLightUtility::concretize_this_dag(_var_store, var_type, inlined_functions);
         }
     }
 

@@ -48,7 +48,7 @@ SketchFunction *SketchFunction::produce_concretization(
 
 }
 
-SketchFunction *SketchFunction::_inplace_recursive_concretize(
+void SketchFunction::_inplace_recursive_concretize(
         VarStore* var_store, const bool_node::Type var_type, bool do_recursive_concretize) {
     if (do_recursive_concretize) {
         if (var_type == bool_node::CTRL) {
@@ -89,6 +89,7 @@ SketchFunction *SketchFunction::_inplace_recursive_concretize(
                     AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
                 }
             }
+
             tmp_inlining_tree->concretize(this, var_store);
             tmp_inlining_tree->clear();
         }
@@ -100,32 +101,39 @@ SketchFunction *SketchFunction::_inplace_recursive_concretize(
         }
     }
 
-    _inplace_concretize(var_store, var_type);
+    _inplace_concretize__assert_subfuncts_are_concretized(var_store, var_type);
 
 }
 
-SketchFunction *SketchFunction::_inplace_concretize(
-        const VarStore* var_store, const bool_node::Type var_type) {
+SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concretized(
+        const VarStore* var_store, const bool_node::Type var_type)
+{
+    assert(!get_has_been_concretized());
 
-    {
-        vector<string> *inlined_functions = nullptr;
-
-        bool prev_has_been_concretized = get_has_been_concretized();
-        assert(!prev_has_been_concretized);
-
-        concretize_this_dag(var_store, var_type, inlined_functions);
-
-        assert(inlined_functions != nullptr);
-
-        rep = get_env()->function_map.concretize(
-                get_dag_name(), var_store, var_type, inlined_functions);
-        if(!get_dag()->getNodesByType(bool_node::UFUN).empty() || !get_dag()->getNodesByType(bool_node::CTRL).empty()) {
-            assert(get_dag()->get_failed_assert() != nullptr);
+    for(const auto& assignment: get_unit_ufuns_map()) {
+        auto it = assignment.second;
+        assert(get_env()->function_map.find(it) != get_env()->function_map.end());
+        if(it != get_dag_name()) {
+            AssertDebug(get_env()->function_map[it]->get_has_been_concretized(),
+                        "INVARIANT NOT SATISFIED: NEED ALL SUBFUNCTIONS TO BE CONCRETIZED. "
+                        "USED TO RESTRICT VAR STORE TO ONLY THE THIS SUBFUNCTION FOR PRINTING PURPOSES.");
         }
-        delete inlined_functions;
-
-        return this;
     }
+
+    vector<string> unit_holes = get_unit_holes();
+
+    vector<string> *inlined_functions = nullptr;
+    concretize_this_dag(var_store, var_type, inlined_functions);
+    assert(inlined_functions != nullptr);
+
+    rep = get_env()->function_map.concretize(
+            get_dag_name(), var_store->produce_restrict(unit_holes), var_type, inlined_functions);
+    if(!get_dag()->getNodesByType(bool_node::UFUN).empty() || !get_dag()->getNodesByType(bool_node::CTRL).empty()) {
+        assert(get_dag()->get_failed_assert() != nullptr);
+    }
+    delete inlined_functions;
+
+    return this;
 }
 
 SketchFunction *SketchFunction::unit_clone_and_insert_in_function_map() {
@@ -575,14 +583,14 @@ void SketchFunction::set_dependencies(const FunctionMap* fmap) {
     }
 }
 
-const vector<string> &SketchFunction::get_unit_holes() {
-    vector<string>* ret = new vector<string>();
+vector<string> SketchFunction::get_unit_holes() {
+    vector<string> ret = vector<string>();
     for (auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
         if (it->get_name() != "#PC") {
-            ret->push_back(it->get_name());
+            ret.push_back(it->get_name());
         }
     }
-    return *ret;
+    return ret;
 }
 
 const map<string, string> &SketchFunction::get_unit_ufuns_map() {
@@ -593,15 +601,6 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 
 #include "GenericFile.h"
 #include "File.h"
-
-VarStore* string_to_var_store(const string& _line, SketchFunction *skfunc)
-{
-    GenericFile generic_file = GenericFile();
-    generic_file.push_back(_line);
-    File file = File(skfunc, &generic_file, skfunc->get_env()->get_floats(), skfunc->get_env()->params.seed);
-    assert(file.size() == 1);
-    return file[0];
-}
 
 SL::VarVal *SketchFunctionEvaluator::eval(SketchFunction *skfunc, const string& _line)
 {

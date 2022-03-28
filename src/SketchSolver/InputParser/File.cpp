@@ -6,7 +6,6 @@
 #include "File.h"
 #include "BooleanDAG.h"
 
-
 void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz, OutType* otype) {
     //Inputs can be redeclared to change their sizes, but not controls.
     if( !inputStore.contains(inname)){
@@ -25,8 +24,25 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
     }
 }
 
+void declareCtrl(VarStore & inputStore, const string& inname, int bitsize, int arrSz, OutType* otype, const string& original_name, const string& source_dag_name) {
+    //Inputs can be redeclared to change their sizes, but not controls.
+    if( !inputStore.contains(inname)){
+        if(arrSz >= 0){
+            inputStore.newArr(inname, bitsize, arrSz, otype, bool_node::CTRL);
+        }else{
+            inputStore.newVar(inname, bitsize, otype, bool_node::CTRL, original_name, source_dag_name);
+        }
+        Dout( cout<<" CTRL "<<inname<<" sz = "<<bitsize<<endl );
+    }else{
+        // cout<<" RESIZING "<<inname<<" to "<<bitsize<<endl;
+        inputStore.resizeVar(inname, bitsize);
+        if(arrSz >= 0){
+            inputStore.resizeArr(inname, arrSz);
+        }
+    }
+}
+
 void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime){
-    //
     {
         auto specIn = dag->getNodesByType(bool_node::SRC);
         for(size_t i=0; i<specIn.size(); ++i){
@@ -75,6 +91,20 @@ void redeclareInputsAndAngelics(VarStore & input_store, BooleanDAG* problem)
     }
 }
 
+void redeclareCtrls(VarStore & ctrl_var_store, BooleanDAG* dag)
+{
+    auto specIn = dag->getNodesByType(bool_node::CTRL);
+    for(size_t i=0; i<specIn.size(); ++i) {
+        CTRL_node *srcnode = dynamic_cast<CTRL_node *>(specIn[i]);
+        int nbits = srcnode->get_nbits();
+        if (srcnode->get_name() != "#PC") {
+            declareCtrl(
+                ctrl_var_store, specIn[i]->get_name(), nbits, srcnode->getArrSz(),
+                srcnode->getOtype(), srcnode->get_original_name(), srcnode->get_source_dag_name());
+        }
+    }
+}
+
 
 void File::growInputs(VarStore & inputStore, BooleanDAG* dag){
     dag->growInputIntSizes();
@@ -99,7 +129,7 @@ void File::relabel(BooleanDagLightUtility *harness) {
 
 #include "GenericFile.h"
 
-File::File(BooleanDagLightUtility *harness, const string &file_name, FloatManager &floats, int seed)
+File::File(BooleanDagLightUtility *harness, const string &file_name, FloatManager &floats, int seed, bool_node::Type var_type)
 
 #define IMPLEMENT_WITH_GENERIC_FILE
 
@@ -107,7 +137,7 @@ File::File(BooleanDagLightUtility *harness, const string &file_name, FloatManage
 
 {
     GenericFile generic_file = GenericFile(file_name, seed);
-    init(harness, &generic_file, floats, seed);
+    init(harness, &generic_file, floats, seed, var_type);
 }
 
 #else
@@ -191,28 +221,33 @@ File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
     return ret;
 }
 
-File::File(BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed)
+File::File(BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
 {
-    init(harness, generic_file, floats, seed);
+    init(harness, generic_file, floats, seed, var_type);
 }
 
-void File::init(BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed)
+void File::init(BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
 {
     generator = std::mt19937(seed);
-    BooleanDAG* problem = harness->get_dag()->clone();
+    BooleanDAG* problem = harness->get_dag()->clone(harness->get_dag_name());
     harness->get_env()->doInline(*problem);
-    VarStore input_store;
-    redeclareInputsAndAngelics(input_store, problem);
-    auto inputs = problem->getNodesByType(bool_node::SRC);
+    VarStore var_store;
+    if(var_type == bool_node::SRC) {
+        redeclareInputsAndAngelics(var_store, problem);
+    } else if (var_type == bool_node::CTRL) {
+        redeclareCtrls(var_store, problem);
+    } else { assert(false); }
 
-    File::Result res = parseFile(generic_file, floats, inputs, input_store);
+    auto inputs = problem->getNodesByType(var_type);
+    File::Result res = parseFile(generic_file, floats, inputs, var_store);
+
     const int max_num_bits = 32;
 
     const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
     while (res == File::MOREBITS) {
         int at_int_size = problem->getIntSize();
         AssertDebug(at_int_size <= max_num_bits, "TOO MANY BITS, CHECK THE INPUT TYPES OF YOUR HARNESS. OTHERWISE PROBABLY WRONG CODE/INPUT/OUTPUT.");
-        growInputs(input_store, problem);
+        growInputs(var_store, problem);
         if(true){
             assert(harness->get_dag()->getIntSize() == at_int_size);
             bool harness_in_function_map = false;
@@ -241,7 +276,7 @@ void File::init(BooleanDagLightUtility *harness, GenericFile *generic_file, Floa
             }
         }
 
-        res = parseFile(generic_file, floats, inputs, input_store);
+        res = parseFile(generic_file, floats, inputs, var_store);
     }
     assert(res == File::DONE);
 #ifdef CHECK_FILE_INVARIANT
@@ -253,17 +288,17 @@ void File::init(BooleanDagLightUtility *harness, GenericFile *generic_file, Floa
 }
 
 
-File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, vector<bool_node *> &inputNodes,
-                             const VarStore &inputs)  {
+File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, const vector<bool_node *> &input_nodes,
+                             const VarStore &var_store)  {
     light_clear();
 
     bool allow_new_iter = true;
     for(int i = 0; i<generic_file->size(); i++){
         assert(allow_new_iter);
-        VarStore* new_row = inputs.clone();
+        VarStore* new_row = var_store.clone();
         parseLineOut ok;
         try {
-            ok = parseLine(generic_file->at(i), floats, inputNodes, new_row);
+            ok = parseLine(generic_file->at(i), floats, input_nodes, new_row);
         }
         catch (BasicError& e) {
             assert(false);
@@ -299,6 +334,19 @@ File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, ve
 
 
 File::File() = default;
+
+
+#include "GenericFile.h"
+#include "SketchFunction.h"
+
+VarStore* string_to_var_store(const string& _line, SketchFunction *skfunc, bool_node::Type var_type)
+{
+    GenericFile generic_file = GenericFile();
+    generic_file.push_back(_line);
+    File file = File(skfunc, &generic_file, skfunc->get_env()->get_floats(), skfunc->get_env()->params.seed, var_type);
+    assert(file.size() == 1);
+    return file[0];
+}
 
 
 

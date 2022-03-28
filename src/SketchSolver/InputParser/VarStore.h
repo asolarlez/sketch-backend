@@ -453,7 +453,9 @@ private:
     {
         if(original_name == "declareInput()") {
             original_name += "___"+name;
-        } else if(original_name == "to_var_store()") {
+        } else if(original_name == "declareCtrl()") {
+            original_name += "___"+name;
+        }else if(original_name == "to_var_store()") {
             original_name += "___"+name;
         }
         if(var_name_to_dag_name_to_name.find(original_name) == var_name_to_dag_name_to_name.end()) {
@@ -765,7 +767,9 @@ public:
         append_join(*this, v2);
     }
 
-    map<string, string> &to_map_str_str(FloatManager& floats);
+    map<string, string> to_map_str_str(FloatManager& floats);
+
+    const VarStore *produce_restrict(const vector<string>& subdomain) const;
 };
 
 template<bool_node::Type type>

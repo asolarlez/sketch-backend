@@ -74,6 +74,8 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         else {
             AssertDebug(false, "HOW CAN THE NAME BE CONTAINED BUT THE DAG BE DIFFERENT. EVERY DAG HAS UNIQUE HOLE NAMES.")
         }
+        _ret_prev_source_dag_name = obj.get_source_dag_name();
+        assert(_ret_prev_source_dag_name == new_source_dag);
     }
     else
     {
@@ -169,6 +171,8 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         }
 
     }
+
+    assert(_ret_prev_source_dag_name != "");
 }
 
 const string &VarStore::get_name(const string& var_name, const string &source_dag_name) {
@@ -389,7 +393,7 @@ bool VarStore::contains(const VarStore::objP &obj, vector<string> *path) const
     return true;
 }
 
-map<string, string> &VarStore::to_map_str_str(FloatManager& floats) {
+map<string, string> VarStore::to_map_str_str(FloatManager& floats) {
     VarStore& ctrlStore = *this;
     map<string, string> values;
     for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
@@ -411,4 +415,14 @@ map<string, string> &VarStore::to_map_str_str(FloatManager& floats) {
         values[it->first] = ctrlStore.synthouts[it->first];
     }
     return values;
+}
+
+const VarStore *VarStore::produce_restrict(const vector<string>& subdomain) const {
+    VarStore* ret = new VarStore();
+    int idx = 0;
+    for(const auto& name : subdomain) {
+        AssertDebug(contains(name), "SUBDOMAIN MUST BE CONTAINED IN DOMAIN. " + name + " NOT FOUND IN VAR_STORE");
+        ret->insertObj(name, idx++, getObjConst(name));
+    }
+    return ret;
 }

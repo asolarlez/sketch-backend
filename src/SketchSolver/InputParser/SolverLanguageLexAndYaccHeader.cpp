@@ -465,6 +465,17 @@ SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMT
     AssertDebug(false, "SHOULD NOT BE NECESSARY.")
 }
 
+void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness)
+{
+    assert(sol->get_inlining_tree() == nullptr);
+
+    VarStore* append_sol = harness->get_inlining_tree(true)->get_solution();
+    LightInliningTree* harness_inlining_tree = new LightInliningTree(harness->get_inlining_tree());
+    harness_inlining_tree->set_var_store(sol);
+    sol->disjoint_join_with(*append_sol);
+    sol->set_inlining_tree(harness_inlining_tree);
+}
+
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
 {
@@ -493,7 +504,6 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             SketchFunction* skfunc = param_var_val->get_skfunc();
 
             vector<string> prev_holes = skfunc->get_deep_holes();
-            sort(prev_holes.begin(), prev_holes.end());
 
             BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
             harness->increment_shared_ptr();
@@ -504,6 +514,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             }
 
             vector<string> after_holes = harness->get_deep_holes();
+            sort(prev_holes.begin(), prev_holes.end());
             sort(after_holes.begin(), after_holes.end());
             assert(prev_holes.size() == after_holes.size());
 
@@ -523,13 +534,15 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 
             HoleVarStore* sol = (solver)->solve(problem);
 
-            assert(sol->get_inlining_tree() == nullptr);
+            set_inlining_tree(sol, harness);
 
-            VarStore* append_sol = harness->get_inlining_tree()->get_solution();
-            LightInliningTree* harness_inlining_tree = new LightInliningTree(harness->get_inlining_tree());
-            harness_inlining_tree->set_var_store(sol);
-            sol->disjoint_join_with(*append_sol);
-            sol->set_inlining_tree(harness_inlining_tree);
+//            assert(sol->get_inlining_tree() == nullptr);
+//
+//            VarStore* append_sol = harness->get_inlining_tree()->get_solution();
+//            LightInliningTree* harness_inlining_tree = new LightInliningTree(harness->get_inlining_tree());
+//            harness_inlining_tree->set_var_store(sol);
+//            sol->disjoint_join_with(*append_sol);
+//            sol->set_inlining_tree(harness_inlining_tree);
 
             if(concretize_after_solving) {
                 //make sure produce_concretiz
@@ -613,14 +626,14 @@ SL::VarVal *SL::FunctionCall::eval(
         case _join: {
             assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
-            HoleVarStore *other_solution = params[0]->eval(state)->get_solution();
+            HoleVarStore *other_solution = params[0]->eval(state)->get_hole_var_store();
             the_solution->disjoint_join_with(*other_solution);
             return new VarVal();
         }
 //        case _get: {
 //            assert(params.size() == 1);
 //            string subfunc_name = params[0]->eval(state)->get_string(true, false);
-//            return new VarVal(the_solution->get_assignment()->get_inlining_tree()->get_sub_inlining_tree(subfunc_name)->get_solution());
+//            return new VarVal(the_solution->get_assignment()->get_inlining_tree()->get_sub_inlining_tree(subfunc_name)->get_hole_var_store());
 //        }
         default:
             assert(false);
@@ -1003,6 +1016,7 @@ eval__sketch_function_replace(const SL::VarVal * const ret_var_val, SketchFuncti
     to_replace_with_var_val->decrement_shared_ptr();
 }
 
+
 template<typename StateType>
 SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, const VarVal* const the_var_val) {
 
@@ -1013,11 +1027,41 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             assert(params.size() == 1);
             VarVal* poly_map_var_val = params[0]->eval(state);
             poly_map_var_val->increment_shared_ptr();
-            map<string, int> hole_assignment = poly_map_var_val->get_poly_map()->get_cpp_map<int>();
+            map<string, string> hole_assignment = poly_map_var_val->get_poly_map()->get_cpp_map<string>();
 
-//            HoleVarStore var_store = HoleVarStore();
+            auto unit_holes = skfunc->get_unit_holes();
+            assert(hole_assignment.size() == unit_holes.size());
 
-            assert(false);
+            VarStore* var_store = nullptr;
+
+            if(!unit_holes.empty()) {
+                string line;
+                for (int i = 0; i < unit_holes.size(); i++) {
+                    assert(hole_assignment.find(unit_holes[i]) != hole_assignment.end());
+                    if (i >= 1) {
+                        line += " ";
+                    }
+                    line += hole_assignment[unit_holes[i]];
+                }
+
+                line += "\n";
+
+                var_store = string_to_var_store(line, skfunc, bool_node::CTRL);
+
+                BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
+                harness->increment_shared_ptr();
+
+                set_inlining_tree(var_store, harness);
+
+                harness->clear();
+            }
+            else {
+                //nothing to concretize;
+            }
+
+            skfunc->_inplace_recursive_concretize(var_store, bool_node::CTRL, true);
+
+            return new VarVal();
         }
         case _produce_executable:
         {
@@ -1025,7 +1069,7 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 using namespace SolverLanguagePrimitives;
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
-                HoleVarStore *var_store = var_val_sol->get_solution();
+                HoleVarStore *var_store = var_val_sol->get_hole_var_store();
                 SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
                 var_val_sol->decrement_shared_ptr();
                 return new SL::VarVal(concretized_function);
@@ -1045,7 +1089,7 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 using namespace SolverLanguagePrimitives;
                 VarVal *sol_var_val = params[0]->eval(state);
                 sol_var_val->increment_shared_ptr();
-                HoleVarStore *sol = sol_var_val->get_solution();
+                HoleVarStore *sol = sol_var_val->get_hole_var_store();
                 skfunc->concretize(sol);
                 sol_var_val->decrement_shared_ptr();
                 return new SL::VarVal();
@@ -1160,7 +1204,7 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 return new VarVal((HoleVarStore*)skfunc->get_solution());
             }
             else if(params.size() == 1){
-                AssertDebug(false, "TODO: equivalent to skfunc.get(name).get_solution()");
+                AssertDebug(false, "TODO: equivalent to skfunc.get(name).get_hole_var_store()");
             }
             else
             {
@@ -1696,7 +1740,7 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
             skfunc = _to_copy->get_skfunc(false)->unit_clone();
             break;
         case solution_val_type:
-//            solution = new SolverLanguagePrimitives::HoleAssignment(_to_copy->get_solution(false));
+//            solution = new SolverLanguagePrimitives::HoleAssignment(_to_copy->get_hole_var_store(false));
             break;
         case input_val_type:
             input_holder = new InputVarStore(*_to_copy->get_input_holder(false));

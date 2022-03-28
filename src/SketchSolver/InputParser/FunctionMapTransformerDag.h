@@ -276,7 +276,8 @@ namespace FMTL {
                             const bool_node::Type _concretization_type) :
                 concretization_type(_concretization_type),
                 TransformPrimitive(_function_name, _make_executable) {
-            if (var_store != nullptr) {
+//            assert(var_store != nullptr);
+            if (_store != nullptr) {
                 var_store = _store->clone();
             }
             AssertDebug(concretization_type == bool_node::CTRL,

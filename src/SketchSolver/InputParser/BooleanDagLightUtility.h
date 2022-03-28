@@ -285,6 +285,7 @@ public:
     LightInliningTree* get_target_non_const(const string& target_subdag)
     {
         const vector<string>* path = find_any_path(target_subdag);
+        assert(path != nullptr);
         LightInliningTree* at = this;
         for(int i = path->size()-1;i>=0;i--) {
             assert(at->var_name_to_inlining_subtree.find(path->at(i)) != at->var_name_to_inlining_subtree.end());

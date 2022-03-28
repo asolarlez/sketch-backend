@@ -9,8 +9,6 @@
 #include <random>
 #include "VarStore.h"
 
-class GenericFile;
-
 //MODIFIES InputStore
 void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
 
@@ -21,6 +19,7 @@ void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 
 class BooleanDagLightUtility;
 
+class GenericFile;
 
 //#define CHECK_FILE_INVARIANT
 
@@ -90,11 +89,11 @@ public:
 
     explicit File(std::mt19937 _generator): generator(_generator){}
 
-    File(BooleanDagLightUtility *harness, const string& file_name, FloatManager& floats, int seed);
+    File(BooleanDagLightUtility *harness, const string& file_name, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
-    void init(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed);
+    void init(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
-    File(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed);
+    File(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
     void clear() {
         light_clear();
@@ -103,7 +102,7 @@ public:
 
     enum parseLineOut {end_of_file__empty_row, more_bits, incomplete_row, complete_row};
 
-    parseLineOut parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
+    parseLineOut parseLine(ifstream& in, FloatManager& floats, const vector<bool_node*>& inputNodes, VarStore* inputs) {
 
         auto vsi = inputs->begin();
         VarStore::objP* arrit = nullptr;
@@ -291,7 +290,7 @@ public:
         }
     }
 
-    parseLineOut parseLine(string _line, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
+    parseLineOut parseLine(string _line, FloatManager& floats, const vector<bool_node*>& inputNodes, VarStore* inputs) {
 //
 //        AssertDebug(false, "IF YOU GET TO HERE IT SHOULD MEAN THAT YOU HAVE INTEGRATED THIS FUNCTION IN THE EXPECTED WAY.");
 
@@ -494,7 +493,7 @@ public:
         }
     }
 
-    Result parseFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes, const VarStore& inputs) {
+    Result parseFile(const string& fname, FloatManager& floats, const vector<bool_node*>& inputNodes, const VarStore& inputs) {
         light_clear();
         ifstream file;
         file.open(fname);
@@ -549,7 +548,7 @@ public:
     }
 
 
-    Result parseFile(GenericFile* generic_file, FloatManager& floats, vector<bool_node*>& inputNodes, const VarStore& inputs);
+    Result parseFile(GenericFile* generic_file, FloatManager& floats, const vector<bool_node*>& input_nodes, const VarStore& var_store);
 
     explicit File(File* to_copy)
     {
@@ -608,5 +607,7 @@ public:
     File();
 };
 
+class SketchFunction;
+VarStore* string_to_var_store(const string& _line, SketchFunction *skfunc, bool_node::Type = bool_node::SRC);
 
 #endif //SKETCH_SOURCE_FILE_H

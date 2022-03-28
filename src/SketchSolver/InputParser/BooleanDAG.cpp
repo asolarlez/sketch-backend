@@ -27,6 +27,10 @@ long long BooleanDAG::global_boolean_dag_id = 0;
 string BooleanDAG::create_suffix(bool modify_name, long long int dag_id)
 {
     if(modify_name) {
+//        if(dag_id == 698)
+//        {
+//            cout << "HERE" << endl;
+//        }
         return "__id"+std::to_string(dag_id);
     }
     else {

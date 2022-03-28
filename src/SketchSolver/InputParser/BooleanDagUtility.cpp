@@ -40,15 +40,18 @@ vector<string> BooleanDagUtility::get_deep_holes() const{
         }
     }
     else {
-        assert(get_env()->function_map.find(get_dag_name())->second == this);
-        subf_names->insert(get_dag_name());
-        for (const auto &f_name: *subf_names) {
-            assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
-            SketchFunction *subf = get_env()->function_map.find(f_name)->second;
+        if(!subf_names->empty()) {
+            assert(get_env()->function_map.find(get_dag_name()) != get_env()->function_map.end());
+            assert(get_env()->function_map.find(get_dag_name())->second == this);
+            subf_names->insert(get_dag_name());
+            for (const auto &f_name: *subf_names) {
+                assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
+                SketchFunction *subf = get_env()->function_map.find(f_name)->second;
 
-            for (auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
-                if (it->get_name() != "#PC") {
-                    ret.push_back(it->get_name());
+                for (auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
+                    if (it->get_name() != "#PC") {
+                        ret.push_back(it->get_name());
+                    }
                 }
             }
         }

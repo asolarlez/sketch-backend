@@ -478,7 +478,7 @@ namespace SL
             return file;
         }
 
-        HoleVarStore *get_solution(bool do_count = true, bool do_assert = true) {
+        HoleVarStore *get_hole_var_store(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
             if(do_count) {
                 assert(do_assert);
@@ -558,7 +558,7 @@ namespace SL
             switch (var_val_type) {
 
                 case string_val_type:
-                    return get_string(do_count, do_assert);
+                    return "\"" + get_string(do_count, do_assert) + "\"";
                     break;
                 case int_val_type:
                     return std::to_string(get_int(do_count, do_assert));

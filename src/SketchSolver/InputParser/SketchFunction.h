@@ -132,8 +132,8 @@ public:
     }
 
     SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type, bool do_clone, const bool do_deep_clone = true, const bool do_recursive_concretize = true);
-    SketchFunction *_inplace_recursive_concretize(VarStore *var_store, const bool_node::Type var_type, const bool do_recursive_concretize);
-    SketchFunction *_inplace_concretize(const VarStore *var_store, const bool_node::Type var_type);
+    void _inplace_recursive_concretize(VarStore *var_store, const bool_node::Type var_type, bool do_recursive_concretize);
+    SketchFunction *_inplace_concretize__assert_subfuncts_are_concretized(const VarStore *var_store, const bool_node::Type var_type);
 
     SketchFunction* unit_clone_and_insert_in_function_map();
     SketchFunction *unit_clone(const string& explicit_name = "", const map<string, string>* hole_rename_map = nullptr);
@@ -174,7 +174,7 @@ public:
 
     void set_dependencies(const FunctionMap* fmap);
 
-    const vector<string> &get_unit_holes();
+    vector<string> get_unit_holes();
 
     const map<string, string> &get_unit_ufuns_map();
 };

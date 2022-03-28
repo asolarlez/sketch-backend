@@ -687,7 +687,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
         if(!is_erased && !superseded)
         {
             auto ret = (*root->get_function_map())[to_this_dag];
-//            ret->get_solution();  //debug code, it's memory-leaky
+//            ret->get_hole_var_store();  //debug code, it's memory-leaky
             return ret;
         }
         else
@@ -724,7 +724,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
 
         ProgramEnvironment* new_env = root->get_function_map()->get_env()->shallow_copy_w_new_blank_function_map();
         auto almost_ret =  the_dag->reconstruct_sketch_function(root, new_env);
-//        almost_ret->get_solution(); // debug code, memory leaky
+//        almost_ret->get_hole_var_store(); // debug code, memory leaky
         new_env->function_map.check_consistency();
 
 //        AssertDebug(false, "DEPENDENCIES SHOULD ALREADY BE IN THE FUNCTION MAP!!! ADD A FIELD TO SKETCH FUNCTION THAT REPRESENTS WHICH TRANSFORMER PRIMITIVE REPRESENTS IT!!!")
@@ -828,7 +828,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             ret->set_mirror_rep(this);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 
-//            ret->get_solution(); // debug code, memory leaky
+//            ret->get_hole_var_store(); // debug code, memory leaky
 
             return ret;
             break;
@@ -1023,19 +1023,27 @@ void ConcretizePrimitive::pretty_print(string& ret, const FunctionMapTransformer
     assert(has_main_parent);
     main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
 
-    const string init_var_store_string = "{";
-    string var_store_str = init_var_store_string;
+    auto floats = fmt.get_function_map()->get_env()->get_floats();
 
-    for(auto it : *var_store)
-    {
-        if(var_store_str != init_var_store_string)
-        {
-            var_store_str += ", ";
+    string var_store_str;
+    if(var_store != nullptr) {
+        map<string, string> ctrls_str_str = var_store->to_map_str_str(floats);
+
+        const string init_var_store_string = "{";
+        var_store_str = init_var_store_string;
+        for (const auto& it: ctrls_str_str) {
+            if (var_store_str != init_var_store_string) {
+                var_store_str += ", ";
+            }
+            var_store_str += "\"" + it.first + "\"" + " : \"" + it.second + "\"";
         }
-        var_store_str += it.name + " : " + it.
+        var_store_str += "}";
     }
-
-    ret += function_name + ".inplace_unit_concretize();" + "\n";
+    else
+    {
+        var_store_str = "{}";
+    }
+    ret += function_name + ".inplace_unit_concretize(" + var_store_str + ");" + "\n";
 }
 
 void

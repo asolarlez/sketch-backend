@@ -72,7 +72,7 @@ public:
 
             if(var_val_ret->is_solution_holder()) {
                 AssertDebug(false, "TODO: add printing of FMTL program.")
-                const HoleVarStore * solution_holder = var_val_ret->get_solution(false);
+                const HoleVarStore * solution_holder = var_val_ret->get_hole_var_store(false);
 
                 delete var_val_ret;
                 state->clear();
