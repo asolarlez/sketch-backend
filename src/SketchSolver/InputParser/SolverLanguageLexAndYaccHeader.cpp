@@ -1063,6 +1063,8 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 state->function_map.insert(skfunc->get_dag_name(), skfunc);
             }
 
+            ///!!! var_stored.inlining tree doesn't have the same topology as skfunc.
+//            assert(skfunc->get_inlining_tree(true)->match_topology(var_store->get_inlining_tree()));
             skfunc->_inplace_recursive_concretize(var_store, bool_node::CTRL, true);
 
             if(var_store != nullptr) {
@@ -1202,6 +1204,10 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         case _inplace_unit_replace:
         {
             assert(params.size() == 2);
+//            if(skfunc->get_dag_id() == 832)
+//            {
+//                cout << "HERE" << endl;
+//            }
             eval__sketch_function_replace(the_var_val, skfunc, state, params);
             return new VarVal();
             break;
