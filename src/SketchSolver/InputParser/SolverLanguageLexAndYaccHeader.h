@@ -715,9 +715,7 @@ namespace SL
         Head* head = nullptr;
         LinkedList* rest = nullptr;
     public:
-        LinkedList(){
-            cout << "HERE creating empty linked list" << endl;
-        };
+        LinkedList()= default;
         explicit LinkedList(Head* _head): head(_head) {}
         LinkedList(Head* _head, LinkedList* _rest): head(_head), rest(_rest) {}
 
@@ -1340,7 +1338,6 @@ public:
     void add_to_function_map(const string &skfunc_name, SketchFunction *skfunc);
 
 };
-
 
 class FloatManager;
 class CommandLineArgs;

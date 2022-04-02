@@ -17,12 +17,17 @@ namespace FMTL{
     public:
         explicit FunctionMapTransformerState(FunctionMap& _function_map): ProgramState(_function_map) {};
 
+        void clear(bool conscious_call = true) override
+        {
+            root->clear();
+            ProgramState::clear(true);
+        }
+
         void add_root(SL::CodeBlock* code_block) {
             root = code_block;
         }
 
-        void eval() {
-//            AssertDebug(false, "TODO: implement state-polymorphic implementation of the AST.")
+        SL::VarVal* eval() {
 
             assert(!function_map.empty());
             for(const auto& it: function_map){
@@ -37,13 +42,16 @@ namespace FMTL{
 
             root->run(this);
 
+            SL::VarVal* var_val_ret = get_return_var_val();
+            assert(var_val_ret != nullptr);
+
             assert(frames.size() == 1);
             pop_stack_frame();
             assert(frames.empty());
 
             global.clear(true);
 
-            AssertDebug(false, "DONE! :D");
+            return var_val_ret;
         }
     };
 

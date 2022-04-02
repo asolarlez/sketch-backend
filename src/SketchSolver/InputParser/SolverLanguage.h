@@ -104,18 +104,21 @@ public:
 
                 assert(var_val_ret->is_sketch_function());
 
-                SketchFunction* concretized_function = var_val_ret->get_skfunc(false);
+                SketchFunction *_concretized_function = var_val_ret->get_skfunc(false);
 
-                File* file = new File(concretized_function, file_name, state->floats, state->args.seed);
+                {
 
-                int num_passing_inputs =
-                        concretized_function->count_passing_inputs(file);
+                    File *file = new File(_concretized_function, file_name, state->floats, state->args.seed);
 
-                cout << "HERE " << concretized_function->get_dag()->get_name() << endl;
-                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
-                     << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+                    int num_passing_inputs =
+                            _concretized_function->count_passing_inputs(file);
 
-                file->clear();
+                    cout << "HERE " << _concretized_function->get_dag()->get_name() << endl;
+                    cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                         << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+
+                    file->clear();
+                }
 
                 //print function_map_transformer_program, parse it, and check that it's the same.
 
@@ -125,7 +128,7 @@ public:
 
                 if(save_and_test_fmtl_program)
                 {
-                    string fmtl_program_str = concretized_function->get_rep()->pretty_print(function_map);
+                    string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map);
                     cout << "pretty_print FMTL program:" << endl;
                     cout << fmtl_program_str << endl;
                     cout << endl;
@@ -153,16 +156,34 @@ public:
 
                     function_map.clear_erased_root_dag_reps();
 
-                    fmtl_state->eval();
 
-                    assert(false);
+                    SL::VarVal* from_fmtl_var_val = fmtl_state->eval();
+
+                    SketchFunction* concretized_function_from_fmtl = from_fmtl_var_val->get_skfunc(false);
+
+                    File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name, state->floats, state->args.seed);
+
+                    int num_passing_inputs =
+                            concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl);
+
+                    cout << "FROM FMTL" << endl;
+                    cout << "HERE " << concretized_function_from_fmtl->get_dag()->get_name() << endl;
+                    cout << "count\t" << num_passing_inputs << " / " << file_from_fmtl->size() << " ("
+                         << 100.0 * (float) num_passing_inputs / file_from_fmtl->size() << " %)" << endl;
+
+                    file_from_fmtl->clear();
+
+                    from_fmtl_var_val->clear_assert_0_shared_ptrs();
+                    fmtl_state->clear();
+
                 }
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
+                assert(dags_diff == 0);
+
                 int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
                 assert(all_remaining_inlining_trees == 0);
 
-                assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
 
                 int transformer_size_diff = function_map.transformer_size() - init_function_map_transformer_size;

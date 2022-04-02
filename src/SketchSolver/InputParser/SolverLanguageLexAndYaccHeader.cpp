@@ -545,7 +545,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 //            sol->set_inlining_tree(harness_inlining_tree);
 
             if(concretize_after_solving) {
-                //make sure produce_concretiz
+                //make sure produce_concretize-s
                 SketchFunction *to_test = skfunc->produce_concretization(sol, bool_node::CTRL, true, true, true);
                 to_test->increment_shared_ptr();
                 to_test->clear();
@@ -1059,7 +1059,15 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 //nothing to concretize;
             }
 
+            if(state->function_map.find(skfunc->get_dag_name()) == state->function_map.end()) {
+                state->function_map.insert(skfunc->get_dag_name(), skfunc);
+            }
+
             skfunc->_inplace_recursive_concretize(var_store, bool_node::CTRL, true);
+
+            if(var_store != nullptr) {
+                var_store->clear();
+            }
 
             return new VarVal();
         }

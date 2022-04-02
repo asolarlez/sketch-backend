@@ -72,6 +72,7 @@ expression:
 	var_val_rule {$$ = new SL::Expression($1);}
 
 unit_line: assignment {$$ = new SL::UnitLine($1);} |
+	return_token expression {$$ = new SL::UnitLine(new SL::Return($2));} |
 	expression {$$ = new SL::UnitLine($1);}
 
 function_call : expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);}

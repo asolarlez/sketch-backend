@@ -257,6 +257,7 @@ namespace FMTL {
         {
             string ret;
             pretty_print(ret, fmt);
+            ret += "return " + function_name + ";";
             return ret;
         }
 

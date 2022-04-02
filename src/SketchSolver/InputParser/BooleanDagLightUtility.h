@@ -42,10 +42,6 @@ protected:
     {
         assert(name_to_count.find(dag_name) != name_to_count.end());
         name_to_count[dag_name]--;
-//        if(dag_name == "printf__id14__id54")
-//        {
-//            cout << "here" << endl;
-//        }
         if(name_to_count[dag_name] == 0)
         {
             name_to_count.erase(dag_name);
@@ -54,10 +50,6 @@ protected:
         if(name_to_count.find(dag_name) == name_to_count.end()) {
             name_to_count[dag_name] = 0;
         }
-//        if(dag_name == "printf__id14__id54")
-//        {
-//            cout << "here" << endl;
-//        }
         name_to_count[dag_name]+=1;
         max_count = max(max_count, name_to_count[dag_name]);
     }
