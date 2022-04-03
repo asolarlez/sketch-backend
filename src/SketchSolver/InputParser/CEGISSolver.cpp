@@ -29,7 +29,7 @@ void CEGISSolver::addProblem(BooleanDagLightUtility *harness, File *file){
             //IF THIS FAILS THE DAG WASN'T INLINED.
             if(!inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty()) {
                 for(auto it: inlined_harness->get_dag()->getNodesByType(bool_node::UFUN)) {
-                    string ufname = ((UFUN_node*)it)->get_ufname();
+                    string ufname = ((UFUN_node *) it)->get_ufun_name();
                     assert(inlined_harness->get_env()->function_map.find(ufname) == inlined_harness->get_env()->function_map.end());
                 }
             }

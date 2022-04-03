@@ -1404,7 +1404,7 @@ NodesToSolver::visit(EQ_node &node)
 
 
 bool NodesToSolver::checkKnownFun(UFUN_node& node) {
-	const string& name = node.get_ufname();	
+	const string& name = node.get_ufun_name();
 	if (floats.hasFun(name) || name == "_cast_int_float_math") {
 		Tvalue mval = tval_lookup(node.arguments(0), TVAL_SPARSE);
 		mval.makeSparse(dir);
@@ -1450,7 +1450,7 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
   string tuple_name = node.getTupleName();
   Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
   
-  const string& name = node.get_ufname();
+  const string& name = node.get_ufun_name();
   if (floats.hasFun(name) || name == "_cast_int_float_math") {
     return;
   }
@@ -1470,7 +1470,7 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
   for (int i = 0; i<nouts; ++i) {
     OutType* ttype = tuple_type->entries[i];
     stringstream sstr;
-    sstr << node.get_ufname() << "_" << node.get_uniquefid() << "_" << i;
+    sstr << node.get_ufun_name() << "_" << node.get_uniquefid() << "_" << i;
     bool isArr = ttype->isArr;
     bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
     int cbits = isBool ? 1 : nbits;
@@ -1547,13 +1547,13 @@ void NodesToSolver::visit( UFUN_node& node ){
 	if(isVerification){
 		//This means you are in the checking phase.
 
-		map<string, int>::iterator idit = ufunids.find(node.get_ufname());
+		map<string, int>::iterator idit = ufunids.find(node.get_ufun_name());
 
 		int funid = -1;
 		if (idit == ufunids.end()) {
 			Assert(ufunids.size() == ufinfos.size(), ";ly7u8AA?");
 			int sz = ufunids.size();
-			ufunids[node.get_ufname()] = sz;
+			ufunids[node.get_ufun_name()] = sz;
 			funid = sz;
 			ufinfos.push_back(vector<Ufinfo>());
 		}
@@ -1589,7 +1589,7 @@ void NodesToSolver::visit( UFUN_node& node ){
 		ms->addUfun(funid, ufs);
 				
 	}else{		
-		newSynthesis(node.get_ufname(), node.getTupleName(), params, nvars, dir);
+		newSynthesis(node.get_ufun_name(), node.getTupleName(), params, nvars, dir);
 	}
 
 

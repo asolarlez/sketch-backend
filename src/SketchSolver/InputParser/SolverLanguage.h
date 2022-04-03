@@ -51,56 +51,13 @@ public:
             int init_num_global_dags = BooleanDAG::get_allocated().size();
             int init_num_global_nodes = bool_node::get_allocated().size();
 
-            BooleanDagLightUtility* local_harness = ((BooleanDagUtility*)state->function_map["sketch_main__Wrapper"])->clone();
-            local_harness->increment_shared_ptr();
-
-            const bool test_generic_file = false;
-            if(test_generic_file) {
-                File *ground_truth_file = new File(local_harness, file_name, state->floats, state->args.seed);
-                File *predicted_file = new File(local_harness, new GenericFile(file_name, state->args.seed), state->floats, state->args.seed);
-                assert(*ground_truth_file == *predicted_file);
-                assert(false);
-            }
-
-            FunctionMap& function_map = local_harness->get_env()->function_map;
-
             int init_function_map_transformer_size = function_map.transformer_size();
 
             parse_solver_langauge_program(state, solver_program_file_name);
 
             SL::VarVal *var_val_ret = state->eval();
 
-            if(var_val_ret->is_solution_holder()) {
-                AssertDebug(false, "TODO: add printing of FMTL program.")
-                const HoleVarStore * solution_holder = var_val_ret->get_hole_var_store(false);
-
-                delete var_val_ret;
-                state->clear();
-
-                local_harness->concretize_this_dag(solution_holder, bool_node::CTRL);
-
-                File *file = new File(local_harness, file_name, state->floats, state->args.seed);
-
-                int num_passing_inputs =
-                        local_harness->count_passing_inputs(file);
-
-                cout << "HERE " << local_harness->get_dag()->get_name() << endl;
-                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
-                     << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
-
-                file->clear();
-
-                local_harness->clear();
-
-                assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
-                assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
-
-
-                assert(init_function_map_transformer_size == function_map.transformer_size());
-            }
-            else
             {
-                local_harness->clear();
 
                 assert(var_val_ret->is_sketch_function());
 

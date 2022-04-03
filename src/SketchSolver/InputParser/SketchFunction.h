@@ -90,6 +90,7 @@ public:
         string name = to_add->get_dag()->get_name();
         assert(dependencies.find(name) == dependencies.end());
 
+        to_add->increment_shared_ptr();
         dependencies.insert(name, to_add);
     }
 
@@ -138,6 +139,8 @@ public:
     SketchFunction* unit_clone_and_insert_in_function_map();
     SketchFunction *unit_clone(const string& explicit_name = "", const map<string, string>* hole_rename_map = nullptr);
     SketchFunction *deep_clone(bool only_tail = false);
+    SketchFunction* deep_exact_clone_and_fresh_function_map(ProgramEnvironment* new_environment = nullptr, map<SketchFunction*, SketchFunction*>* dp = new map<SketchFunction*, SketchFunction*>());
+    SketchFunction * unit_exact_clone_in_fresh_env(Dependencies& new_dependencies, ProgramEnvironment* fresh_env, bool self_dependency = false);
     void deep_clone_tail();
 
     void clear() override;
@@ -177,6 +180,8 @@ public:
     vector<string> get_unit_holes();
 
     const map<string, string> &get_unit_ufuns_map();
+
+//    bool has_unit_self_loop() const;
 };
 
 #include "NodeEvaluator.h"

@@ -723,7 +723,7 @@ public:
     friend void append_join(VarStore& v1 , const VarStore& v2);
 //    friend VarStore* concatenate_join(VarStore& v1 , const VarStore& v2);
 
-    void relabel(vector<bool_node*>& inputs){
+    void relabel(const vector<bool_node*>& inputs){
 
         Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
         Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");

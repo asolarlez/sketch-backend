@@ -169,15 +169,15 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
 //        }
 //    }
 
-    if(functionMap.find(node.get_ufname()) != functionMap.end()) {
-        inlined_functions.insert(node.get_ufname());
+    if(functionMap.find(node.get_ufun_name()) != functionMap.end()) {
+        inlined_functions.insert(node.get_ufun_name());
         //ufun is an actual function
         //it is handled by functionInliner.
         DagFunctionInliner::visit(node);
     }
     else
     {
-        cout << "ASSEERT FALSE IN void DagOneStepInlineAndConcretize::visit(UFUN_node& node): node.get_ufname() = " << node.get_ufname() << endl;
+        cout << "ASSEERT FALSE IN void DagOneStepInlineAndConcretize::visit(UFUN_node& node): node.get_ufun_name() = " << node.get_ufun_name() << endl;
         assert(false);
         //!!! UFUNS STILL FAILING.
         //ufun is a ufun, which is handled by NodeHardcoder.
@@ -350,7 +350,7 @@ bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, i
 
 void DagFunctionInliner::visit( UFUN_node& node ){
 	Dllist tmpList;
-	const string& name = node.get_ufname();
+	const string& name = node.get_ufun_name();
 	map<int, int> oldToNew;
 
 
@@ -485,7 +485,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                 }
                 cout << endl;
                 cout << "node.args()" << endl;
-                cout << node.get_ufname() << endl;
+                cout << node.get_ufun_name() << endl;
                 for(int i = 0;i<node.nargs();i++)
                 {
                     cout << node.arguments(i)->lprint() << endl;
@@ -494,7 +494,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
             }
 			AssertDebug(
                     inputs.size() == node.nargs() ,
-                    node.get_ufname() + " argument missmatch: " +
+                    node.get_ufun_name() + " argument missmatch: " +
                     std::to_string(inputs.size()) + " formal parameters, but only got " + std::to_string(node.nargs()) + " actuals.\n" + node.lprint());
 
       vector<bool_node*> inp_arg;
@@ -678,7 +678,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		lnfuns++;
 		
-		// cout<<node.get_ufname()<<endl;
+		// cout<<node.get_ufun_name()<<endl;
 
 		/*
 			The idea is that we have a wavefront moving through the graph as we add more nodes.
@@ -761,8 +761,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						bool_node * oldMother = ufun->mother();
 						
 						const bool_node* nnode;
-						if (!ufun->ignoreAsserts &&  isConst(oldMother) && this->getBval(oldMother) && !oldFun.isModel && pureFunctions.count(node.get_ufname()) > 0) {
-							//cout << "Pre inlining " << ufun->get_ufname() << endl;
+						if (!ufun->ignoreAsserts &&  isConst(oldMother) && this->getBval(oldMother) && !oldFun.isModel && pureFunctions.count(
+                                node.get_ufun_name()) > 0) {
+							//cout << "Pre inlining " << ufun->get_ufun_name() << endl;
 							if (ictrl != NULL) { ictrl->registerCall(node, ufun); }							
 							visit(*ufun);
 							nnode = rvalue;
@@ -797,7 +798,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						if(oldFun.isModel && nnode->type == bool_node::UFUN ){
 							const UFUN_node* ufn = dynamic_cast<const UFUN_node*>(nnode);
 							//Add an SRC node to stand in place of this ufun.
-							string nm = ufn->get_ufname();
+							string nm = ufn->get_ufun_name();
 							nm += "_";
 							nm += ufn->outname;
 							SRC_node* sn = SRC_node::create(nm);
@@ -1047,7 +1048,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 				on all functions first, before we start inlining.
 				*/
 				ictrl->preCheckInline(uf);
-                auto it = functionMap.find(uf.get_ufname());
+                auto it = functionMap.find(uf.get_ufun_name());
                 if (it != functionMap.end()) {
                     if (it->second->isModel && uf.ignoreAsserts) {
                         if (lastDln != NULL) {
@@ -1126,7 +1127,7 @@ bool DagFunctionInliner::process_and_return(BooleanDAG& dag){
 				on all functions first, before we start inlining.
 				*/
                 ictrl->preCheckInline(uf);
-                auto it = functionMap.find(uf.get_ufname());
+                auto it = functionMap.find(uf.get_ufun_name());
                 if(it != functionMap.end()){
                     if(it->second->isModel && uf.ignoreAsserts){
                         if(lastDln != NULL){

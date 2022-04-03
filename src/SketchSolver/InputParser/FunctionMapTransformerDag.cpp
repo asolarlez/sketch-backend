@@ -667,6 +667,7 @@ void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnviron
     if(!almost_ret->get_replace_map().empty()) {
         assert(almost_ret->get_dependencies().empty());
         for(const auto& it: almost_ret->get_replace_map()) {
+            AssertDebug(false, "THIS IS PROBABLY OK, BUT I ADDED 'to_add->increment_shared_ptr();' INSIDE add_dependency. TODO: TEST THAT THIS IS FINE.")
             almost_ret->add_dependency(new_env->function_map[it.second]);
         }
         for(const auto& it: almost_ret->get_dependencies()) {

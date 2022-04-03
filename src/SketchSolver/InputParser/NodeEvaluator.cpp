@@ -257,7 +257,7 @@ void NodeEvaluator::builtinRetVal(UFUN_node& node, int idxval) {
 
 
 bool NodeEvaluator::checkKnownFun(UFUN_node& node) {
-	const string& name = node.get_ufname();
+	const string& name = node.get_ufun_name();
 	if (name == "_cast_int_float_math") {
 		int val = i(*node.arguments(0));
 		builtinRetVal(node, floats.getIdx((float)val));
@@ -279,7 +279,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 	}
 
 
-	vector<pair<int, vector<int> > >& args = funargs[node.get_ufname()];
+	vector<pair<int, vector<int> > >& args = funargs[node.get_ufun_name()];
 	vector<int> cargs;
 	for(int ii=0; ii<node.nargs(); ++ii){
 		bool_node* pred = node.arguments(ii);
@@ -311,7 +311,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 
 	for (int j = 0; j < size ; j++) {
 		stringstream sstr;
-		sstr<<node.get_ufname()<<"_"<<node.get_uniquefid()<<"_"<<j;
+		sstr << node.get_ufun_name() << "_" << node.get_uniquefid() << "_" << j;
 		OutType* type = tuple_type->entries[j];
 		Assert(!type->isTuple, "NYS");
 		if(type->isArr){

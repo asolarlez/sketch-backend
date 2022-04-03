@@ -120,6 +120,22 @@ SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concre
         }
     }
 
+    for(const auto& it:dependencies) {
+        bool found = false;
+        for(auto ufun_node : get_dag()->getNodesByType(bool_node::UFUN)) {
+            if(it.first == ((UFUN_node *) ufun_node)->get_ufun_name()) {
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            if(it.first == get_dag_name()) {
+                AssertDebug(found, "THE SELF IS IT'S OWN DEPENDENCY, WHICH IS FINE. THE REASON FOR THIS ASSERT IS BECAUSE AS OF THIS MOMENT, THE SELF IS ONLY A DEPENDENCY IF IT HAS A UFUN POINTING TO ITSELF.")
+            }
+        }
+        AssertDebug(found, "THERE ARE DEPENDENCIES THAT ARE UNNECESSARY.");
+    }
+
     vector<string> unit_holes = get_unit_holes();
 
     vector<string> *inlined_functions = nullptr;
@@ -132,6 +148,49 @@ SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concre
         assert(get_dag()->get_failed_assert() != nullptr);
     }
     delete inlined_functions;
+
+    bool remove_unnecessary_dependencies = false;
+    if(remove_unnecessary_dependencies)
+    {
+        // remove unnecessary dependencies. (these are the inlined function that were previously dependencies, but now theyare not.
+        //BUT! these dependencies are necessary if you want to access the subdags after make_executable.
+        vector<string> to_erase_from_dependencies;
+        for (const auto &it: dependencies) {
+            assert(!it.first.empty());
+            bool found = false;
+//            if (it.first == get_dag_name()) {
+//                found = true;
+//            } else
+            {
+                for (auto ufun_node: get_dag()->getNodesByType(bool_node::UFUN)) {
+                    if (it.first == ((UFUN_node *) ufun_node)->get_ufun_name()) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (!found) {
+                to_erase_from_dependencies.push_back(it.first);
+            }
+        }
+        for(const auto& it: to_erase_from_dependencies) {
+            if(it == get_dag_name()) {
+                increment_shared_ptr();
+            }
+            dependencies.erase(it);
+        }
+        for(const auto& it:dependencies) {
+            bool found = false;
+            for(auto ufun_node : get_dag()->getNodesByType(bool_node::UFUN)) {
+                if(it.first == ((UFUN_node *) ufun_node)->get_ufun_name()) {
+                    found = true;
+                    break;
+                }
+            }
+            AssertDebug(found, "THERE ARE DEPENDENCIES THAT ARE UNNECESSARY.");
+        }
+    }
+
 
     return this;
 }
@@ -223,7 +282,7 @@ void SketchFunction::clear(){
         auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
         for(auto it_ufun : ufuns)
         {
-            string ufname = ((UFUN_node*)it_ufun)->get_ufname();
+            string ufname = ((UFUN_node *) it_ufun)->get_ufun_name();
             assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
         }
     }
@@ -239,7 +298,7 @@ void SketchFunction::clear(){
         auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
         for(auto it_ufun : ufuns)
         {
-            string ufname = ((UFUN_node*)it_ufun)->get_ufname();
+            string ufname = ((UFUN_node *) it_ufun)->get_ufun_name();
             assert(prev_env->function_map.find(ufname) != prev_env->function_map.end());
         }
     }
@@ -367,17 +426,178 @@ void SketchFunction::set_mirror_rep(const FMTL::TransformPrimitive *_mirror_rep)
     mirror_rep = _mirror_rep;
 }
 
-SketchFunction* SketchFunction::deep_clone(bool only_tail)
+SketchFunction * SketchFunction::unit_exact_clone_in_fresh_env(Dependencies& new_dependencies, ProgramEnvironment* fresh_env, bool self_dependency)
 {
-//    assert(!only_tail);
-    if(false) {
-        auto ret = unit_clone();
+    BooleanDAG *cloned_dag = get_dag()->clone(get_dag_name(), false);
 
-        assert(*get_inlined_functions() == *ret->get_inlined_functions());
+    SketchFunction *clone = new SketchFunction(
+            cloned_dag, fresh_env,
+            replaced_labels, original_labels, nullptr, new_dependencies, get_inlining_tree(false),
+            get_has_been_concretized());
 
-        ret->deep_clone_tail();
+//    YOU DON'T ACTUALLY WANT TO HAVE self-dependencies FOR GARBAGE COLLECTION REASONS.
+//    if(self_dependency) {
+//        assert(clone->has_unit_self_loop());
+//        clone->add_dependency(clone);
+//    }
+//    else {
+//        assert(!clone->has_unit_self_loop());
+//    }
+
+    clone->set_rep(fresh_env->function_map.insert(get_dag_name(), clone));
+
+    return clone;
+}
+
+SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(ProgramEnvironment *new_environment, map<SketchFunction*, SketchFunction*>* dp)
+{
+    assert(dp->find(this) == dp->end());
+    (*dp)[this] = nullptr;
+
+    bool is_root = new_environment == nullptr;
+    if(is_root) {
+        new_environment = get_env()->shallow_copy_w_new_blank_function_map();
+    }
+
+    FunctionMap &fresh_function_map = new_environment->function_map;
+
+    Dependencies new_dependencies = Dependencies();
+
+    SketchFunction *ret = nullptr;
+
+    set<string> unit_visited_ufun_names;
+
+    for(auto node: get_dag()->getNodesByType(bool_node::UFUN))
+    {
+        UFUN_node* ufun_node = (UFUN_node*)node;
+        string ufun_name = ufun_node->get_ufun_name();
+
+        AssertDebug(unit_visited_ufun_names.find(ufun_name) == unit_visited_ufun_names.end(),
+                    "TODO: REFACTOR THIS SLIGHTLY TO ONLY PROCESS UFUN_NAMEs ONCE. [arises in case: f(){g(); g()}]<enough to only process g once>");
+        unit_visited_ufun_names.insert(ufun_name);
+
+        if (ufun_name == get_dag_name()) {
+            assert(ret == nullptr);
+            assert(this == get_env()->function_map[ufun_name]);
+            assert(dp->find(this) != dp->end());
+            assert((*dp)[this] == nullptr);
+            continue;
+        }
+
+        assert(get_env()->function_map.find(ufun_name) != get_env()->function_map.end());
+
+        SketchFunction* sub_skfunc = get_env()->function_map[ufun_name];
+        assert(sub_skfunc != this);
+
+        assert(ufun_name == sub_skfunc->get_dag_name());
+
+//        assert(fresh_function_map.find(ufun_name) == fresh_function_map.end());
+
+        SketchFunction *fresh_deep_exact_copy = nullptr;
+
+        if(dp->find(sub_skfunc) == dp->end()) {
+             fresh_deep_exact_copy = sub_skfunc->deep_exact_clone_and_fresh_function_map(
+                    new_environment);
+        }
+        else
+        {
+            assert((*dp)[sub_skfunc] != nullptr);
+            fresh_deep_exact_copy = (*dp)[sub_skfunc];
+        }
+
+        assert(fresh_deep_exact_copy->get_dag_name() == ufun_name);
+        assert(fresh_function_map.find(ufun_name) != fresh_function_map.end());
+        assert(fresh_function_map[ufun_name]->get_dag_name() == ufun_name);
+
+        new_dependencies.insert(ufun_name, fresh_deep_exact_copy);
+    }
+
+    assert(ret == nullptr);
+    if (ret == nullptr) {
+        //exact copy of root skfunc.
+
+        string _ufun_name = this->get_dag_name();
+//        assert(fresh_function_map.find(_ufun_name) == fresh_function_map.end());
+
+        SketchFunction* _sub_skfunc = this;
+
+        SketchFunction* fresh_unit_clone = nullptr;
+
+        fresh_unit_clone = (*dp)[_sub_skfunc];
+        assert(fresh_unit_clone == nullptr);
+        fresh_unit_clone = _sub_skfunc->unit_exact_clone_in_fresh_env(new_dependencies, new_environment, true);
+
+        assert(fresh_function_map.find(_ufun_name) != fresh_function_map.end());
+        assert(fresh_function_map[_ufun_name]->get_dag_name() == _ufun_name);
+
+        assert(fresh_unit_clone == fresh_function_map[_ufun_name]);
+        ret = fresh_function_map[_ufun_name];
+    }
+
+    (*dp)[this] = ret;
+
+    return ret;
+
+
+    bool flat_implementation = false;
+    if(flat_implementation)
+    //--------
+    //flattening, but it doesn't work because you need to reassign the dependencies;
+    //which you can only do recursively
+    {
+
+        set<string> *inlined_functions = get_inlined_functions();
+
+        ProgramEnvironment *_new_environment = get_env()->shallow_copy_w_new_blank_function_map();
+        FunctionMap &fresh_function_map = _new_environment->function_map;
+
+        SketchFunction *ret = nullptr;
+
+        for (const auto &ufun_name: *inlined_functions) {
+            assert(fresh_function_map.find(ufun_name) == fresh_function_map.end());
+            assert(get_env()->function_map.find(ufun_name) != get_env()->function_map.end());
+
+            assert(ufun_name == get_env()->function_map[ufun_name]->get_dag_name());
+            get_env()->function_map[ufun_name]->unit_exact_clone_in_fresh_env(get_env()->function_map[ufun_name]->dependencies, _new_environment);
+
+            assert(fresh_function_map.find(ufun_name) != fresh_function_map.end());
+            assert(fresh_function_map[ufun_name]->get_dag_name() == ufun_name);
+
+            if (ufun_name == get_dag_name()) {
+                assert(ret == nullptr);
+                assert(this == get_env()->function_map[ufun_name]);
+                ret = fresh_function_map[ufun_name];
+            }
+        }
+
+        if (ret == nullptr) {
+            //exact copy root.
+            string _ufun_name = this->get_dag_name();
+            assert(fresh_function_map.find(_ufun_name) == fresh_function_map.end());
+
+            this->unit_exact_clone_in_fresh_env(dependencies, _new_environment);
+
+            assert(fresh_function_map.find(_ufun_name) != fresh_function_map.end());
+            assert(fresh_function_map[_ufun_name]->get_dag_name() == _ufun_name);
+            ret = fresh_function_map[_ufun_name];
+        }
+
+        assert(ret != nullptr);
+
+        for (const auto &it: fresh_function_map) {
+            for (auto node: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+                UFUN_node *ufun_node = (UFUN_node *) node;
+                assert(fresh_function_map.find(ufun_node->get_ufun_name()) != fresh_function_map.end());
+            }
+        }
+
         return ret;
     }
+}
+
+SketchFunction* SketchFunction::deep_clone(bool only_tail)
+{
+
     //first get all inlined functions
     //clone all inlined functions;
     //replace the name inside the inlined function with eachother's
@@ -385,7 +605,7 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
     //assert that all the ufuns are represented in the function map
     for (const auto& it: get_env()->function_map) {
         for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
+            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
             assert(f != get_env()->function_map.end());
         }
     }
@@ -397,7 +617,7 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
     //assert that all that the previous operation hasn't corrupted the function map ufuns invariant
     for (const auto& it: get_env()->function_map) {
         for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
+            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
             assert(f != get_env()->function_map.end());
         }
     }
@@ -407,9 +627,9 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
         auto it_f = get_env()->function_map.find(inlined_f_name);
         assert(it_f != get_env()->function_map.end());
         for (auto ufun_it: it_f->second->get_dag()->getNodesByType(bool_node::UFUN)) {
-            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
+            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
             assert(f != get_env()->function_map.end());
-            assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufname()) != inlined_functions->end());
+            assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufun_name()) != inlined_functions->end());
         }
     }
 
@@ -489,7 +709,7 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
         set<pair<string, string> > ufnames;
 
         for (auto ufun_it: skfunc_it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-            string ufname = ((UFUN_node *) ufun_it)->get_ufname();
+            string ufname = ((UFUN_node *) ufun_it)->get_ufun_name();
             string original = ((UFUN_node *) ufun_it)->get_original_ufname();
             ufnames.insert(make_pair(ufname, original));
         }
@@ -525,7 +745,7 @@ set<string> SketchFunction::ufun_names() {
     set<string> ret;
     for(auto it: get_dag()->getNodesByType(bool_node::UFUN))
     {
-        ret.insert(((UFUN_node*)it)->get_ufname());
+        ret.insert(((UFUN_node *) it)->get_ufun_name());
     }
     return ret;
 }
@@ -561,7 +781,7 @@ void SketchFunction::set_dependencies(const FunctionMap* fmap) {
     assert(original_labels.empty());
     for(auto it: get_dag()->getNodesByType(bool_node::UFUN))
     {
-        string ufun_name = ((UFUN_node*)it)->get_ufname();
+        string ufun_name = ((UFUN_node *) it)->get_ufun_name();
         if(dependencies.find(ufun_name) == dependencies.end()) {
             assert(fmap->find(ufun_name) != fmap->end());
             dependencies.insert(ufun_name, (*fmap)[ufun_name]);
@@ -596,6 +816,27 @@ vector<string> SketchFunction::get_unit_holes() {
 const map<string, string> &SketchFunction::get_unit_ufuns_map() {
     return replaced_labels;
 }
+
+//bool SketchFunction::has_unit_self_loop() const {
+//    bool ret = false;
+//    for(auto it: get_dag()->getNodesByType(bool_node::UFUN)) {
+//        if(((UFUN_node*)it)->get_ufun_name() == get_dag_name()) {
+//            ret = true;
+//        }
+//    }
+//
+//    bool second_ret = false;
+//    for(const auto& it: replaced_labels)
+//    {
+//        if(it.second == get_dag_name()) {
+//            assert(ret);
+//            second_ret = true;
+//        }
+//    }
+//    assert(ret == second_ret);
+//
+//    return ret;
+//}
 
 #include "SolverLanguageLexAndYaccHeader.h"
 

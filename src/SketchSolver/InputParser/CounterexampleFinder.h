@@ -38,7 +38,7 @@ class CounterexampleFinder :
 				jumpids[oid] = src->id;
 			}else if (cur->type == bool_node::UFUN) {
 				UFUN_node& node = *((UFUN_node*)cur);
-				string uname = node.get_ufname();
+				string uname = node.get_ufun_name();
 				vector<UFUN_node*>& uv = ufmap[uname];
 
 				const string& tuple_name = node.getTupleName();
@@ -52,7 +52,7 @@ class CounterexampleFinder :
 					UFUN_node* ufn = uv[tt];
 					for (int j = 0; j < size; j++) {
 						stringstream sstr;
-						sstr << ufn->get_ufname() << "_" << ufn->get_uniquefid() << "_" << j;
+						sstr << ufn->get_ufun_name() << "_" << ufn->get_uniquefid() << "_" << j;
 						int oid = inputs->getId(sstr.str());
 						nb->insert(oid);
 						if (ufn == &node) {

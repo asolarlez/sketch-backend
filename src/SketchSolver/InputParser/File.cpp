@@ -65,7 +65,7 @@ void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime){
             int ASize =  1 << PARAMS->NINPUTS;
             for(int tt = 0; tt<size; ++tt){
                 stringstream sstr;
-                sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
+                sstr << ufunnode->get_ufun_name() << "_" << ufunnode->get_uniquefid() << "_" << tt;
                 OutType* ttype = tuple_type->entries[tt];
                 bool isArr = ttype->isArr ;
                 bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
@@ -112,19 +112,19 @@ void File::growInputs(VarStore & inputStore, BooleanDAG* dag){
 }
 
 void File::relabel(BooleanDagLightUtility *harness) {
-    BooleanDagLightUtility* cloned_inlined_harness = harness->produce_inlined_dag();
-    cloned_inlined_harness->increment_shared_ptr();
-    BooleanDAG* problem = cloned_inlined_harness->get_dag();
+//    BooleanDagLightUtility* cloned_inlined_harness = harness; //->produce_inlined_dag();
+//    cloned_inlined_harness->increment_shared_ptr();
+//    BooleanDAG* problem = cloned_inlined_harness->get_dag();
+    BooleanDAG* problem = harness->get_dag();
     VarStore input_store;
     redeclareInputsAndAngelics(input_store, problem);
-    auto inputs = problem->getNodesByType(bool_node::SRC);
+    const auto& inputs = problem->getNodesByType(bool_node::SRC);
 
-    for(int i = 0;i<size();i++)
-    {
+    for(int i = 0;i<size();i++) {
         at(i)->relabel(inputs);
     }
 
-    cloned_inlined_harness->clear();
+//    cloned_inlined_harness->clear();
 }
 
 #include "GenericFile.h"

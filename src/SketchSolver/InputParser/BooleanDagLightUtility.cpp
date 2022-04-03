@@ -45,7 +45,7 @@ int BooleanDagLightUtility::count_passing_inputs(File *file) {
 set<string> *BooleanDagLightUtility::get_inlined_functions(set<string> *ret) const {
     for(auto node_it: get_dag()->getNodesByType(bool_node::UFUN)) {
         auto* ufun_it = (UFUN_node*)node_it;
-        string ufname = ufun_it->get_ufname();
+        string ufname = ufun_it->get_ufun_name();
         if(ret->find(ufname) == ret->end()) {
             ret->insert(ufname);
             assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
@@ -103,6 +103,11 @@ LightInliningTree::LightInliningTree(
         assert(ufun_nodes.empty());
     }
 
+    if(get_dag_name() == "program_lvl0__id341__id374")
+    {
+        cout << "HERE" << endl;
+    }
+
     if(ufun_nodes.empty()) {
         if(skfunc_inlining_tree != nullptr) {
             AssertDebug(false, "DEAD CODE (skfunc_inlining_tree should always be == nullptr here), otherwise you don't need to construct the inliing_tree");
@@ -129,7 +134,7 @@ LightInliningTree::LightInliningTree(
     else {
         for (auto it: ufun_nodes) {
             string var_name = ((UFUN_node *) it)->get_original_ufname();
-            string sub_dag_name = ((UFUN_node *) it)->get_ufname();
+            string sub_dag_name = ((UFUN_node *) it)->get_ufun_name();
             assert(_skfunc->get_env()->function_map.find(sub_dag_name) != _skfunc->get_env()->function_map.end());
             const BooleanDagUtility *sub_dag = _skfunc->get_env()->function_map[sub_dag_name];
             if (visited->find(sub_dag->get_dag_id()) == visited->end()) {

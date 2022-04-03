@@ -221,7 +221,7 @@ void ComplexInliner::unify(){
 		// Get the code for this node.
 		if(typeid(*dag[i]) == typeid(UFUN_node)){
 			UFUN_node* ufun = dynamic_cast<UFUN_node*>(dag[i]);
-			const string& name = ufun->get_ufname();
+			const string& name = ufun->get_ufun_name();
 			if(checkFunName(name)){
 				vector<vector<bool_node*> >& v = argLists;	
 				int id = v.size();

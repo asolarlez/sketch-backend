@@ -71,7 +71,7 @@ public:
             return false;
         }
         UFUN_node* un = (UFUN_node*) n;
-        if (un->get_ufname() == "sqrt_math") {
+        if (un->get_ufun_name() == "sqrt_math") {
             return true;
         }
         return false;

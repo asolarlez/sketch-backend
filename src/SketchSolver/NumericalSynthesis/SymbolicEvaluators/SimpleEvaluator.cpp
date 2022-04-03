@@ -150,7 +150,7 @@ void SimpleEvaluator::visit( ARRASS_node& node ) {
 }
 
 void SimpleEvaluator::visit( UFUN_node& node ) {
-	const string& name = node.get_ufname();
+	const string& name = node.get_ufun_name();
 	double m = d(node.arguments(0));
 	double d;
 	if (name == "_cast_int_float_math") {

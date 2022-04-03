@@ -692,7 +692,10 @@ public:
         return _env;
     }
 
-    BooleanDagLightUtility* clone(bool use_same_name = false) {
+    BooleanDagLightUtility* _clone(bool use_same_name = false) {
+
+        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(), "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE; BUT THERE IS NO DEEP CLONE IN THIS CLASS. HERE CLONE DOES UNIT_CLONE, WHICH IS NOT WHAT YOU WANT (DUE TO RECURSIVE SKETCHES).");
+
         BooleanDAG* new_dag = nullptr;
         if(use_same_name) {
             new_dag = get_dag()->clone(get_dag_name());
@@ -703,8 +706,17 @@ public:
         return new BooleanDagLightUtility(new_dag, get_env());
     }
 
+//    BooleanDagLightUtility* produce_inlined_dag(bool use_same_name = false) {
+//        BooleanDagLightUtility* ret = clone(use_same_name);
+//        vector<string>* inlined_functions = nullptr;
+//        ret->concretize_this_dag(nullptr, bool_node::CTRL, inlined_functions);
+//        delete inlined_functions;
+//        return ret;
+//    }
+
     BooleanDagLightUtility* produce_inlined_dag(bool use_same_name = false) {
-        BooleanDagLightUtility* ret = clone(use_same_name);
+        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(), "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE; BUT THERE IS NO DEEP CLONE IN THIS CLASS. HERE CLONE DOES UNIT_CLONE, WHICH IS NOT WHAT YOU WANT (DUE TO RECURSIVE SKETCHES).");
+        BooleanDagLightUtility* ret = _clone(use_same_name);
         vector<string>* inlined_functions = nullptr;
         ret->concretize_this_dag(nullptr, bool_node::CTRL, inlined_functions);
         delete inlined_functions;
@@ -712,13 +724,23 @@ public:
     }
 
 
+//    BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type) {
+//        BooleanDagLightUtility* ret = clone();
+//        vector<string>* inlined_functions = nullptr;
+//        ret->concretize_this_dag(var_store, var_type, inlined_functions);
+//        delete inlined_functions;
+//        return ret;
+//    }
+
     BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type) {
-        BooleanDagLightUtility* ret = clone();
+        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(), "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE; BUT THERE IS NO DEEP CLONE IN THIS CLASS. HERE CLONE DOES UNIT_CLONE, WHICH IS NOT WHAT YOU WANT (DUE TO RECURSIVE SKETCHES).");
+        BooleanDagLightUtility* ret = _clone();
         vector<string>* inlined_functions = nullptr;
         ret->concretize_this_dag(var_store, var_type, inlined_functions);
         delete inlined_functions;
         return ret;
     }
+
 
     void concretize_this_dag(const VarStore* const var_store, bool_node::Type var_type) {
         vector<string>* inlined_functions = nullptr;

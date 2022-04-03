@@ -332,7 +332,7 @@ void BoolAutoDiff::visit( UFUN_node& node ) {
 	ValueGrad* val = v(node);
 	ValueGrad* mval = v(node.arguments(0));
 	
-	const string& name = node.get_ufname();
+	const string& name = node.get_ufun_name();
 	if (name == "_cast_int_float_math") {
 		ValueGrad::vg_cast_int_float(mval, val);
 	} else if (name == "arctan_math") {

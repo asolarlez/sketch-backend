@@ -1673,7 +1673,7 @@ public:
 	int get_nbits() const { 
 		return nbits; 
 	}
-	const string& get_ufname() const { return ufname; }
+	const string& get_ufun_name() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
     void set_tupleName(const string& name){tupleName = name;}
     const string& getTupleName() const {return tupleName;}

@@ -79,9 +79,9 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
   }
 #endif
 
-//  if(dag_id == 58) {
-//     cout << "here" << endl;
-//  }
+  if(dag_id == 370) {
+     cout << "HERE" << endl;
+  }
 
 }
 
@@ -1571,7 +1571,7 @@ void BooleanDAG::replace_label_with_another(const string replace_this, const str
     bool enter = false;
     for(auto ufun_node : ufun_nodes){
         assert(ufun_node->type == bool_node::UFUN);
-        if(((UFUN_node*)ufun_node)->get_ufname() == replace_this) {
+        if(((UFUN_node *) ufun_node)->get_ufun_name() == replace_this) {
             ((UFUN_node*)ufun_node)->modify_ufname(with_this);
             enter = true;
         }
@@ -1589,7 +1589,7 @@ vector<string> BooleanDAG::get_ufun_names() const {
     ret.reserve(ufuns.size());
     for(auto it : ufuns)
     {
-        ret.push_back(((UFUN_node*)it)->get_ufname());
+        ret.push_back(((UFUN_node *) it)->get_ufun_name());
     }
     return ret;
 }

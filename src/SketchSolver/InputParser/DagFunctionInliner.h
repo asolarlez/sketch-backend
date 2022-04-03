@@ -42,7 +42,7 @@ class CallTreeTracker{
 	map<int, string> cname;
 
 	string funName(const UFUN_node& fun){
-		string s = fun.get_ufname().substr(0, 9);
+		string s = fun.get_ufun_name().substr(0, 9);
 		s += "_";
 		char tmpbo[256];
 		//itoa(fun.get_callsite(), tmpbo, 10);
@@ -94,7 +94,7 @@ public:
 				cout<<cname[(*it)->globalId]<<"[shape=record]"<<endl;
 				}else{
 					// UFUN_node* un = dynamic_cast<UFUN_node*>(*it);
-					// cout<<"couldn't find "<<un->get_ufname()<<" "<<un->globalId<<"  "<<un->get_callsite()<<endl;
+					// cout<<"couldn't find "<<un->get_ufun_name()<<" "<<un->globalId<<"  "<<un->get_callsite()<<endl;
 				}
 			}
 		}
@@ -225,7 +225,7 @@ protected:
 protected:
 	virtual void addChild(InlinerNode* parent, const UFUN_node& node) {
 		int id = nextfunid++;
-		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size() + 1, id, id);
+		funidmap.condAdd(node.get_ufun_name().c_str(), node.get_ufun_name().size() + 1, id, id);
 		InlinerNode* next = inodestore.newObj();
 		if (boundByCallsite) {
 			next->funid = node.get_callsite();
@@ -242,7 +242,7 @@ protected:
 
 	virtual void addChildWithLimit(InlinerNode* parent, const UFUN_node& node, int newLmt) {
 		int id = nextfunid++;
-		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size() + 1, id, id);
+		funidmap.condAdd(node.get_ufun_name().c_str(), node.get_ufun_name().size() + 1, id, id);
 		InlinerNode* next = inodestore.newObj();
 		if (boundByCallsite) {
 			next->funid = node.get_callsite();
@@ -345,13 +345,13 @@ public:
 			if (temp->funid == candidate->funid) {
 				cnt++;
 				if (cnt >= recLimit) {
-					// cout<<"Prevented "<<node.get_ufname()<<endl;
+					// cout<<"Prevented "<<node.get_ufun_name()<<endl;
 					return false;
 				}
 			}
 			temp = temp->parent;
 		}
-		//cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufname()<<endl;
+		//cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufun_name()<<endl;
 		return true;
 	}
 
@@ -364,7 +364,7 @@ public:
 				return false;
 			}else{
 				//if(!node.ignoreAsserts){
-					// cout<<"Inlining with true cond "<<node.get_ufname()<<endl;
+					// cout<<"Inlining with true cond "<<node.get_ufun_name()<<endl;
 					return true;
 				//}
 			}
@@ -417,7 +417,7 @@ public:
 			}
 		}
 
-		const string& s = node.get_ufname();
+		const string& s = node.get_ufun_name();
 		map<string, int>::iterator it = counts.find(s);
 		if(it != counts.end()){			
 			if(it->second < inlinebound){				
@@ -535,7 +535,7 @@ class ExclusiveInliner : public InlineControl{
 	set<string> funsToNotInline;
 	virtual void registerInline(UFUN_node& node){}
 	virtual bool checkInline(UFUN_node& node){
-		return funsToNotInline.count(node.get_ufname())==0;
+		return funsToNotInline.count(node.get_ufun_name()) == 0;
 	}
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
 		
@@ -583,7 +583,7 @@ public:
 		bool t1 = ocs.checkInline(node);
 		bool t2 = bci.checkInline(node);
 		/*if(!node.dependent()){
-			cout<<" node="<<node.get_ufname()<<" t1="<<(t1?"yes":"no")<<"  t2="<<(t2?"yes":"no")<<endl;
+			cout<<" node="<<node.get_ufun_name()<<" t1="<<(t1?"yes":"no")<<"  t2="<<(t2?"yes":"no")<<endl;
 		}*/		
 		return t1 && t2;
 	}
@@ -623,7 +623,7 @@ public:
 		
 	}
 	virtual bool checkInline(UFUN_node& node){
-		return (inlineAllFuns) ||  funsToInline.count(node.get_ufname())!=0;
+		return (inlineAllFuns) || funsToInline.count(node.get_ufun_name()) != 0;
 	}
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
 		

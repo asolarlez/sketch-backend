@@ -461,7 +461,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 //
 //				UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
 //				if (ufn == NULL) { continue;  }
-//				if (other.count(ufn->get_ufname()) == 0) {
+//				if (other.count(ufn->get_ufun_name()) == 0) {
 //					//calling a non-pure function means you are not pure either.
 //					other.erase(*it);
 //					break;

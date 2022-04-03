@@ -24,6 +24,25 @@ const FMTL::TransformPrimitive* FunctionMap::insert(const string &name, SketchFu
 {
     assert(name == sketch_function->get_dag()->get_name());
     auto it = find(name);
+//    string target_prefix = "program_lvl0";
+//    if(name.substr(0, target_prefix.size()) == target_prefix)
+//    {
+//        bool enter = false;
+//        for(auto ufun: sketch_function->get_dag()->getNodesByType(bool_node::UFUN))
+//        {
+//            string target_prefix_2 = "printf";
+//            if(((UFUN_node*)ufun)->get_ufun_name().substr(0, target_prefix_2.size()) == target_prefix_2)
+//            {
+//                assert(!enter);
+//                enter = true;
+//            }
+//        }
+//        assert(enter);
+//    }
+//    if(name == "program_lvl0__id341__id374")
+//    {
+//        cout << "HERE" << endl;
+//    }
     if(it == end()) {
         map<string, SketchFunction *>::operator[](name) = sketch_function;
         return FunctionMapTransformer::insert(sketch_function->get_dag()->get_name(), sketch_function->get_dag()->get_ufun_names(), sketch_function->get_unit_holes());
@@ -43,7 +62,7 @@ SketchFunction *FunctionMap::produce_get(const string &from_dag, const string &u
     }
     else
     {
-        AssertDebug(false, "CHECK IF YOU CAN MERGE THE TWO BRANCES!!!");
+        AssertDebug(false, "CHECK IF YOU CAN MERGE THE TWO BRANCHES!!!");
 //        cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " RECONSTRUCTING NOW" << endl;
         return reconstruct_sketch_function(from_dag, under_this_var, underlying_dag);
     }

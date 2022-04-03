@@ -443,7 +443,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
     if(problemStack.empty())
 	{
-		pushProblem((*problems.rbegin())->clone());
+		pushProblem((*problems.rbegin())->_clone());
 	}	
 	BooleanDAG* oriProblem = getProblemDag();
 	bool rv = false;
@@ -571,7 +571,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 				if(PARAMS->verbosity > 5){
 					cout<<"Switching to problem "<<curProblem<<endl;
 				}
-				pushProblem(problems[curProblem]->clone());				
+				pushProblem(problems[curProblem]->_clone());
 
 				pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
 //				pushProblem(hardCodeINode(oriProblem, controls, bool_node::CTRL, floats));
@@ -728,7 +728,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 			int ASize = 1 << PARAMS->NINPUTS;
 			for (int tt = 0; tt<size; ++tt) {
 				stringstream sstr;
-				sstr << ufunnode->get_ufname() << "_" << ufunnode->get_uniquefid() << "_" << tt;
+				sstr << ufunnode->get_ufun_name() << "_" << ufunnode->get_uniquefid() << "_" << tt;
 				OutType* ttype = tuple_type->entries[tt];
 				bool isArr = ttype->isArr;
 				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
@@ -763,7 +763,7 @@ void CEGISChecker::addProblem(BooleanDagLightUtility *harness, File *file)
         //IF THIS FAILS THE DAG WASN'T INLINED.
         if(!inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty()) {
             for(auto it: inlined_harness->get_dag()->getNodesByType(bool_node::UFUN)) {
-                string ufname = ((UFUN_node*)it)->get_ufname();
+                string ufname = ((UFUN_node *) it)->get_ufun_name();
                 assert(inlined_harness->get_env()->function_map.find(ufname) == inlined_harness->get_env()->function_map.end());
             }
         }

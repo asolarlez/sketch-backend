@@ -162,7 +162,7 @@ BoolAbstractor::visit(EQ_node &node)
 void
 BoolAbstractor::visit( UFUN_node& node )
 {
-    const string& name = node.get_ufname();
+    const string& name = node.get_ufun_name();
     if (name == "_cast_int_float_math" || name == "arctan_math" || name == "sin_math" || name == "cos_math" || name == "tan_math" || name == "sqrt_math" || name == "exp_math") {
         return;
     }

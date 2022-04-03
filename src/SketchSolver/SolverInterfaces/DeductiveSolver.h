@@ -165,7 +165,7 @@ public:
 		Assert(node->mother()->type == bool_node::UFUN, "UFUN mother required!");
 		UFUN_node* un = (UFUN_node*) node->mother();
 		out << "double t" << node->id << ";"<<endl;
-		out << nameTrans(un->get_ufname()) << "(";
+		out << nameTrans(un->get_ufun_name()) << "(";
 		
 		for (auto it = un->arg_begin(); it != un->arg_end(); ++it) {
 			outParent(out, *it);			
@@ -415,7 +415,7 @@ public:
 		for (auto it = unknowns.begin(); it != unknowns.end(); ++it) {
 			bool_node* expr = join(sols, (*it)->id);
 			UFUN_node* uf = (UFUN_node*)(*it)->mother();			
-			string name = uf->get_ufname();
+			string name = uf->get_ufun_name();
 			DST_node* dst = DST_node::create();
 			dst->name = name;
 			dst->mother() = expr;

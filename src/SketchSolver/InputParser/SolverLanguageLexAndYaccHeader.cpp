@@ -505,10 +505,14 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 
             vector<string> prev_holes = skfunc->get_deep_holes();
 
-            BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
-            harness->increment_shared_ptr();
+//            BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
+//            harness->increment_shared_ptr();
 
-            const bool concretize_after_solving = false;
+            SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
+            harness->increment_shared_ptr();
+            harness->inline_this_dag();
+
+            const bool concretize_after_solving = true;
             if(!concretize_after_solving) {
                 param_var_val->decrement_shared_ptr();
             }
@@ -1048,10 +1052,19 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
 
                 var_store = string_to_var_store(line, skfunc, bool_node::CTRL);
 
-                BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
+//                BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
+//                harness->increment_shared_ptr();
+
+                SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
                 harness->increment_shared_ptr();
+                harness->inline_this_dag();
 
                 set_inlining_tree(var_store, harness);
+
+//                if(var_store->get_inlining_tree()->get_dag_id() == 834)
+//                {
+//                    cout << "HERE" << endl;
+//                }
 
                 harness->clear();
             }
@@ -1138,11 +1151,18 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         }
         case _num_holes: {
             assert(params.empty());
-            BooleanDagLightUtility* func_clone = ((BooleanDagLightUtility*)skfunc)->produce_inlined_dag();
-//            func_clone->print_hole_names(state->console_output);
+//            BooleanDagLightUtility* func_clone = ((BooleanDagLightUtility*)skfunc)->produce_inlined_dag();
+            int init_num_global_dags = BooleanDAG::get_allocated().size();
+
+            SketchFunction* func_clone = skfunc->deep_exact_clone_and_fresh_function_map();
             func_clone->increment_shared_ptr();
+            func_clone->inline_this_dag(false);
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
             func_clone->clear();
+
+            int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
+            assert(dags_diff == 0);
+
             return new VarVal(num_ctrls);
             break;
         }

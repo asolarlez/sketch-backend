@@ -73,7 +73,7 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 
 SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
 	stringstream str;
-    str<< node.get_ufname() <<"_"<<node.outname<<"_"<<i;
+    str << node.get_ufun_name() << "_" << node.outname << "_" << i;
     SRC_node* src = SRC_node::create( str.str() );
     // BUGFIX: this is not wide enough! UFUN_node.nbits is either 1 or 2, set by InputParser
     // TODO xzl: confirm this bug. Confirmed by cout, need to confirm with asolar
@@ -108,9 +108,9 @@ SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
 bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 	bool_node* rv = NULL;
 	
-	string name = node.get_ufname();
+	string name = node.get_ufun_name();
 	name += node.outname;
-	Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
+	Dout( cout << "Replacing call to function " << node.get_ufun_name() << endl );
 	int nargs = node.nargs();
 	
 	if( functions.find(name) == functions.end() ){
@@ -333,7 +333,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 
 
 void DagElimUFUN::visit( UFUN_node& node ){
-	string name = node.get_ufname();
+	string name = node.get_ufun_name();
 	if(ufunsToDo.count(name) == 0){
 		rvalue = &node;
 		return;
@@ -346,7 +346,7 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		//sketch are required to have the same parameters in the spec. This means that no new symbolic values need to be added
 		//when evaluating uninterpreted functions in the sketch. (Except for the very first call, which needs a fresh symbolic value
 		//to distinguish it from the others; hence the moreNewFuns flag.).
-		Dout( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
+		Dout( cout << "Replacing call to function " << node.get_ufun_name() << " : " << node.id << endl );
 		int nargs = node.nargs();
 		
 		if(nargs == 0){
@@ -450,7 +450,7 @@ void DagElimUFUN::process(BooleanDAG& dag){
 			UFUN_node* uf = (UFUN_node*)nn;
 			for(auto it = uf->arg_begin(); it != uf->arg_end(); ++it){
 				if( (*it)->getOtype()->isArr ){
-					ufunsToDo.insert(uf->get_ufname());
+					ufunsToDo.insert(uf->get_ufun_name());
 				}
 			}
 		}

@@ -1588,9 +1588,9 @@ void DagOptim::visit( UFUN_node& node ){
 		}
 	}
 
-	if (floats.hasFun(node.get_ufname())) {
+	if (floats.hasFun(node.get_ufun_name())) {
 		if (isConst(node.arguments(0))) {
-			auto ff = floats.getFun(node.get_ufname());
+			auto ff = floats.getFun(node.get_ufun_name());
 			bool_node* tbn  = getCnode(ff.apply(getFval(node.arguments(0))));
 			
 			TUPLE_CREATE_node* newOutTuple = TUPLE_CREATE_node::create(1);
@@ -1611,7 +1611,7 @@ void DagOptim::visit( UFUN_node& node ){
 		return;
     }    
 
-	string tmp = node.get_ufname();
+	string tmp = node.get_ufun_name();
 	if(node.ignoreAsserts){
 		tmp += "_IA";
 	}

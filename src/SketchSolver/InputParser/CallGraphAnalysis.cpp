@@ -72,8 +72,8 @@ void CallGraphAnalysis::populateCG(BooleanDAG& dag, map<string, BooleanDAG*>& fu
 		for(BooleanDAG::iterator it = cur->begin(); it != cur->end(); ++it){
 			if(typeid(**it) == typeid(UFUN_node)){
 				UFUN_node* node = dynamic_cast<UFUN_node*>(*it);
-				if(funMap.count(node->get_ufname())>0){
-					BooleanDAG* callee=funMap[node->get_ufname()];
+				if(funMap.count(node->get_ufun_name()) > 0){
+					BooleanDAG* callee=funMap[node->get_ufun_name()];
 					cg.addEdge(cur, callee, node);
 					if(seen.count(callee)==0){
 						tosee.push(callee);

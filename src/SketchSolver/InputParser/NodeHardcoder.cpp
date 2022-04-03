@@ -143,7 +143,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 	TUPLE_CREATE_node* new_node = TUPLE_CREATE_node::create(size);
 	for (int j = 0; j < size ; j++) {
 		stringstream sstr;
-		sstr<<uf->get_ufname()<<"_"<<uf->get_uniquefid()<<"_"<<j;
+		sstr << uf->get_ufun_name() << "_" << uf->get_uniquefid() << "_" << j;
 		OutType* type = tuple_type->entries[j];
 		Assert(!type->isTuple, "NYS");	
 		if(type->isArr){
@@ -179,7 +179,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 
 
 void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
-	auto it = values.synths.find(node.get_ufname());
+	auto it = values.synths.find(node.get_ufun_name());
 	if (it == values.synths.end()) {
 		DagOptim::visit(node);
 	} else {
@@ -213,7 +213,7 @@ void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
 void NodeHardcoder::visit( UFUN_node& node ){
 	if(type == bool_node::SRC){		
 
-		if (floats.hasFun(node.get_ufname()) || node.get_ufname() == "_cast_int_float_math") {
+		if (floats.hasFun(node.get_ufun_name()) || node.get_ufun_name() == "_cast_int_float_math") {
 			DagOptim::visit(node);
 			return;
 		}
@@ -226,7 +226,7 @@ void NodeHardcoder::visit( UFUN_node& node ){
 
 
 		UFUN_node* uf = &node;
-		vector<pair<bool_node*, vector<bool_node*> > >& params = ufunparams[uf->get_ufname()];
+		vector<pair<bool_node*, vector<bool_node*> > >& params = ufunparams[uf->get_ufun_name()];
 		
 		vector<bool_node*> pars( uf->arg_begin(), uf->arg_end());
 		
