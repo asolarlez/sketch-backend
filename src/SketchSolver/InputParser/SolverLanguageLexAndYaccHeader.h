@@ -1502,6 +1502,14 @@ namespace SL {
 
         void clear() override;
 
+        auto begin(){
+            return vector<SL::VarVal*>::begin();
+        }
+
+        auto end(){
+            return vector<SL::VarVal*>::end();
+        }
+
         size_t size(){
             return vector<SL::VarVal*>::size();
         }
@@ -1616,7 +1624,7 @@ namespace SL {
         _get_solution,
 
         //FMTL primitives:
-        _init,
+        _declare,
 //        _vector
 
     };

@@ -103,16 +103,30 @@ public:
         to_add->increment_shared_ptr();
         dependencies.insert(name, to_add);
     }
-
     explicit SketchFunction(
             BooleanDAG *_dag_root,
-            ProgramEnvironment *_env = nullptr,
+            ProgramEnvironment *_env = nullptr/*,
             const map<string, string>& _replaced_labels = map<string, string>(),
             const map<string, string>& _original_labels = map<string, string>(),
             const FMTL::TransformPrimitive* _rep = nullptr,
             Dependencies _responsibility = Dependencies(),
             const LightInliningTree* _inlining_tree = nullptr,
-            bool _has_been_concretized = false) :
+            bool _has_been_concretized = false*/) :
+            BooleanDagUtility(_dag_root, _env, nullptr, false),
+            replaced_labels(map<string, string>()), original_labels(map<string, string>()),
+            rep(nullptr), dependencies(Dependencies()) {
+
+    }
+
+    explicit SketchFunction(
+            BooleanDAG *_dag_root,
+            ProgramEnvironment *_env,
+            const map<string, string>& _replaced_labels,
+            const map<string, string>& _original_labels,
+            const FMTL::TransformPrimitive* _rep,
+            Dependencies _responsibility,
+            const LightInliningTree* _inlining_tree,
+            bool _has_been_concretized) :
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized),
             replaced_labels(_replaced_labels), original_labels(_original_labels),
             rep(_rep), dependencies(std::move(_responsibility)) {
@@ -121,6 +135,15 @@ public:
             assert(dependency.second != this);
             assert(dependency.second->get_dag_name() != get_dag_name());
             dependency.second->increment_shared_ptr();
+        }
+
+        //add self-loop dependency if it exists.
+        for(auto it: get_dag()->getNodesByType(bool_node::UFUN)) {
+            string ufun_name = ((UFUN_node*)it)->get_ufun_name();
+            if(dependencies.find(ufun_name) == dependencies.end()) {
+                assert(ufun_name == get_dag_name());
+                dependencies.insert(ufun_name, this);
+            }
         }
     }
 

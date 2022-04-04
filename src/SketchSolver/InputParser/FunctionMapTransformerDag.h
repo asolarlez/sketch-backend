@@ -251,6 +251,11 @@ namespace FMTL {
 
         TransformPrimitive *get_main_parent();
 
+        virtual void pretty_print(string& ret,
+                                  const FunctionMapTransformer &fmt,
+                                  map<string, map<string, string> > *running_assignment_map = new map<string, map<string, string> >(),
+                                  set<TransformPrimitive *> *visited = new set<TransformPrimitive *>()) const;
+
     public:
 
         string pretty_print(const FunctionMapTransformer &fmt) const
@@ -260,11 +265,6 @@ namespace FMTL {
             ret += "return " + function_name + ";";
             return ret;
         }
-
-        virtual void pretty_print(string& ret,
-                const FunctionMapTransformer &fmt,
-                map<string, map<string, string> > *running_assignment_map = new map<string, map<string, string> >(),
-                set<TransformPrimitive *> *visited = new set<TransformPrimitive *>()) const;
 
         string to_string();
     };

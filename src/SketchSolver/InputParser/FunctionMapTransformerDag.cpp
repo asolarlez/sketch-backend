@@ -1106,13 +1106,13 @@ InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<
             assign_map_str += ", ";
         }
         string key_col_val_str;
-        key_col_val_str = "\"" + it.first + "\"" + " : " + it.second;
+        key_col_val_str = "\"" + it.first + "\"" + " : " + "\"" + it.second + "\"";
 
         assign_map_str += key_col_val_str;
     }
     assign_map_str += "}";
 
-    ret += function_name + " = init(" + "\"" + function_name + "\"" + ", " + hole_names_str + ", " + assign_map_str + ");" + "\n";
+    ret += function_name + " = declare(" + "\"" + function_name + "\"" + ", " + hole_names_str + ", " + assign_map_str + ");" + "\n";
 }
 
 void ClonePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt,

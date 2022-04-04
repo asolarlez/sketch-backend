@@ -464,7 +464,7 @@ template<>
 SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMTL::FunctionMapTransformerState *state)
 {
     switch (method_id) {
-        case _init:
+        case _declare:
         {
             assert(params.size() == 3);
 
@@ -503,7 +503,7 @@ SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMT
                 auto ufuns_map = skfunc->get_unit_ufuns_map();
                 assert(ufuns_map.size() == ports_map->size());
                 for (const auto &it: ufuns_map) {
-                    assert(ports_map->at(it.first)->get_skfunc(false)->get_dag_name() == it.second);
+                    assert(ports_map->at(it.first)->get_string(false) == it.second);
                 }
 
                 ports_map_var_val->decrement_shared_ptr();
@@ -667,50 +667,6 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             assert(params.size() == 1);
             bool val = params[0]->eval(state)->get_bool(true, false);
             return new VarVal((bool)!val);
-        }
-        case _init:
-        {
-            assert(params.size() == 3);
-
-            VarVal* skfunc_var_val = params[0]->eval(state);
-            skfunc_var_val->increment_shared_ptr();
-
-            SketchFunction* skfunc = skfunc_var_val->get_skfunc();
-
-            assert(state->function_map.find(skfunc->get_dag_name()) != state->function_map.end());
-
-            { // assert holes invariant
-                VarVal *holes_vec_var_val = params[1]->eval(state);
-                holes_vec_var_val->increment_shared_ptr();
-                PolyVec *holes = holes_vec_var_val->get_poly_vec();
-
-                vector<string> hole_names = skfunc->get_unit_holes();
-                assert(hole_names.size() == holes->size());
-                for (int i = 0; i < hole_names.size(); i++) {
-                    string predicted_hole_name = holes->at(i)->get_string(false);
-                    assert(hole_names[i] == predicted_hole_name);
-                }
-
-                holes_vec_var_val->decrement_shared_ptr();
-            }
-
-            { // assert ports invariant
-                VarVal *ports_map_var_val = params[2]->eval(state);
-                ports_map_var_val->increment_shared_ptr();
-                PolyMap *ports_map = ports_map_var_val->get_poly_map();
-
-                auto ufuns_map = skfunc->get_unit_ufuns_map();
-                assert(ufuns_map.size() == ports_map->size());
-                for (const auto &it: ufuns_map) {
-                    assert(ports_map->at(it.first)->get_skfunc(false)->get_dag_name() == it.second);
-                }
-
-                ports_map_var_val->decrement_shared_ptr();
-            }
-
-            skfunc_var_val->decrement_shared_ptr();
-
-            return new VarVal();
         }
         default:
             assert(false);
@@ -1027,7 +983,7 @@ void SL::init_method_str_to_method_id_map()
 
     //FMTL Primitives:
 
-    add_to_method_str_to_method_id_map("init", _init, "namespace");
+    add_to_method_str_to_method_id_map("declare", _declare, "namespace");
 
 
 method_str_to_method_id_map_is_defined = true;

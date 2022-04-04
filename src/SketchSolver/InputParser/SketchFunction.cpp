@@ -222,9 +222,16 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name, const ma
                                                                                    cloned_dag->get_name(),
                                                                                    cloned_dag->get_hole_assignment_map());
 
-    return new SketchFunction(
+    SketchFunction* ret = new SketchFunction(
             cloned_dag, get_env(),
             replaced_labels, original_labels, new_primitive, dependencies, get_inlining_tree(false), get_has_been_concretized());
+
+    for(auto it: ret->get_dag()->getNodesByType(bool_node::UFUN)) {
+        string ufun_name = ((UFUN_node*)it)->get_ufun_name();
+        assert(ret->dependencies.find(ufun_name) != ret->dependencies.end());
+    }
+
+    return ret;
 }
 
 void SketchFunction::core_clear(const string& dag_name)
@@ -346,8 +353,7 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
         assert(original_it->second == replace_this);
         string prev_dep_name = replaced_labels[replace_this];
 
-        auto dependency_it = get_env()->function_map.find(prev_dep_name);
-        assert(dependency_it != get_env()->function_map.end());
+        assert(get_env()->function_map.find(prev_dep_name) != get_env()->function_map.end());
         assert(dependencies.find(prev_dep_name) != dependencies.end());
 
         assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
