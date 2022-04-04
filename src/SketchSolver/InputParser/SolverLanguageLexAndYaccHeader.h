@@ -715,7 +715,7 @@ namespace SL
         Head* head = nullptr;
         LinkedList* rest = nullptr;
     public:
-        LinkedList()= default;
+        LinkedList() {}
         explicit LinkedList(Head* _head): head(_head) {}
         LinkedList(Head* _head, LinkedList* _rest): head(_head), rest(_rest) {}
 

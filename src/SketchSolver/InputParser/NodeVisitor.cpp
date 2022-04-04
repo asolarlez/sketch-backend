@@ -2,15 +2,9 @@
 #include "BooleanDAG.h"
 
 
-NodeVisitor::NodeVisitor()
-{
-}
+NodeVisitor::NodeVisitor(){}
 
-NodeVisitor::~NodeVisitor()
-{
-}
-
-
+NodeVisitor::~NodeVisitor() {}
 
 void NodeVisitor::process(BooleanDAG& bdag){
 	int i=0;
@@ -25,8 +19,6 @@ void NodeVisitor::process(BooleanDAG& bdag){
     	}
 	}
 }
-
-
 
 void NodeVisitor::visitBool(bool_node& node ){
 	rvalue = &node;

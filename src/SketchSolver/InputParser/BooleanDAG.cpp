@@ -79,9 +79,9 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
   }
 #endif
 
-  if(dag_id == 370) {
-     cout << "HERE" << endl;
-  }
+//  if(dag_id == 370) {
+//     cout << "HERE" << endl;
+//  }
 
 }
 

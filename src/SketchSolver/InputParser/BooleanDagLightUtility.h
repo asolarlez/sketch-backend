@@ -652,8 +652,13 @@ class BooleanDagLightUtility
     const string& dag_name;
     const long long dag_id;
 
+    bool has_been_concretized = false;
+
 public:
     static bool new_way;
+
+
+    bool get_has_been_concretized() const ;
 
     const int get_dag_id() const {
         return dag_id;
@@ -665,11 +670,13 @@ public:
         assert(_root_dag->getNodesByType(bool_node::UFUN).empty());
     }
 
-    BooleanDagLightUtility(BooleanDAG* _root_dag, ProgramEnvironment* __env): root_dag(_root_dag), _env(__env), dag_name(_root_dag->get_name()), dag_id(_root_dag->get_dag_id()) {
+    BooleanDagLightUtility(BooleanDAG* _root_dag, ProgramEnvironment* __env, bool _has_been_concretized):
+        root_dag(_root_dag), _env(__env), dag_name(_root_dag->get_name()), dag_id(_root_dag->get_dag_id()), has_been_concretized(_has_been_concretized) {
         assert(root_dag != nullptr);
     }
 
-    explicit BooleanDagLightUtility(BooleanDagLightUtility* to_copy): root_dag(to_copy->root_dag->clone()), _env(to_copy->get_env()), dag_name(to_copy->dag_name), dag_id(root_dag->get_dag_id()) {
+    explicit BooleanDagLightUtility(BooleanDagLightUtility* to_copy):
+        root_dag(to_copy->root_dag->clone()), _env(to_copy->get_env()), dag_name(to_copy->dag_name), dag_id(to_copy->get_dag_id()), has_been_concretized(to_copy->has_been_concretized) {
         assert(root_dag != nullptr);
     }
 
@@ -703,7 +710,7 @@ public:
         else {
             new_dag = get_dag()->clone();
         }
-        return new BooleanDagLightUtility(new_dag, get_env());
+        return new BooleanDagLightUtility(new_dag, get_env(), has_been_concretized);
     }
 
 //    BooleanDagLightUtility* produce_inlined_dag(bool use_same_name = false) {
@@ -772,11 +779,14 @@ public:
             assert(var_store->size() == 0);
             delete var_store;
         }
+
+        has_been_concretized = true;
+
     }
 
     virtual bool soft_clear_assert_num_shared_ptr_is_0();
 
-    int count_passing_inputs(File* file);
+    virtual int count_passing_inputs(File* file);
 
     virtual void clear(LightInliningTree*& inlining_tree) {
         if(soft_clear(inlining_tree)){
@@ -823,7 +833,7 @@ public:
     }
 
     void increment_shared_ptr() const {
-//        if(get_dag()->get_dag_id() == 91)
+//        if(get_dag()->get_dag_id() == 306)
 //        {
 //            cout << "here" << endl;
 //        }
@@ -832,7 +842,7 @@ public:
     }
 
     void decrement_shared_ptr_wo_clear() {
-//        if(get_dag()->get_dag_id() == 91)
+//        if(get_dag()->get_dag_id() == 306)
 //        {
 //            cout << "here " << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
 //        }

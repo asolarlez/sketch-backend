@@ -28,15 +28,15 @@ class SketchFunction: public BooleanDagUtility
 
     class Dependencies: private map<string, SketchFunction*> {
 
-    public:
+
     public:
         Dependencies() = default;
 
-        auto find(const string &key) const {
+        const_iterator find(const string &key) const {
             return map<string, SketchFunction *>::find(key);
         }
 
-        auto end() const {
+        const_iterator end() const {
             return map<string, SketchFunction *>::end();
         }
 
@@ -67,6 +67,16 @@ class SketchFunction: public BooleanDagUtility
 
         bool empty() const {
             return map<string, SketchFunction *>::empty();
+        }
+
+        void clear() {
+            vector<string> keys;
+            for(const auto& key : *this) {
+                keys.push_back(key.first);
+            }
+            for(const auto& key: keys) {
+                erase(key);
+            }
         }
     };
 
@@ -182,6 +192,9 @@ public:
     const map<string, string> &get_unit_ufuns_map();
 
 //    bool has_unit_self_loop() const;
+
+    int count_passing_inputs(File *file) override;
+
 };
 
 #include "NodeEvaluator.h"
@@ -192,11 +205,9 @@ namespace SketchFunctionEvaluator
 
     SL::VarVal* eval(SketchFunction* skfunc, const VarStore *input_var_store);
 
-    SL::VarVal* passes(const SketchFunction *skfunc, const VarStore *input_var_store);
+    SL::VarVal* new_passes(BooleanDagLightUtility *skfunc, const string& _line);
 
-    SL::VarVal* new_passes(SketchFunction *skfunc, const string& _line);
-
-    SL::VarVal* new_passes(SketchFunction* skfunc, const VarStore *input_var_store);
+    SL::VarVal* new_passes(BooleanDagLightUtility* skfunc, const VarStore *input_var_store);
 
 };
 

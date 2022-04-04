@@ -18,29 +18,27 @@ bool BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0()
     return true;
 }
 
-#include "File.h"
 
-int BooleanDagLightUtility::count_passing_inputs(File *file) {
-    int ret = 0;
-    int num_0s = 0;
-    int num_1s = 0;
-    for(int i = 0;i<file->size();i++)
-    {
-//            file->at(i)->printBrief(cout);
-        BooleanDagLightUtility* _dag = produce_concretization(file->at(i), bool_node::SRC);
-        _dag->increment_shared_ptr();
-        auto dag = _dag->get_dag();
-        assert(dag->getNodesByType(bool_node::CTRL).empty());
-        assert((dag->size() == 0) == (dag->get_failed_assert() == nullptr));
-        if(dag->get_failed_assert() == nullptr) {
-            ret += 1;
-        }
-        _dag->clear();
-    }
-    return ret;
+
+bool BooleanDagLightUtility::get_has_been_concretized() const {
+    return has_been_concretized;
 }
 
 #include "SketchFunction.h"
+
+#include "File.h"
+#include "SolverLanguageLexAndYaccHeader.h"
+
+int BooleanDagLightUtility::count_passing_inputs(File *file) {
+    int ret = 0;
+    for(int i = 0;i<file->size();i++) {
+        bool passes = SketchFunctionEvaluator::new_passes(this, file->at(i))->get_bool(true, false);
+        if(passes) {
+            ret += 1;
+        }
+    }
+    return ret;
+}
 
 set<string> *BooleanDagLightUtility::get_inlined_functions(set<string> *ret) const {
     for(auto node_it: get_dag()->getNodesByType(bool_node::UFUN)) {
@@ -103,10 +101,10 @@ LightInliningTree::LightInliningTree(
         assert(ufun_nodes.empty());
     }
 
-    if(get_dag_name() == "program_lvl0__id341__id374")
-    {
-        cout << "HERE" << endl;
-    }
+//    if(get_dag_name() == "program_lvl0__id341__id374")
+//    {
+//        cout << "HERE" << endl;
+//    }
 
     if(ufun_nodes.empty()) {
         if(skfunc_inlining_tree != nullptr) {

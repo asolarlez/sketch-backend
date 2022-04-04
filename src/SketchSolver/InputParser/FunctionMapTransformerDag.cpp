@@ -180,9 +180,9 @@ string FunctionMapTransformer::find_subdag_name(const string &from_dag, const st
     assert(it != root_dag_reps.end());
 
     bool print = false;
-    if(print)
+    if(print) {
         cout << endl << "IN find_subdag_name " << from_dag << " " << find_what_dag_this_varname_maps_to << endl;
-
+    }
     TransformPrimitive* subdag = it->second->find_underlying_function(find_what_dag_this_varname_maps_to, this, print);
 
     AssertDebug(subdag != nullptr, "port_name: '" +find_what_dag_this_varname_maps_to +"' not found.");

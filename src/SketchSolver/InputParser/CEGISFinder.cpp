@@ -246,7 +246,6 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 			return false;
 		}
 	}
-	cout<<endl;
 	if(!isSingleMinHole){
 		dirFind.addBigOrClause(&bigor[0], bigor.size()-1);
 		try{

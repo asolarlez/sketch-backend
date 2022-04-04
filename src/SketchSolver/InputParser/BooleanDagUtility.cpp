@@ -73,9 +73,6 @@ LightInliningTree * BooleanDagUtility::get_inlining_tree_non_const(bool assert_n
     return inlining_tree;
 }
 
-bool BooleanDagUtility::get_has_been_concretized() const {
-    return has_been_concretized;
-}
 
 bool BooleanDagUtility::get_has_been_inlined() const {
     return inlining_tree != nullptr;

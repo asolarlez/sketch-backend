@@ -276,7 +276,7 @@ bool SketchFunction::_clear()
 
 void SketchFunction::clear(){
 
-    //assert invai
+    //assert invariant
     for(const auto& sk_it : get_env()->function_map)
     {
         auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
@@ -472,8 +472,12 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(ProgramE
         UFUN_node* ufun_node = (UFUN_node*)node;
         string ufun_name = ufun_node->get_ufun_name();
 
+        if(unit_visited_ufun_names.find(ufun_name) != unit_visited_ufun_names.end()) {
+            continue;
+        }
         AssertDebug(unit_visited_ufun_names.find(ufun_name) == unit_visited_ufun_names.end(),
                     "TODO: REFACTOR THIS SLIGHTLY TO ONLY PROCESS UFUN_NAMEs ONCE. [arises in case: f(){g(); g()}]<enough to only process g once>");
+
         unit_visited_ufun_names.insert(ufun_name);
 
         if (ufun_name == get_dag_name()) {
@@ -496,8 +500,7 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(ProgramE
         SketchFunction *fresh_deep_exact_copy = nullptr;
 
         if(dp->find(sub_skfunc) == dp->end()) {
-             fresh_deep_exact_copy = sub_skfunc->deep_exact_clone_and_fresh_function_map(
-                    new_environment);
+             fresh_deep_exact_copy = sub_skfunc->deep_exact_clone_and_fresh_function_map(new_environment, dp);
         }
         else
         {
@@ -533,6 +536,8 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(ProgramE
         assert(fresh_unit_clone == fresh_function_map[_ufun_name]);
         ret = fresh_function_map[_ufun_name];
     }
+
+    new_dependencies.clear();
 
     (*dp)[this] = ret;
 
@@ -838,10 +843,29 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 //    return ret;
 //}
 
+
+
 #include "SolverLanguageLexAndYaccHeader.h"
 
 #include "GenericFile.h"
 #include "File.h"
+
+int SketchFunction::count_passing_inputs(File *file) {
+    int ret = 0;
+    int num_0s = 0;
+    int num_1s = 0;
+    SketchFunction* concretized_clone = deep_exact_clone_and_fresh_function_map();
+    concretized_clone->increment_shared_ptr();
+    concretized_clone->inline_this_dag(false);
+    for(int i = 0;i<file->size();i++) {
+        bool passes = SketchFunctionEvaluator::new_passes(concretized_clone, file->at(i))->get_bool(true, false);
+        if(passes) {
+            ret += 1;
+        }
+    }
+    concretized_clone->clear();
+    return ret;
+}
 
 SL::VarVal *SketchFunctionEvaluator::eval(SketchFunction *skfunc, const string& _line)
 {
@@ -918,26 +942,7 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, const VarStore
     return ret;
 }
 
-SL::VarVal *
-SketchFunctionEvaluator::passes(const SketchFunction *skfunc,  const VarStore* inputs)
-{
-    AssertDebug(false, "USE new_passes instead.");
-    if(skfunc->get_dag()->get_failed_assert() != nullptr) {
-        return new SL::VarVal(false);
-    }
-    BooleanDAG* concretized_dag = skfunc->get_dag()->clone();
-    skfunc->get_env()->doInline(*concretized_dag, *inputs, bool_node::SRC);
-    bool ret = concretized_dag->get_failed_assert() == nullptr;
-    if(!concretized_dag->getNodesByType(bool_node::CTRL).empty()) {
-        assert(!ret);
-    }
-
-    concretized_dag->clear();
-
-    return new SL::VarVal(ret);
-}
-
-SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc, const string& _line)
+SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, const string& _line)
 {
     VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
@@ -945,7 +950,7 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc, const st
     return ret;
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc, const VarStore* _the_var_store)
+SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, const VarStore* _the_var_store)
 {
     if(skfunc->get_dag()->get_failed_assert() != nullptr) {
         return new SL::VarVal(false);
@@ -987,3 +992,4 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc, const Va
 
     return new SL::VarVal(!fails);
 }
+

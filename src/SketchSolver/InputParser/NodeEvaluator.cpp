@@ -108,14 +108,6 @@ void NodeEvaluator::visit( ARR_W_node &node){
 	}else{
 		vecvalues[node.id] = new cpvec(vvin, idx, i(*node.getNewVal()));
 	}
-	if (false && node.id == 197) {
-		cout << node.lprint() << ":";
-		vecvalues[node.id]->print(cout);
-		cout << endl;
-		cout << node.getOldArr()->id << "{" << idx << "->" << i(*node.getNewVal()) << "} ";
-		vvin->print(cout);
-		cout << endl;
-	}
 }
 
 void NodeEvaluator::visit( ARR_CREATE_node &node){

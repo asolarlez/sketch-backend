@@ -339,7 +339,7 @@ File::File() = default;
 #include "GenericFile.h"
 #include "SketchFunction.h"
 
-VarStore* string_to_var_store(const string& _line, SketchFunction *skfunc, bool_node::Type var_type)
+VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfunc, bool_node::Type var_type)
 {
     GenericFile generic_file = GenericFile();
     generic_file.push_back(_line);

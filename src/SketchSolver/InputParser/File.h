@@ -608,6 +608,6 @@ public:
 };
 
 class SketchFunction;
-VarStore* string_to_var_store(const string& _line, SketchFunction *skfunc, bool_node::Type = bool_node::SRC);
+VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfunc, bool_node::Type = bool_node::SRC);
 
 #endif //SKETCH_SOURCE_FILE_H

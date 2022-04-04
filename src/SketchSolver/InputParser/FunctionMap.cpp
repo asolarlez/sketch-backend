@@ -24,23 +24,7 @@ const FMTL::TransformPrimitive* FunctionMap::insert(const string &name, SketchFu
 {
     assert(name == sketch_function->get_dag()->get_name());
     auto it = find(name);
-//    string target_prefix = "program_lvl0";
-//    if(name.substr(0, target_prefix.size()) == target_prefix)
-//    {
-//        bool enter = false;
-//        for(auto ufun: sketch_function->get_dag()->getNodesByType(bool_node::UFUN))
-//        {
-//            string target_prefix_2 = "printf";
-//            if(((UFUN_node*)ufun)->get_ufun_name().substr(0, target_prefix_2.size()) == target_prefix_2)
-//            {
-//                assert(!enter);
-//                enter = true;
-//            }
-//        }
-//        assert(enter);
-//    }
-//    if(name == "program_lvl0__id341__id374")
-//    {
+//    if(sketch_function->get_dag_id() == 303) {
 //        cout << "HERE" << endl;
 //    }
     if(it == end()) {
@@ -92,8 +76,14 @@ void FunctionMap::clear_assert_num_shared_ptr_is_0() {
 }
 
 void FunctionMap::erase(const string &name) {
+//    if(name == "printf") {
+//        cout << "HERE" << endl;
+//    }
     auto it = find(name);
     if(it != end()) {
+//        if(find(name)->second->get_dag_id() == 303) {
+//            cout << "HERE" << endl;
+//        }
         map<string, SketchFunction *>::erase(it);
     }
     FunctionMapTransformer::erase(name);
