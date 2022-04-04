@@ -150,7 +150,7 @@ public:
     SketchFunction *unit_clone(const string& explicit_name = "", const map<string, string>* hole_rename_map = nullptr);
     SketchFunction *deep_clone(bool only_tail = false);
     SketchFunction* deep_exact_clone_and_fresh_function_map(ProgramEnvironment* new_environment = nullptr, map<SketchFunction*, SketchFunction*>* dp = new map<SketchFunction*, SketchFunction*>());
-    SketchFunction * unit_exact_clone_in_fresh_env(Dependencies& new_dependencies, ProgramEnvironment* fresh_env, bool self_dependency = false);
+    SketchFunction *unit_exact_clone_in_fresh_env(Dependencies &new_dependencies, ProgramEnvironment *fresh_env);
     void deep_clone_tail();
 
     void clear() override;

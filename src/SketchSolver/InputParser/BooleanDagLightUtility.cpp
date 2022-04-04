@@ -433,10 +433,6 @@ void LightSkFuncSetter::init() {
 //    {
 //        cout << "HERE" << endl;
 //    }
-//    if(get_dag_name() == "printf__id14__id54" && name_to_count[get_dag_name()] >= 1)
-//    {
-//        cout << "here" << endl;
-//    }
 //    cout << "#trees " << all_inlining_trees.size() <<", tree_id: " << inlining_tree_global_id << ", dag_name: " << get_dag_name() << ", count: "<< name_to_count[get_dag_name()] << ", ptr: " << this << endl;
 //    cout << "";
 }

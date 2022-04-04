@@ -76,6 +76,7 @@ unit_line: assignment {$$ = new SL::UnitLine($1);} |
 	expression {$$ = new SL::UnitLine($1);}
 
 function_call : expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);}
+	     | identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3);}
 	     | '[' params ']' {$$ = new SL::FunctionCall(
                				new SL::SLType(new SL::Identifier("vector"),
                				new SL::TypeParams(

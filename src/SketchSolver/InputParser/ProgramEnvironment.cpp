@@ -45,18 +45,29 @@ void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pur
 FunctionMap* boolean_dag_map_to_function_map(map<string, BooleanDAG *> &boolean_dag_map, ProgramEnvironment *the_env)
 {
     auto ret = new FunctionMap(the_env);
-
-    for(const auto& it: boolean_dag_map)
-    {
-        for(auto ctrl : it.second->getNodesByType(bool_node::CTRL)) {
-            ((CTRL_node*)ctrl)->set_dag_name(it.second->get_name());
-        }
-        ret->insert(it.first, new SketchFunction(it.second, the_env));
-    }
-
-    for(const auto& it: *ret) {
-        it.second->set_dependencies(ret);
-    }
-
     return ret;
 };
+
+ProgramEnvironment::ProgramEnvironment(CommandLineArgs &_params, FloatManager &_floats, HoleHardcoder &_hardcoder,
+                                       map<string, BooleanDAG *> &boolean_dag_map, int _num_inlining_steps,
+                                       map<string, map<string, string>> &_replaceMap) :
+        params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
+        function_map(*boolean_dag_map_to_function_map(boolean_dag_map, this)), num_inlining_steps(_num_inlining_steps)
+{
+    { // init function_map;
+        auto ret = &function_map;
+        auto the_env = this;
+        for (const auto &it: boolean_dag_map) {
+            for (auto ctrl: it.second->getNodesByType(bool_node::CTRL)) {
+                ((CTRL_node *) ctrl)->set_dag_name(it.second->get_name());
+            }
+            ret->insert(it.first, new SketchFunction(it.second, the_env));
+        }
+
+        for (const auto &it: *ret) {
+            it.second->set_dependencies(ret);
+        }
+    }
+    program_environment_id = num_program_envs;
+    num_program_envs+=1;
+}

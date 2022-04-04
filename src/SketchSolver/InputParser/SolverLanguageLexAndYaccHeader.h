@@ -1206,6 +1206,8 @@ public:
     explicit ProgramState(FunctionMap& _function_map):
         function_map(_function_map), global() {}
 
+    explicit ProgramState(ProgramEnvironment* program_environment);
+
     virtual void clear(bool conscious_call = false)
     {
         AssertDebug(conscious_call, "METHOD NOT IMPLEMENTED IN DERIVED CLASS.");

@@ -36,13 +36,7 @@ public:
     }
 
     ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
-                       map<string, BooleanDAG*>& boolean_dag_map, int _num_inlining_steps, map<string, map<string, string> >& _replaceMap):
-            params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
-            function_map(*boolean_dag_map_to_function_map(boolean_dag_map, this)), num_inlining_steps(_num_inlining_steps)
-    {
-        program_environment_id = num_program_envs;
-        num_program_envs+=1;
-    }
+                       map<string, BooleanDAG*>& boolean_dag_map, int _num_inlining_steps, map<string, map<string, string> >& _replaceMap);
 
     ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder, int _num_inlining_steps, map<string, map<string, string> >& _replaceMap):
             params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),

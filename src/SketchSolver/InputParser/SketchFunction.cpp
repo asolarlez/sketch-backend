@@ -426,7 +426,8 @@ void SketchFunction::set_mirror_rep(const FMTL::TransformPrimitive *_mirror_rep)
     mirror_rep = _mirror_rep;
 }
 
-SketchFunction * SketchFunction::unit_exact_clone_in_fresh_env(Dependencies& new_dependencies, ProgramEnvironment* fresh_env, bool self_dependency)
+SketchFunction * SketchFunction::unit_exact_clone_in_fresh_env(
+        Dependencies &new_dependencies, ProgramEnvironment *fresh_env)
 {
     BooleanDAG *cloned_dag = get_dag()->clone(get_dag_name(), false);
 
@@ -435,27 +436,18 @@ SketchFunction * SketchFunction::unit_exact_clone_in_fresh_env(Dependencies& new
             replaced_labels, original_labels, nullptr, new_dependencies, get_inlining_tree(false),
             get_has_been_concretized());
 
-//    YOU DON'T ACTUALLY WANT TO HAVE self-dependencies FOR GARBAGE COLLECTION REASONS.
-//    if(self_dependency) {
-//        assert(clone->has_unit_self_loop());
-//        clone->add_dependency(clone);
-//    }
-//    else {
-//        assert(!clone->has_unit_self_loop());
-//    }
-
     clone->set_rep(fresh_env->function_map.insert(get_dag_name(), clone));
 
     return clone;
 }
 
-SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(ProgramEnvironment *new_environment, map<SketchFunction*, SketchFunction*>* dp)
+SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(
+        ProgramEnvironment *new_environment, map<SketchFunction*, SketchFunction*>* dp)
 {
     assert(dp->find(this) == dp->end());
     (*dp)[this] = nullptr;
 
-    bool is_root = new_environment == nullptr;
-    if(is_root) {
+    if(new_environment == nullptr) {
         new_environment = get_env()->shallow_copy_w_new_blank_function_map();
     }
 
@@ -528,7 +520,7 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(ProgramE
 
         fresh_unit_clone = (*dp)[_sub_skfunc];
         assert(fresh_unit_clone == nullptr);
-        fresh_unit_clone = _sub_skfunc->unit_exact_clone_in_fresh_env(new_dependencies, new_environment, true);
+        fresh_unit_clone = _sub_skfunc->unit_exact_clone_in_fresh_env(new_dependencies, new_environment);
 
         assert(fresh_function_map.find(_ufun_name) != fresh_function_map.end());
         assert(fresh_function_map[_ufun_name]->get_dag_name() == _ufun_name);
@@ -563,7 +555,8 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(ProgramE
             assert(get_env()->function_map.find(ufun_name) != get_env()->function_map.end());
 
             assert(ufun_name == get_env()->function_map[ufun_name]->get_dag_name());
-            get_env()->function_map[ufun_name]->unit_exact_clone_in_fresh_env(get_env()->function_map[ufun_name]->dependencies, _new_environment);
+            get_env()->function_map[ufun_name]->unit_exact_clone_in_fresh_env(
+                    get_env()->function_map[ufun_name]->dependencies, _new_environment);
 
             assert(fresh_function_map.find(ufun_name) != fresh_function_map.end());
             assert(fresh_function_map[ufun_name]->get_dag_name() == ufun_name);

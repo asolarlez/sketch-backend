@@ -14,8 +14,11 @@ namespace FMTL{
     class FunctionMapTransformerState: public ProgramState
     {
         SL::CodeBlock* root = nullptr;
+        FunctionMap& source_function_map;
+        ProgramEnvironment* env = nullptr;
+        map<SketchFunction*, SketchFunction*>* meta_map_dp = new map<SketchFunction*, SketchFunction*>();
     public:
-        explicit FunctionMapTransformerState(FunctionMap& _function_map): ProgramState(_function_map) {};
+        explicit FunctionMapTransformerState(FunctionMap& _source_function_map);
 
         void clear(bool conscious_call = true) override
         {
@@ -29,13 +32,13 @@ namespace FMTL{
 
         SL::VarVal* eval() {
 
-            assert(!function_map.empty());
-            for(const auto& it: function_map){
-                global.add_var_and_set_var_val_and_clear_var(
-                        new SL::Var(new SL::Identifier("SketchFunction"),
-                                    new SL::Identifier(it.first)),
-                        new SL::VarVal(function_map[it.first]));
-            }
+//            assert(!function_map.empty());
+//            for(const auto& it: function_map){
+//                global.add_var_and_set_var_val_and_clear_var(
+//                        new SL::Var(new SL::Identifier("SketchFunction"),
+//                                    new SL::Identifier(it.first)),
+//                        new SL::VarVal(function_map[it.first]));
+//            }
 
             new_stack_frame();
             assert(frames.size() == 1);
@@ -53,6 +56,12 @@ namespace FMTL{
 
             return var_val_ret;
         }
+
+        SketchFunction *get_source_skfunc(string name);
+
+        ProgramEnvironment *get_env();
+
+        map<SketchFunction *, SketchFunction *> *get_meta_map_dp();
     };
 
     void parse_function_map_transformer_program(FunctionMapTransformerState* _state, string solver_program_file);

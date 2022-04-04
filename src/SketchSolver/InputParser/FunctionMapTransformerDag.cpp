@@ -115,6 +115,10 @@ void FunctionMapTransformer::erase(const string &to_erase_name, bool assert_not_
     if(assert_not_in_function_map) {
         assert(function_map->find(to_erase_name) == function_map->end());
     }
+//    if(to_erase_name == "condition")
+//    {
+//        cout << "HERE" << endl;
+//    }
     assert(root_dag_reps.find(to_erase_name) != root_dag_reps.end());
     assert(root_dag_reps[to_erase_name]->get_function_name() == to_erase_name);
     auto to_erase = root_dag_reps[to_erase_name];
@@ -1108,7 +1112,7 @@ InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<
     }
     assign_map_str += "}";
 
-    ret += function_name + ".init(" + hole_names_str + ", " + assign_map_str + ");" + "\n";
+    ret += function_name + " = init(" + "\"" + function_name + "\"" + ", " + hole_names_str + ", " + assign_map_str + ");" + "\n";
 }
 
 void ClonePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt,

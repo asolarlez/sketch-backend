@@ -23,8 +23,9 @@ void FunctionMap::populate_boolean_dag_map(map<string, BooleanDAG*>& boolean_dag
 const FMTL::TransformPrimitive* FunctionMap::insert(const string &name, SketchFunction *sketch_function)
 {
     assert(name == sketch_function->get_dag()->get_name());
+    assert(sketch_function->get_env() == get_env());
     auto it = find(name);
-//    if(sketch_function->get_dag_id() == 303) {
+//    if(sketch_function->get_dag_id() == 584 || sketch_function->get_dag_id() == 587) {
 //        cout << "HERE" << endl;
 //    }
     if(it == end()) {
@@ -81,7 +82,8 @@ void FunctionMap::erase(const string &name) {
 //    }
     auto it = find(name);
     if(it != end()) {
-//        if(find(name)->second->get_dag_id() == 303) {
+        auto skfunc = it->second;
+//        if(name == "condition") {
 //            cout << "HERE" << endl;
 //        }
         map<string, SketchFunction *>::erase(it);

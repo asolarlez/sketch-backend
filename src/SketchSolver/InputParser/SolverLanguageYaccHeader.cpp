@@ -149,3 +149,8 @@ void ProgramState::add_to_function_map(const string &skfunc_name, SketchFunction
     }
 }
 
+ProgramState::ProgramState(ProgramEnvironment *program_environment):
+        function_map(program_environment->function_map), global() {
+    assert(program_environment != nullptr);
+}
+
