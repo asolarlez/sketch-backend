@@ -949,7 +949,7 @@ TransformPrimitive *TransformPrimitive::get_main_parent() {
     return main_parent;
 }
 
-void TransformPrimitive::pretty_print(string& ret, const FunctionMapTransformer& fmt, map<string, map<string, string> >* running_assignment_map,
+void TransformPrimitive::pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer& fmt, map<string, map<string, string> >* running_assignment_map,
                                         set<TransformPrimitive*>* _visited) const {
     assert(false);
 }
@@ -958,7 +958,7 @@ string TransformPrimitive::to_string() {
     return function_name + " | " + transform_primitive_meta_type_name[meta_type] + " | parents: " + parents_to_str() + " | children:" + children_to_str();
 }
 
-void ReplacePrimitive::pretty_print(string& ret,
+void ReplacePrimitive::pretty_print(string& ret, map<string, string>* holes_to_values,
         const FunctionMapTransformer &fmt,
         map<string, map<string, string> >* running_assignment_map,
         set<TransformPrimitive*>* visited) const {
@@ -979,7 +979,7 @@ void ReplacePrimitive::pretty_print(string& ret,
         if(running_assignment_map->at(function_name).find(var_name) != running_assignment_map->at(function_name).end()) {
             //var_name has been updated on the path to here with another val_name in the function with function name.
             //meaning that the current val_name is superseded.
-            return main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
+            return main_parent->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
         }
         else {
             running_assignment_map->at(function_name)[var_name] = val_name;
@@ -991,8 +991,8 @@ void ReplacePrimitive::pretty_print(string& ret,
 
     assert(root_dag_reps.find(assign_map.begin()->second) != root_dag_reps.end());
 
-    main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
-    root_dag_reps.at(assign_map.begin()->second)->pretty_print(ret, fmt, running_assignment_map, visited);
+    main_parent->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
+    root_dag_reps.at(assign_map.begin()->second)->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
     ret += function_name + ".replace(" + "\"" + assign_map.begin()->first + "\"" + ", " + assign_map.begin()->second + ");" + "\n";
 
     assert(running_assignment_map->find(function_name) != running_assignment_map->end());
@@ -1005,7 +1005,7 @@ void ReplacePrimitive::pretty_print(string& ret,
     }
 }
 
-void ConcretizePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt,
+void ConcretizePrimitive::pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt,
                                          map<string, map<string, string>> *running_assignment_map,
                                          set<TransformPrimitive *> *visited) const  {
 
@@ -1019,14 +1019,14 @@ void ConcretizePrimitive::pretty_print(string& ret, const FunctionMapTransformer
     bool has_main_parent = false;
     for (const auto &it: parents) {
         if (it.second != main_parent) {
-            it.second->pretty_print(ret, fmt, running_assignment_map, visited);
+            it.second->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
         } else {
             assert(!has_main_parent);
             has_main_parent = true;
         }
     }
     assert(has_main_parent);
-    main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
+    main_parent->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
 
     auto floats = fmt.get_function_map()->get_env()->get_floats();
 
@@ -1041,6 +1041,9 @@ void ConcretizePrimitive::pretty_print(string& ret, const FunctionMapTransformer
                 var_store_str += ", ";
             }
             var_store_str += "\"" + it.first + "\"" + " : \"" + it.second + "\"";
+            assert(holes_to_values->find(it.first) == holes_to_values->end());
+            (*holes_to_values)[it.first] = it.second;
+
         }
         var_store_str += "}";
     }
@@ -1052,7 +1055,7 @@ void ConcretizePrimitive::pretty_print(string& ret, const FunctionMapTransformer
 }
 
 void
-InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string>> *running_assignment_map,
+InitPrimitive::pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt, map<string, map<string, string>> *running_assignment_map,
                             set<TransformPrimitive *> *visited) const {
 
     if(visited->find((TransformPrimitive *) this) != visited->end()) {
@@ -1082,7 +1085,7 @@ InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<
 
         if(print_parent) {
             auto next = root_dag_reps.at(val_name);
-            next->pretty_print(ret, fmt, running_assignment_map, visited);
+            next->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
         }
         else {
             ret += "//" + var_name + " -> " + val_name + " superseded in " + function_name + "\n";
@@ -1115,7 +1118,7 @@ InitPrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt, map<
     ret += function_name + " = declare(" + "\"" + function_name + "\"" + ", " + hole_names_str + ", " + assign_map_str + ");" + "\n";
 }
 
-void ClonePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt,
+void ClonePrimitive::pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt,
                                     map<string, map<string, string>> *running_assignment_map,
                                     set<TransformPrimitive *> *visited) const {
 
@@ -1138,6 +1141,6 @@ void ClonePrimitive::pretty_print(string& ret, const FunctionMapTransformer &fmt
     }
     hole_renaming_map_str += "}";
 
-    main_parent->pretty_print(ret, fmt, running_assignment_map, visited);
+    main_parent->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
     ret += function_name + " = " + main_parent->get_function_name() + ".unit_clone(" + "\"" + function_name + "\"" + ", " + hole_renaming_map_str + ");" + "\n";
 }

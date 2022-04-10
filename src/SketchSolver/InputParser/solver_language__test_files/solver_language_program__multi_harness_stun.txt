@@ -37,13 +37,13 @@ int composite_predicate(int x)
 
 int dummy_program(int x) {return 1;}
 
-@FromFile("zig_zag.data")
+@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness int eval_program_main(int x, int out)
 {
     return dummy_program(x);
 }
 
-@FromFile("zig_zag.data")
+@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void sketch_main(int x, int out)
 {
     assert(composite_predicate(x) == out);
@@ -759,7 +759,6 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
     num_rows_per_sample = 6;
     select_best = 5;
 
-    //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
 
     file = File(file_name, sketch_main_lvl0_left__Wrapper);
@@ -846,9 +845,7 @@ Solver Solution original_sketch_main()
 
 Solver Solution beam_search_sketch_main()
 {
-    //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
-    //string file_name = "uav_kg_big__as_bools__smaller.data";
 
     File file = File(file_name, sketch_main_lvl0__Wrapper); //unnatural, remove harness
     int total_num_rows = file.size();
@@ -952,7 +949,7 @@ Solver Solution beam_search_sketch_main()
 
 Solver Solution repeat_greedy_sketch_main()
 {
-    string file_name = "zig_zag.data";
+    string file_name = "/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
     File file = File(file_name, sketch_main_lvl2__Wrapper);
     int n = file.size();
 

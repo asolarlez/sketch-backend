@@ -35,14 +35,14 @@ using namespace std;
 class SolverLanguage {
 public:
     SolverLanguage() = default;
-    void eval(string solver_program_file_name, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
+    map<string, string> eval(string solver_program_file_name, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {
 
         SolverProgramState state_abs =
                 SolverProgramState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
-
         SolverProgramState* state = &state_abs;
+        map<string, string> final_hole_values;
 
         {
 
@@ -53,7 +53,11 @@ public:
 
             int init_function_map_transformer_size = function_map.transformer_size();
 
+            cout << "READING, LEXING, AND PARSING SOLVER PROGRAM FROM FILE: " << solver_program_file_name << endl;
+
             parse_solver_langauge_program(state, solver_program_file_name);
+
+            cout << "DONE PARSING SOLVER PROGRAM" << endl;
 
             SL::VarVal *var_val_ret = state->eval();
 
@@ -81,11 +85,12 @@ public:
 
                 bool save_and_test_fmtl_program = true;
 
-                const string fmtl_program_file_name = "fmtl_program_file.fmtl";
+                const string fmtl_program_file_name = "ftml_program_file.fmtl";
 
                 if(save_and_test_fmtl_program)
                 {
-                    string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map);
+                    assert(final_hole_values.empty());
+                    string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map, &final_hole_values);
                     cout << "pretty_print FMTL program:" << endl;
                     cout << fmtl_program_str << endl;
                     cout << endl;
@@ -112,7 +117,6 @@ public:
                     FMTL::parse_function_map_transformer_program(fmtl_state, fmtl_program_file_name);
 
                     function_map.clear_erased_root_dag_reps();
-
 
                     SL::VarVal* from_fmtl_var_val = fmtl_state->eval();
 
@@ -158,6 +162,8 @@ public:
                 function_map.soft_clear_transformer();
             }
         }
+
+        return final_hole_values;
     }
 };
 

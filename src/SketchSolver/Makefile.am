@@ -125,7 +125,11 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/BooleanDagLightUtility.h \
     InputParser/BooleanDagUtility.h \
     InputParser/FunctionMapTransformerLanguage.h \
-    InputParser/FunctionMap.h
+    InputParser/FunctionMap.h \
+    InputParser/function_map_transformer_language.h \
+    InputParser/FunctionMapTransformerDag.h \
+    InputParser/GenericFile.h
+
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -196,7 +200,13 @@ libcegis_a_SOURCES =				\
     InputParser/BooleanDagUtility.cpp \
     InputParser/FunctionMapTransformerLanguage.cpp \
     InputParser/solver_language_lex.cpp \
-    InputParser/FunctionMap.cpp
+    InputParser/FunctionMap.cpp \
+    InputParser/function_map_transformer_language.cpp \
+    InputParser/FunctionMapTransformerDag.cpp \
+    InputParser/GenericFile.cpp \
+    InputLexer.cpp
+
+
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp

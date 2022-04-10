@@ -251,17 +251,17 @@ namespace FMTL {
 
         TransformPrimitive *get_main_parent();
 
-        virtual void pretty_print(string& ret,
+        virtual void pretty_print(string& ret, map<string, string>* holes_to_values,
                                   const FunctionMapTransformer &fmt,
                                   map<string, map<string, string> > *running_assignment_map = new map<string, map<string, string> >(),
                                   set<TransformPrimitive *> *visited = new set<TransformPrimitive *>()) const;
 
     public:
 
-        string pretty_print(const FunctionMapTransformer &fmt) const
+        string pretty_print(const FunctionMapTransformer &fmt, map<string, string>* holes_to_values) const
         {
             string ret;
-            pretty_print(ret, fmt);
+            pretty_print(ret, holes_to_values, fmt);
             ret += "return " + function_name + ";";
             return ret;
         }
@@ -293,7 +293,7 @@ namespace FMTL {
             return &concretization_type;
         }
 
-        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+        void pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
                      set<TransformPrimitive *> *visited) const override;
     };
 
@@ -322,7 +322,7 @@ namespace FMTL {
             return &assign_map;
         }
 
-        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+        void pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
                      set<TransformPrimitive *> *visited) const override;
     };
 
@@ -343,7 +343,7 @@ namespace FMTL {
             return &assign_map;
         }
 
-        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+        void pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
                      set<TransformPrimitive *> *visited) const override;
     };
 
@@ -355,7 +355,7 @@ namespace FMTL {
                 const map<string, string> &_hole_renaming_map) :
                 TransformPrimitive(_new_function, _clone), hole_renaming_map(_hole_renaming_map) {}
 
-        void pretty_print(string& ret, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
+        void pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt, map<string, map<string, string> > *running_assignment_map,
                      set<TransformPrimitive *> *visited) const override;
     };
 

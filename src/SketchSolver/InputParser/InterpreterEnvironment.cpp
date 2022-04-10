@@ -982,12 +982,21 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
 
 //    string solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
 
-    solver_language.eval(params.solver_program_file_name, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
-    for(const auto& it: program_env.function_map)
-    {
+    assert(currentControls.empty());
+    currentControls = solver_language.eval(params.solver_program_file_name, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+
+    for(const auto& it: program_env.function_map) {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.
     }
     delete &program_env.function_map; //.clear_assert_num_shared_ptr_is_0(); // at this point all dags are cleared.
+
+    printControls("");
+
+    cout << "Final Controls:" << endl;
+    for(auto it : currentControls)
+    {
+        cout << "\t" << it.first <<" "<< it.second << endl;
+    }
 
     return SAT_SATISFIABLE;
 }
