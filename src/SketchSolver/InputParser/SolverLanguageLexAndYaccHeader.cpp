@@ -350,6 +350,9 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
 }
 
 
+template SL::VarVal *SL::FunctionCall::eval<SolverProgramState, GenericFile>(
+        GenericFile*& file, SolverProgramState *state, const SL::VarVal* const the_var_val);
+
 template<typename StateType, typename FileType>
 SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::VarVal* const the_var_val) {
     if(is_same<FileType, File>::value) {
@@ -1324,7 +1327,7 @@ SL::VarVal* SL::Method::eval(StateType *state, vector<T>& inputs)  {
     return state->get_return_var_val();
 }
 
-//template void SL::Method::run<SolverProgramState>(SolverProgramState *state, vector<Param *> &input_params);
+template void SL::Method::run<SolverProgramState>(SolverProgramState *state, vector<Param *> &input_params);
 
 template<typename StateType>
 void SL::Method::run(StateType *state, vector<Param *> &input_params)
@@ -1390,6 +1393,8 @@ var(new Var(to_copy->var)), body(new CodeBlock(to_copy->body)), params(copy_para
 const vector<SL::Param*>* SL::Method::get_params() {
     return params;
 }
+
+template SL::VarVal* SL::Param::eval<ProgramState>(ProgramState *state);
 
 template<typename StateType>
 SL::VarVal* SL::Param::eval(StateType *state)  {
@@ -1928,6 +1933,17 @@ void SL::VarVal::clear_assert_0_shared_ptrs() {
     assert(num_shared_ptr == 0);
     _clear();
 }
+
+template void SL::VarVal::clear<SketchFunction*>(SketchFunction* &val, bool do_delete);
+template void SL::VarVal::clear<File*>(File* &val, bool do_delete);
+template void SL::VarVal::clear<GenericFile*>(GenericFile* &val, bool do_delete);
+template void SL::VarVal::clear<SL::PolyMap*>(SL::PolyMap* &val, bool do_delete);
+template void SL::VarVal::clear<SL::PolyPair*>(SL::PolyPair* &val, bool do_delete);
+template void SL::VarVal::clear<SL::PolyVec*>(SL::PolyVec* &val, bool do_delete);
+template void SL::VarVal::clear<SL::Identifier*>(SL::Identifier* &val, bool do_delete);
+template void SL::VarVal::clear<SL::Method*>(SL::Method* &val, bool do_delete);
+template void SL::VarVal::clear<HoleVarStore*>(HoleVarStore* &val, bool do_delete);
+template void SL::VarVal::clear<InputVarStore*>(InputVarStore* &val, bool do_delete);
 
 template<typename T>
 void SL::VarVal::clear(T &val, bool do_delete) {

@@ -122,14 +122,16 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/SketchFunction.h \
     InputParser/ProgramEnvironment.h \
     InputParser/File.h \
+    InputParser/GenericFile.h \
     InputParser/BooleanDagLightUtility.h \
     InputParser/BooleanDagUtility.h \
     InputParser/FunctionMapTransformerLanguage.h \
     InputParser/FunctionMap.h \
-    InputParser/function_map_transformer_language.h \
+    InputParser/FunctionMapTransformerLanguage.h \
     InputParser/FunctionMapTransformerDag.h \
-    InputParser/GenericFile.h
-
+    InputParser/function_map_transformer_language_yacc.h \
+    InputParser/SolverLanguage.h \
+    InputParser/SolverLanguagePrimitives.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -193,6 +195,7 @@ libcegis_a_SOURCES =				\
     InputParser/SketchFunction.cpp \
     InputParser/ProgramEnvironment.cpp \
     InputParser/File.cpp \
+    InputParser/GenericFile.cpp \
     InputParser/VarStore.cpp \
     InputParser/SolverLanguageLexAndYaccHeader.cpp \
     InputParser/SolverLanguageYaccHeader.cpp \
@@ -201,10 +204,11 @@ libcegis_a_SOURCES =				\
     InputParser/FunctionMapTransformerLanguage.cpp \
     InputParser/solver_language_lex.cpp \
     InputParser/FunctionMap.cpp \
-    InputParser/function_map_transformer_language.cpp \
+    InputParser/FunctionMapTransformerLanguage.cpp \
     InputParser/FunctionMapTransformerDag.cpp \
-    InputParser/GenericFile.cpp \
-    InputLexer.cpp
+    InputParser/function_map_transformer_language_yacc.cpp \
+    InputParser/SolverLanguage.cpp \
+    InputParser/SolverLanguagePrimitives.cpp
 
 
 
@@ -222,7 +226,7 @@ BUILT_SOURCES = InputParser.cpp InputParser.hpp InputLexer.cpp
 InputParser/InputReader.cpp: InputParser.cpp InputLexer.cpp
 
 InputLexer.cpp: InputParser/InputLexer.ll InputParser.cpp
-	$(LEX)$@ $<
+	$(LEX) -o$@ $<
 
 InputParser.hpp: InputParser.cpp
 
