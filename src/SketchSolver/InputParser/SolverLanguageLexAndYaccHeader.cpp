@@ -223,7 +223,7 @@ SL::Assignment::Assignment(SL::Assignment *to_copy) : dest_type(to_copy->dest_ty
 int SL::Identifier::global_identifier_id = 0;
 
 template<typename StateType>
-SL::VarVal* SL::Identifier::eval(StateType *state)  {
+SL::VarVal* SL::Identifier::eval(StateType *state) {
     return state->get_var_val(state->name_to_var(this));
 }
 

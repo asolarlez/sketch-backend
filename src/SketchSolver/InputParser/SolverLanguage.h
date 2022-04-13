@@ -85,7 +85,7 @@ public:
 
                 bool save_and_test_fmtl_program = true;
 
-                const string fmtl_program_file_name = "ftml_program_file.fmtl";
+                const string fmtl_program_file_name = "fmtl_program_file.fmtl";
 
                 if(save_and_test_fmtl_program)
                 {
