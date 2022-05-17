@@ -872,7 +872,7 @@ int SketchFunction::count_passing_inputs(File *file, bool do_assert) {
 
 //#define cilk_spawn
 //#define cilk_sync
-#define cilk_for for
+//#define cilk_for for
 
 
 
@@ -884,11 +884,8 @@ SL::PolyVec* SketchFunction::evaluate_inputs(File *file) {
     SketchFunction* concretized_clone = deep_exact_clone_and_fresh_function_map();
     concretized_clone->increment_shared_ptr();
     concretized_clone->inline_this_dag(false);
-    SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"));
-    for(int i = 0;i<file->size();i++)
-    {
-        ret->push_back(nullptr);
-    }
+    SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
+
     cilk_for(int i = 0;i<file->size();i++) {
         bool passes = SketchFunctionEvaluator::new_passes(
                 concretized_clone, file->at(i), false)->get_bool(true, false);
