@@ -72,7 +72,7 @@ return                       {print_rule("return", string(yytext)); return retur
 
 void print_rule(string description, string str)
 {
-    //cout << "RULE " << description <<" TOKEN " << str << endl;
+    cout << "RULE " << description <<" TOKEN " << str << endl;
 }
 
 void yyerror(yyscan_t scanner, SolverProgramState* state, string s)

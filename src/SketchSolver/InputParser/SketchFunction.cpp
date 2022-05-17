@@ -849,22 +849,77 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 #include "GenericFile.h"
 #include "File.h"
 
-int SketchFunction::count_passing_inputs(File *file) {
-    int ret = 0;
-    int num_0s = 0;
-    int num_1s = 0;
+
+#include <chrono>
+
+int SketchFunction::count_passing_inputs(File *file, bool do_assert) {
+    if(do_assert) {
+        assert(false);
+    }
+
+    SL::PolyVec* passing_inputs_bitvector = evaluate_inputs(file);
+    vector<bool> bitvector = passing_inputs_bitvector->to_vector_bool();
+    passing_inputs_bitvector->clear();
+    int predicted_ret = 0;
+    for(int i = 0;i<bitvector.size();i++) {
+        predicted_ret+=bitvector[i];
+    }
+    return predicted_ret;
+}
+
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
+
+//#define cilk_spawn
+//#define cilk_sync
+#define cilk_for for
+
+
+
+SL::PolyVec* SketchFunction::evaluate_inputs(File *file) {
+
+    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
+    auto start = chrono::steady_clock::now();
+
     SketchFunction* concretized_clone = deep_exact_clone_and_fresh_function_map();
     concretized_clone->increment_shared_ptr();
     concretized_clone->inline_this_dag(false);
-    for(int i = 0;i<file->size();i++) {
-        bool passes = SketchFunctionEvaluator::new_passes(concretized_clone, file->at(i))->get_bool(true, false);
-        if(passes) {
-            ret += 1;
-        }
+    SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"));
+    for(int i = 0;i<file->size();i++)
+    {
+        ret->push_back(nullptr);
+    }
+    cilk_for(int i = 0;i<file->size();i++) {
+        bool passes = SketchFunctionEvaluator::new_passes(
+                concretized_clone, file->at(i), false)->get_bool(true, false);
+        SL::VarVal* passes_var_val = new SL::VarVal(passes);
+        ret->set(i, passes_var_val);
+//        ret->push_back(passes_var_val); //sequential
+/// FOR EXECUTION (i.e. getting the output, rather whether or not it passes).
+//        if(passes) {
+//            SL::VarVal *output = SketchFunctionEvaluator::eval(concretized_clone, file->at(i));
+//            ret->push_back(output);
+//        }
+//        else {
+//            ret->push_back(nullptr);
+//        }
     }
     concretized_clone->clear();
+
+
+    auto end = chrono::steady_clock::now();
+
+    auto elapsed = chrono::duration_cast<chrono::microseconds>(end - start).count();
+
+    cout << "END MEASURING TIME (evaluate_inputs)" << endl;
+    cout << "ELAPSED: " << elapsed << " (microseconds)" << endl;
+    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
+    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
+    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
+
     return ret;
 }
+
 
 SL::VarVal *SketchFunctionEvaluator::eval(SketchFunction *skfunc, const string& _line)
 {
@@ -949,8 +1004,11 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, 
     return ret;
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, const VarStore* _the_var_store)
+SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, const VarStore* _the_var_store, bool do_assert)
 {
+    if(do_assert) {
+        assert(false);
+    }
     if(skfunc->get_dag()->get_failed_assert() != nullptr) {
         return new SL::VarVal(false);
     }

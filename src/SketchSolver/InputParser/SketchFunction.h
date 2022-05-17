@@ -17,6 +17,8 @@ namespace SL
 {
     class VarVal;
     class FunctionCall;
+    class PolyVec;
+    class PolyType;
 }
 
 class SketchFunction: public BooleanDagUtility
@@ -216,7 +218,8 @@ public:
 
 //    bool has_unit_self_loop() const;
 
-    int count_passing_inputs(File *file) override;
+    int count_passing_inputs(File *file, bool do_assert = true) override;
+    SL::PolyVec* evaluate_inputs(File *file);
 
 };
 
@@ -230,7 +233,7 @@ namespace SketchFunctionEvaluator
 
     SL::VarVal* new_passes(BooleanDagLightUtility *skfunc, const string& _line);
 
-    SL::VarVal* new_passes(BooleanDagLightUtility* skfunc, const VarStore *input_var_store);
+    SL::VarVal* new_passes(BooleanDagLightUtility* skfunc, const VarStore *input_var_store, bool do_assert = true);
 
 };
 

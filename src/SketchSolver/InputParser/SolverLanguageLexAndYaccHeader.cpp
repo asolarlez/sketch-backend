@@ -725,7 +725,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -987,6 +987,8 @@ void SL::init_method_str_to_method_id_map()
     //FMTL Primitives:
 
     add_to_method_str_to_method_id_map("declare", _declare, "namespace");
+    add_to_method_str_to_method_id_map("vectorized_count_passing_inputs", _vectorized_count_passing_inputs, "SketchFunction");
+    add_to_method_str_to_method_id_map("evaluate_inputs", _evaluate_inputs, "SketchFunction");
 
 
 method_str_to_method_id_map_is_defined = true;
@@ -1107,20 +1109,11 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
 
                 var_store = string_to_var_store(line, skfunc, bool_node::CTRL);
 
-//                BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
-//                harness->increment_shared_ptr();
-
                 SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
                 harness->increment_shared_ptr();
                 harness->inline_this_dag();
 
                 set_inlining_tree(var_store, harness);
-
-//                if(var_store->get_inlining_tree()->get_dag_id() == 834)
-//                {
-//                    cout << "HERE" << endl;
-//                }
-
                 harness->clear();
             }
             else {
@@ -1131,8 +1124,6 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 state->function_map.insert(skfunc->get_dag_name(), skfunc);
             }
 
-            ///!!! var_stored.inlining tree doesn't have the same topology as skfunc.
-//            assert(skfunc->get_inlining_tree(true)->match_topology(var_store->get_inlining_tree()));
             skfunc->_inplace_recursive_concretize(var_store, bool_node::CTRL, true);
 
             if(var_store != nullptr) {
@@ -1183,7 +1174,16 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         }
         case _passes:
         {
-            assert(params.size() == 1);
+//            assert(params.size() == 1);
+            assert(params.size() >= 1);
+            bool do_assert = true;
+            if(params.size() == 2) {
+                do_assert = params[1]->eval(state)->get_bool();
+            }
+            else {
+                assert(params.size() == 1);
+            }
+
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
 #ifdef USE_GENERIC_FILE
@@ -1191,7 +1191,7 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
 #else
             InputVarStore* input_holder = input_holder_var_val->get_input_holder();
 #endif
-            auto ret_predicted = SketchFunctionEvaluator::new_passes(skfunc, input_holder);
+            auto ret_predicted = SketchFunctionEvaluator::new_passes(skfunc, input_holder, do_assert);
             input_holder_var_val->decrement_shared_ptr();
             return ret_predicted;
             break;
@@ -1206,7 +1206,6 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         }
         case _num_holes: {
             assert(params.empty());
-//            BooleanDagLightUtility* func_clone = ((BooleanDagLightUtility*)skfunc)->produce_inlined_dag();
             int init_num_global_dags = BooleanDAG::get_allocated().size();
 
             SketchFunction* func_clone = skfunc->deep_exact_clone_and_fresh_function_map();
@@ -1279,10 +1278,6 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         case _inplace_unit_replace:
         {
             assert(params.size() == 2);
-//            if(skfunc->get_dag_id() == 832)
-//            {
-//                cout << "HERE" << endl;
-//            }
             eval__sketch_function_replace(the_var_val, skfunc, state, params);
             return new VarVal();
             break;
@@ -1313,6 +1308,34 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             string subfunc_name = params[0]->eval(state)->get_string(true, false);
             skfunc->reset(subfunc_name);
             return new VarVal();
+        }
+        case _vectorized_count_passing_inputs:
+        {
+            assert(params.size() == 1);
+
+            VarVal *file_var_val = params[0]->eval(state);
+            file_var_val->increment_shared_ptr();
+            File* file = file_var_val->get_file();
+
+            int ret = skfunc->count_passing_inputs(file, false);
+            file_var_val->decrement_shared_ptr();
+
+            return new VarVal(ret);
+            break;
+        }
+        case _evaluate_inputs:
+        {
+            assert(params.size() == 1);
+
+            VarVal *file_var_val = params[0]->eval(state);
+            file_var_val->increment_shared_ptr();
+            File* file = file_var_val->get_file();
+
+            PolyVec* ret = skfunc->evaluate_inputs(file);
+            file_var_val->decrement_shared_ptr();
+
+            return new VarVal(ret);
+            break;
         }
         default:
             assert(false);
@@ -1533,8 +1556,10 @@ bool SL::var_val_invariant(SL::Var *var, SL::VarVal* var_val)
 
 
 void SL::PolyVec::push_back(SL::VarVal* new_element) {
-    assert(SL::var_val_invariant(get_type_params()->at(0), new_element));
-    new_element->increment_shared_ptr();
+    if(new_element != nullptr) {
+        assert(SL::var_val_invariant(get_type_params()->at(0), new_element));
+        new_element->increment_shared_ptr();
+    }
     vector<SL::VarVal* >::emplace_back(new_element);
 }
 
@@ -1575,6 +1600,14 @@ SL::PolyVec::PolyVec(PolyVec* to_copy): PolyType(to_copy)
     {
         push_back(new SL::VarVal(it));
     }
+}
+
+vector<bool> SL::PolyVec::to_vector_bool() {
+    vector<bool> ret;
+    for(int i = 0;i<size();i++) {
+        ret.push_back(at(i)->get_bool());
+    }
+    return ret;
 }
 
 SL::PolyMap::PolyMap(SL::PolyMap* to_copy): PolyType(to_copy)

@@ -938,6 +938,181 @@ void run(StateType* state);
     bool var_val_invariant(SL::SLType *var_type, SL::VarVal*var_val);
     bool var_val_invariant(SL::Var *var, SL::VarVal*var_val);
 
+
+    vector<SL::SLType*>* copy_type_params(vector<SLType*>* to_copy);
+
+    class PolyType
+    {
+        vector<SL::SLType*>* type_params = nullptr;
+
+        static vector<SL::SLType*>* one_type_param(string type_name)
+        {
+            vector<SL::SLType*>* ret = new vector<SL::SLType*>();
+            ret->push_back(new SL::SLType(new Identifier(type_name)));
+            return ret;
+        }
+
+    public:
+        explicit PolyType(TypeParams* _type_params){
+            assert(_type_params != nullptr);
+            type_params = new vector<SL::SLType*>();
+            _type_params->populate_vector(*type_params);
+            _type_params->clear();
+        }
+        explicit PolyType(vector<SLType*>* _type_params): type_params(_type_params) {
+            assert(_type_params != nullptr);}
+        explicit PolyType(string any_str): type_params(one_type_param(any_str)) {assert(any_str == "any");}
+        explicit PolyType(PolyType* to_copy): type_params(copy_type_params(to_copy->type_params)) {
+            assert(to_copy != nullptr);
+        };
+
+        SL::SLType* at(int idx)
+        {
+            assert(type_params != nullptr);
+            assert(0 <= idx && idx < size());
+            return type_params->at(idx);
+        }
+
+        virtual size_t size()
+        {
+            assert(type_params != nullptr);
+            if(type_params == nullptr)
+            {
+                return 0;
+            }
+            return type_params->size();
+        }
+
+        const vector<SLType*>* get_type_params()
+        {
+            return type_params;
+        }
+
+        string to_string()
+        {
+            string str;
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(i >= 1)
+                {
+                    str+= ", ";
+                }
+                str += type_params->at(i)->to_string();
+            }
+            return str;
+        }
+
+        virtual void clear()
+        {
+            soft_clear();
+            delete this;
+        }
+
+        void soft_clear()
+        {
+            for(auto & it: *type_params)
+            {
+                it->clear();
+                it = nullptr;
+            }
+            type_params->clear();
+            delete type_params;
+            type_params = nullptr;
+        }
+
+        bool operator == (const PolyType& other) const
+        {
+            if(type_params->size() != other.type_params->size())
+            {
+                return false;
+            }
+            assert(type_params->size() == other.type_params->size());
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(!(*type_params->at(i) == *other.type_params->at(i)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        bool operator < (const PolyType& other) const
+        {
+            assert(is_strongly_typed);
+            if(type_params->size() < other.type_params->size())
+            {
+                return true;
+            }
+            else if(type_params->size() > other.type_params->size())
+            {
+                return false;
+            }
+            assert(type_params->size() == other.type_params->size());
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(*type_params->at(i) < *other.type_params->at(i))
+                {
+                    return true;
+                }
+                else if( *other.type_params->at(i) < *type_params->at(i))
+                {
+                    return false;
+                }
+            }
+            return false;
+        }
+    };
+
+    class PolyVec: public PolyType, private vector<SL::VarVal*>
+    {
+    public:
+        explicit PolyVec(PolyType* _type_params): PolyType(_type_params){
+            assert(get_type_params()->size() == 1);
+            _type_params->clear();
+        }
+        explicit PolyVec(PolyVec* to_copy);
+
+        void push_back(SL::VarVal* new_element);
+
+        void sort();
+
+        void clear() override;
+
+        auto begin(){
+            return vector<SL::VarVal*>::begin();
+        }
+
+        auto end(){
+            return vector<SL::VarVal*>::end();
+        }
+
+        size_t size(){
+            return vector<SL::VarVal*>::size();
+        }
+
+        SL::VarVal* at(int idx)
+        {
+            assert(idx >= 0 && idx < size());
+            return vector<SL::VarVal*>::at(idx);
+        }
+
+        void set(size_t idx, SL::VarVal* new_element)
+        {
+            assert(0 <= idx && idx < size());
+            if(at(idx) != nullptr) {
+                at(idx)->decrement_shared_ptr();
+            }
+            if(new_element != nullptr) {
+                new_element->increment_shared_ptr();
+            }
+            (*this)[idx] = new_element;
+        }
+
+        vector<bool> to_vector_bool();
+
+        void reverse();
+    };
 }
 
 static exception NameNotFound;
@@ -1347,127 +1522,6 @@ class HoleHardcoder;
 
 namespace SL {
 
-    vector<SL::SLType*>* copy_type_params(vector<SLType*>* to_copy);
-
-    class PolyType
-    {
-        vector<SL::SLType*>* type_params = nullptr;
-
-        static vector<SL::SLType*>* one_type_param(string type_name)
-        {
-            vector<SL::SLType*>* ret = new vector<SL::SLType*>();
-            ret->push_back(new SL::SLType(new Identifier(type_name)));
-            return ret;
-        }
-
-    public:
-        explicit PolyType(TypeParams* _type_params){
-            type_params = new vector<SL::SLType*>();
-            _type_params->populate_vector(*type_params);
-            _type_params->clear();
-        }
-        explicit PolyType(vector<SLType*>* _type_params): type_params(_type_params) {}
-//        explicit PolyType(string any_str): type_params(one_type_param(any_str)) {assert(any_str == "any");}
-        explicit PolyType(PolyType* to_copy): type_params(copy_type_params(to_copy->type_params)) {};
-
-        SL::SLType* at(int idx)
-        {
-            assert(type_params != nullptr);
-            assert(0 <= idx && idx < size());
-            return type_params->at(idx);
-        }
-
-        virtual size_t size()
-        {
-            assert(type_params != nullptr);
-            if(type_params == nullptr)
-            {
-                return 0;
-            }
-            return type_params->size();
-        }
-
-        const vector<SLType*>* get_type_params()
-        {
-            return type_params;
-        }
-
-        string to_string()
-        {
-            string str;
-            for(int i = 0;i<type_params->size();i++)
-            {
-                if(i >= 1)
-                {
-                    str+= ", ";
-                }
-                str += type_params->at(i)->to_string();
-            }
-            return str;
-        }
-
-        virtual void clear()
-        {
-            soft_clear();
-            delete this;
-        }
-
-        void soft_clear()
-        {
-            for(auto & it: *type_params)
-            {
-                it->clear();
-                it = nullptr;
-            }
-            type_params->clear();
-            delete type_params;
-            type_params = nullptr;
-        }
-
-        bool operator == (const PolyType& other) const
-        {
-            if(type_params->size() != other.type_params->size())
-            {
-                return false;
-            }
-            assert(type_params->size() == other.type_params->size());
-            for(int i = 0;i<type_params->size();i++)
-            {
-                if(!(*type_params->at(i) == *other.type_params->at(i)))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        bool operator < (const PolyType& other) const
-        {
-            assert(is_strongly_typed);
-            if(type_params->size() < other.type_params->size())
-            {
-                return true;
-            }
-            else if(type_params->size() > other.type_params->size())
-            {
-                return false;
-            }
-            assert(type_params->size() == other.type_params->size());
-            for(int i = 0;i<type_params->size();i++)
-            {
-                if(*type_params->at(i) < *other.type_params->at(i))
-                {
-                    return true;
-                }
-                else if( *other.type_params->at(i) < *type_params->at(i))
-                {
-                    return false;
-                }
-            }
-            return false;
-        }
-    };
-
     class PolyPair: public PolyType, private pair<SL::VarVal*, SL::VarVal*>
     {
     public:
@@ -1485,42 +1539,6 @@ namespace SL {
         void clear() override;
 
         bool operator < (const PolyPair& other) const;
-    };
-
-    class PolyVec: public PolyType, private vector<SL::VarVal*>
-    {
-    public:
-        explicit PolyVec(PolyType* _type_params): PolyType(_type_params){
-            assert(get_type_params()->size() == 1);
-            _type_params->clear();
-        }
-        explicit PolyVec(PolyVec* to_copy);
-
-        void push_back(SL::VarVal* new_element);
-
-        void sort();
-
-        void clear() override;
-
-        auto begin(){
-            return vector<SL::VarVal*>::begin();
-        }
-
-        auto end(){
-            return vector<SL::VarVal*>::end();
-        }
-
-        size_t size(){
-            return vector<SL::VarVal*>::size();
-        }
-
-        SL::VarVal* at(int idx)
-        {
-            assert(idx >= 0 && idx < size());
-            return vector<SL::VarVal*>::at(idx);
-        }
-
-        void reverse();
     };
 
     class PolyMap: public PolyType, private map<string, SL::VarVal*>
@@ -1626,7 +1644,8 @@ namespace SL {
         //FMTL primitives:
         _declare,
 //        _vector
-
+        _vectorized_count_passing_inputs,
+        _evaluate_inputs
     };
 
     static bool method_str_to_method_id_map_is_defined = false;

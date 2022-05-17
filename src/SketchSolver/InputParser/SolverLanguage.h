@@ -72,7 +72,7 @@ public:
                     File *file = new File(_concretized_function, file_name, state->floats, state->args.seed);
 
                     int num_passing_inputs =
-                            _concretized_function->count_passing_inputs(file);
+                            _concretized_function->count_passing_inputs(file, false);
 
                     cout << "HERE " << _concretized_function->get_dag()->get_name() << endl;
                     cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
@@ -125,7 +125,7 @@ public:
                     File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name, state->floats, state->args.seed);
 
                     int num_passing_inputs =
-                            concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl);
+                            concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl, false);
 
                     cout << "FROM FMTL" << endl;
                     cout << "HERE " << concretized_function_from_fmtl->get_dag()->get_name() << endl;

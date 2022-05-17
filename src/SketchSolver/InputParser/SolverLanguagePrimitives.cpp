@@ -6,6 +6,8 @@
 #include "GenericFile.h"
 #include "File.h"
 
+//#define CHECK_SOLVE
+
 HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePrimitives::ProblemAE *problem)
 {
 //            cout << endl;
@@ -64,35 +66,30 @@ HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePr
         }
     }
 
-    VarStore* tmp_var_store = new VarStore(*holes_to_sk_val);
-    auto tmp_dag =
-            problem->get_harness()->produce_concretization(tmp_var_store, bool_node::CTRL);
-    tmp_var_store->clear();
-    tmp_dag->increment_shared_ptr();
-
-    int num_passing_inputs = tmp_dag->count_passing_inputs(file);
-    if(ret_result == SAT_SATISFIABLE)
+#ifdef CHECK_SOLVE
     {
-        assert(num_passing_inputs == file->size());
-    }
-    else
-    {
-        assert(num_passing_inputs < file->size());
-    }
-    tmp_dag->clear();
+        VarStore *tmp_var_store = new VarStore(*holes_to_sk_val);
+        auto tmp_dag =
+                problem->get_harness()->produce_concretization(tmp_var_store, bool_node::CTRL);
+        tmp_var_store->clear();
+        tmp_dag->increment_shared_ptr();
 
-//            HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
+        int num_passing_inputs = tmp_dag->count_passing_inputs(file);
+        if (ret_result == SAT_SATISFIABLE) {
+            assert(num_passing_inputs == file->size());
+        } else {
+            assert(num_passing_inputs < file->size());
+        }
+        tmp_dag->clear();
+    }
+#endif
+
     HoleVarStore * ret = holes_to_sk_val;
-
-//            cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
-//            cout << "failing assert: " << problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->get_dag()->get_failed_assert() << endl;
-//            cout << "returns " << ret->to_string() << endl << endl;
-
 
     assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
     if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
     {
-        auto tmp_local_var_store = new VarStore(*ret);//;->to_var_store(false);
+        auto tmp_local_var_store = new VarStore(*ret);
         auto tmp = problem->get_harness()->produce_concretization(tmp_local_var_store, bool_node::CTRL);
         tmp_local_var_store->clear();
         assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
