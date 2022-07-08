@@ -31,46 +31,63 @@ int intFromBV(T& bv, int start, int nbits){
     return nval;
 }
 
-class objP{
-
-    void getArrRec(vector<pair<int, int> >* ret) const
-    {
-        assert(get_is_array());
-        ret->push_back(getIntAndSize());
-        if(next != nullptr && next->defined)
-        {
-            next->getArrRec(ret);
-        }
-    }
-    bool defined = false;
-    bool is_array;
+class VarStoreElementHeader
+{
+protected:
+    bool_node::Type type = bool_node::NO_TYPE;
+    string name;
     const string original_name;
     string source_dag_name;
-    bool_node::Type type = bool_node::NO_TYPE;
+public:
+    const OutType* const otype;
+
+    VarStoreElementHeader(
+            bool_node::Type _type, const string& _name,
+            const OutType* _otype,  const string& _original_name,
+            const string& _source_dag_name):
+        type(_type), name(_name), otype(_otype), original_name(_original_name), source_dag_name(_source_dag_name) {}
+
+    VarStoreElementHeader(const VarStoreElementHeader& old):
+            type(old.type), name(old.name), otype(old.otype), original_name(old.original_name), source_dag_name(old.source_dag_name) {}
+
+    string get_name() const
+    {
+        return name;
+    }
+    const string& get_original_name() const {
+        if(type == bool_node::CTRL)
+            AssertDebug(!original_name.empty(), "check why this fails and act accordingly.")
+        return original_name;
+    }
+
+    const string& get_source_dag_name() const {
+        if(type == bool_node::CTRL)
+            AssertDebug(!source_dag_name.empty(), "check why this fails and act accordingly.")
+        return source_dag_name;
+    }
+};
+
+class objP: public VarStoreElementHeader{
+    bool defined = false;
+    bool is_array;
     objP* next;
     vector<int> vals;
     int index;
     bool isNeg;
-    string name;
 public:
     int get_index() const {
         return index;
     }
+
     objP* get_next() const {
         return next;
     }
-
-    const OutType* const otype;
 
     int get_size() const
     {
         return globalSize();
     }
 
-    string get_name() const
-    {
-        return name;
-    }
 
 private:
     bool in_clear = false;
@@ -89,9 +106,11 @@ public:
     }
 
     objP(
-            string  name, int size, const OutType* _otype,
-            bool_node::Type _type, const string& _original_name = "", const string _source_dag_name = ""):
-            name(std::move(name)),vals(size),otype(_otype), type(_type), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name), source_dag_name(_source_dag_name){
+            string  _name, int _size, const OutType* _otype,
+            bool_node::Type _type, const string& _original_name = "", const string& _source_dag_name = ""):
+            vals(_size), isNeg(false), index(0), next(nullptr), defined(true),
+            VarStoreElementHeader(_type, _name, _otype, _original_name, _source_dag_name)
+            {
         assert(_otype != nullptr);
         if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
             is_array = true;
@@ -106,154 +125,16 @@ public:
     }
 
     objP(const objP& old):
-            vals(old.vals), name(old.name), original_name(old.original_name),
-            source_dag_name(old.source_dag_name), otype(old.otype), type(old.type),
-            isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array){
+            vals(old.vals), isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array),
+            VarStoreElementHeader(old){
         if(old.next != nullptr){
             next=new objP(*old.next);
         }
         else{next=nullptr;}
     }
 
-    const string& get_original_name() const {
-        if(type == bool_node::CTRL)
-            AssertDebug(!original_name.empty(), "check why this fails and act accordingly.")
-        return original_name;
-    }
-
-    const string& get_source_dag_name() const {
-        if(type == bool_node::CTRL)
-            AssertDebug(!source_dag_name.empty(), "check why this fails and act accordingly.")
-        return source_dag_name;
-    }
-
     objP operator=(const objP& old){
         return objP(old);
-    }
-
-    bool operator == (const objP& other) const
-    {
-        const bool debug = true;
-        if(other.vals.size() != vals.size())
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        for(int i = 0;i<vals.size();i++) {
-            if (vals[i] != other.vals[i]) {
-                if(vals[i] == 0 && other.vals[i] == -1) {
-                    //TODO: fix this. Artifact from CEGISSolver. -1 interpreted as 0 in int intFromBV(T& bv, int start, int nbits)
-                }
-                else {
-                    if (debug) {
-                        cout << "return false" << endl;
-                        AssertDebug(false, "not eq");
-                    }
-                    return false;
-                }
-            }
-        }
-        if(name != other.name)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(original_name != other.original_name)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(source_dag_name != other.source_dag_name)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(otype != other.otype)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(type != other.type)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(isNeg!= other.isNeg)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(index != other.index)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(defined != other.defined)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(is_array != other.is_array)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if((next == nullptr) != (other.next == nullptr))
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(next != nullptr)
-        {
-            bool ret = (*next == *other.next);
-            if(debug) {
-                if (!ret) {
-                    cout << "return false" << endl;
-                    AssertDebug(false, "not eq");
-                }
-                else{
-                    cout << "return true" << endl;
-                }
-            }
-            return ret;
-        }
-        if(debug) {
-            cout << "return true" << endl;
-        }
-        return true;
     }
 
     void makeArr(int start, int end){
@@ -272,10 +153,35 @@ public:
             }
         }
     }
-    int arrSize(){ assert(is_array); if(next==nullptr){ return 1; }else{ return next->arrSize() + 1;  } }
-    int element_size() const { return vals.size(); }
-    int globalSize() const { if(next == nullptr){ return element_size();} return next->globalSize() + element_size(); }
-    int resize(int n){ int x=0; vals.resize(n); if(next != nullptr){ x=next->resize(n); } return x+n; }
+
+    int arrSize(){
+        assert(is_array);
+        if(next==nullptr){
+            return 1;
+        }else{
+            return next->arrSize() + 1;
+        }
+    }
+
+    int element_size() const {
+        return vals.size();
+    }
+
+    int globalSize() const {
+        if(next == nullptr){
+            return element_size();
+        }
+        return next->globalSize() + element_size();
+    }
+
+    int resize(int n){
+        int x=0;
+        vals.resize(n);
+        if(next != nullptr){
+            x=next->resize(n);
+        } return x+n;
+    }
+
     objP* setBit(size_t i, int val){
         if(i<vals.size()){
             vals[i] = val;
@@ -291,11 +197,6 @@ public:
         return isNeg? -t : t;
     }
 
-    pair<int, int> getIntAndSize() const
-    {
-        return make_pair(getInt(), (int)vals.size());
-    }
-
     int getInt(int idx) const{
         assert(!is_array);
         if(this->index==idx){
@@ -305,13 +206,6 @@ public:
             else {return -1;}
         }
         Assert(false,"Control shouldn't reach here");
-    }
-    vector<pair<int, int> >* getArr() const
-    {
-        assert(is_array);
-        vector<pair<int, int> >* ret = new vector<pair<int, int> >();
-        getArrRec(ret);
-        return ret;
     }
 
     void setArr(const vector<int> *arr) {
@@ -462,6 +356,131 @@ public:
     void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const;
 
     void append_vals(vector<int>& out) const;
+
+    bool operator == (const objP& other) const
+    {
+        const bool debug = true;
+        if(other.vals.size() != vals.size())
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        for(int i = 0;i<vals.size();i++) {
+            if (vals[i] != other.vals[i]) {
+                if(vals[i] == 0 && other.vals[i] == -1) {
+                    //TODO: fix this. Artifact from CEGISSolver. -1 interpreted as 0 in int intFromBV(T& bv, int start, int nbits)
+                }
+                else {
+                    if (debug) {
+                        cout << "return false" << endl;
+                        AssertDebug(false, "not eq");
+                    }
+                    return false;
+                }
+            }
+        }
+        if(name != other.name)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(original_name != other.original_name)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(source_dag_name != other.source_dag_name)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(otype != other.otype)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(type != other.type)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(isNeg!= other.isNeg)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(index != other.index)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(defined != other.defined)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(is_array != other.is_array)
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if((next == nullptr) != (other.next == nullptr))
+        {
+            if(debug) {
+                cout << "return false" << endl;
+                AssertDebug(false, "not eq");
+            }
+            return false;
+        }
+        if(next != nullptr)
+        {
+            bool ret = (*next == *other.next);
+            if(debug) {
+                if (!ret) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                else{
+                    cout << "return true" << endl;
+                }
+            }
+            return ret;
+        }
+        if(debug) {
+            cout << "return true" << endl;
+        }
+        return true;
+    }
 };
 
 
