@@ -786,7 +786,7 @@ public:
 
     virtual bool soft_clear_assert_num_shared_ptr_is_0();
 
-    virtual int count_passing_inputs(File* file, bool do_assert);
+    virtual int count_passing_inputs(const File* file, bool do_assert);
 
     virtual void clear(LightInliningTree*& inlining_tree) {
         if(soft_clear(inlining_tree)){

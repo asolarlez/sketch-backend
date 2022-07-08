@@ -218,8 +218,8 @@ public:
 
 //    bool has_unit_self_loop() const;
 
-    int count_passing_inputs(File *file, bool do_assert = true) override;
-    SL::PolyVec* evaluate_inputs(File *file);
+    int count_passing_inputs(const File *file, bool do_assert = true) override;
+    SL::PolyVec* evaluate_inputs(const File *file, unsigned int repeat = 100);
 
 };
 
@@ -227,13 +227,13 @@ public:
 
 namespace SketchFunctionEvaluator
 {
-    SL::VarVal* eval(SketchFunction *skfunc, const string& _line);
+    SL::VarVal* eval(const SketchFunction *skfunc, const string& _line);
 
-    SL::VarVal* eval(SketchFunction* skfunc, const VarStore *input_var_store);
+    SL::VarVal* eval(const SketchFunction* skfunc, const VarStore *input_var_store);
 
-    SL::VarVal* new_passes(BooleanDagLightUtility *skfunc, const string& _line);
+    SL::VarVal* new_passes(const BooleanDagLightUtility *skfunc, const string& _line);
 
-    SL::VarVal* new_passes(BooleanDagLightUtility* skfunc, const VarStore *input_var_store, bool do_assert = true);
+    SL::VarVal* new_passes(const BooleanDagLightUtility* skfunc, const VarStore *input_var_store, bool do_assert = true);
 
 };
 

@@ -105,10 +105,11 @@ public:
 	}
     bool parseLine(const VarStore* var_store)
     {
-        *inputs = *var_store;
+
+        inputs = new VarStore(*var_store);
         return true;
     }
-	Result fromFile(File* file, FloatManager& floats, vector<bool_node*>& inputNodes);
+	Result fromFile(const File *file, FloatManager& floats, vector<bool_node*>& inputNodes);
 
 	Result searchLoop(int maxfails){
 		int failcount = 0;

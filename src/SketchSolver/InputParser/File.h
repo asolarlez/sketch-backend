@@ -89,11 +89,11 @@ public:
 
     explicit File(std::mt19937 _generator): generator(_generator){}
 
-    File(BooleanDagLightUtility *harness, const string& file_name, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
+    File(const BooleanDagLightUtility *harness, const string& file_name, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
-    void init(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
+    void init(const BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
-    File(BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
+    File(const BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
     void clear() {
         light_clear();
@@ -608,6 +608,6 @@ public:
 };
 
 class SketchFunction;
-VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfunc, bool_node::Type = bool_node::SRC);
+VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type = bool_node::SRC);
 
 #endif //SKETCH_SOURCE_FILE_H

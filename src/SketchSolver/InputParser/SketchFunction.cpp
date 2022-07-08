@@ -852,7 +852,7 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 
 #include <chrono>
 
-int SketchFunction::count_passing_inputs(File *file, bool do_assert) {
+int SketchFunction::count_passing_inputs(const File *file, bool do_assert) {
     if(do_assert) {
         assert(false);
     }
@@ -876,7 +876,7 @@ int SketchFunction::count_passing_inputs(File *file, bool do_assert) {
 
 
 
-SL::PolyVec* SketchFunction::evaluate_inputs(File *file) {
+SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
 
     cout << "START MEASURING TIME (evaluate_inputs)" << endl;
     auto start = chrono::steady_clock::now();
@@ -914,11 +914,19 @@ SL::PolyVec* SketchFunction::evaluate_inputs(File *file) {
 //    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
 //    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
 
-    return ret;
+    if(repeat == 0)
+    {
+        assert(false);
+        return ret;
+    }
+    else
+    {
+        return evaluate_inputs(file, repeat-1);
+    }
 }
 
 
-SL::VarVal *SketchFunctionEvaluator::eval(SketchFunction *skfunc, const string& _line)
+SL::VarVal *SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const string& _line)
 {
     VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
@@ -927,7 +935,7 @@ SL::VarVal *SketchFunctionEvaluator::eval(SketchFunction *skfunc, const string& 
 }
 
 
-SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, const VarStore* _the_var_store) {
+SL::VarVal* SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const VarStore* _the_var_store) {
     BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
 
@@ -993,7 +1001,7 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, const VarStore
     return ret;
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, const string& _line)
+SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const string& _line)
 {
     VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
@@ -1001,7 +1009,7 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, 
     return ret;
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, const VarStore* _the_var_store, bool do_assert)
+SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const VarStore* the_var_store, bool do_assert)
 {
     if(do_assert) {
         assert(false);
@@ -1026,8 +1034,6 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, 
         skfunc->get_env()->doInline(*the_dag);
     }
 
-    VarStore *the_var_store = new VarStore(*_the_var_store);
-
     const bool assert_num_remaining_holes_is_0 = true;
     if (assert_num_remaining_holes_is_0) {
         size_t remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
@@ -1042,7 +1048,6 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, 
     if(new_clone) {
         the_dag->clear();
     }
-    the_var_store->clear();
 
     return new SL::VarVal(!fails);
 }

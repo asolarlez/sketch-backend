@@ -129,7 +129,7 @@ void File::relabel(BooleanDagLightUtility *harness) {
 
 #include "GenericFile.h"
 
-File::File(BooleanDagLightUtility *harness, const string &file_name, FloatManager &floats, int seed, bool_node::Type var_type)
+File::File(const BooleanDagLightUtility *harness, const string &file_name, FloatManager &floats, int seed, bool_node::Type var_type)
 
 #define IMPLEMENT_WITH_GENERIC_FILE
 
@@ -221,12 +221,12 @@ File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
     return ret;
 }
 
-File::File(BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
+File::File(const BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
 {
     init(harness, generic_file, floats, seed, var_type);
 }
 
-void File::init(BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
+void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
 {
     generator = std::mt19937(seed);
     BooleanDAG* problem = harness->get_dag()->clone(harness->get_dag_name());
@@ -339,7 +339,7 @@ File::File() = default;
 #include "GenericFile.h"
 #include "SketchFunction.h"
 
-VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfunc, bool_node::Type var_type)
+VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type)
 {
     GenericFile generic_file = GenericFile();
     generic_file.push_back(_line);

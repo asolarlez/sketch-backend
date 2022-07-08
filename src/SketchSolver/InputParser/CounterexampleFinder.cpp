@@ -6,7 +6,7 @@
 #include "File.h"
 
 CounterexampleFinder::Result
-CounterexampleFinder::fromFile(File *file, FloatManager &floats, vector<bool_node *> &inputNodes)  {
+CounterexampleFinder::fromFile(const File *file, FloatManager &floats, vector<bool_node *> &inputNodes)  {
     AssertDebug(file != nullptr, "file shouldn't be nullptr.");
 //		ifstream file;
 //		file.open(fname);
