@@ -48,6 +48,7 @@ class objP{
     string source_dag_name;
     bool_node::Type type = bool_node::NO_TYPE;
     objP* next;
+    vector<int> vals;
 public:
     objP* get_next() const {
         return next;
@@ -56,7 +57,6 @@ public:
 
     OutType* otype;
     int index;
-    vector<int> vals;
     bool isNeg;
 
     OutType* getOtype() const
@@ -460,6 +460,8 @@ public:
     void populate_multi_mother_nodeForINode(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const;
 
     void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const;
+
+    void append_vals(vector<int>& out) const;
 };
 
 

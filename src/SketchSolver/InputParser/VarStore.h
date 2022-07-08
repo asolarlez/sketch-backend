@@ -242,9 +242,8 @@ public:
 	}
 	vector<int> serialize() const{
 		vector<int> out;
-		for(size_t t=0; t<objs.size(); ++t){
-			const objP& tmp = objs[t];
-			out.insert(out.end(), tmp.vals.begin(), tmp.vals.end());			
+		for(const auto & obj : objs){
+            obj.append_vals(out);
 		}
 		return out;
 	}

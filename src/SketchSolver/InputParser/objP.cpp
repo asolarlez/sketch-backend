@@ -48,3 +48,7 @@ void objP::populate_multi_mother_nodeForFun(
         val = val->next;
     }
 }
+
+void objP::append_vals(vector<int>& out) const {
+    out.insert(out.end(), vals.begin(), vals.end());
+}
