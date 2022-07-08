@@ -505,24 +505,25 @@ void NodeEvaluator::printNodeValue(int i){
 	}
 }
 
-bool NodeEvaluator::run(const VarStore &inputs_p){
+bool NodeEvaluator::run(const VarStore &_inputs){
     funargs.clear();
-	inputs = new VarStore(inputs_p);
+    inputs = &_inputs;
+//	inputs = new VarStore(inputs_p);
 	int i=0;
 	failedAssert = false;
 	failedHAssert = false;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
 		if(failedAssert){
-            inputs->clear();
+//            inputs->clear();
 			return true;
 		}
 		if(failedHAssert){
-            inputs->clear();
+//            inputs->clear();
 			return false;
 		}
 	}
-    inputs->clear();
+//    inputs->clear();
 	return false;
 }
 

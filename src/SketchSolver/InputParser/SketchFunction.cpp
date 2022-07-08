@@ -878,6 +878,10 @@ int SketchFunction::count_passing_inputs(const File *file, bool do_assert) {
 
 SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
 
+    for(int i = 0;i<repeat;i++)
+    {
+        evaluate_inputs(file, 0);
+    }
     cout << "START MEASURING TIME (evaluate_inputs)" << endl;
     auto start = chrono::steady_clock::now();
 
@@ -914,15 +918,12 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
 //    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
 
-    if(repeat == 0)
+    if(repeat >= 1)
     {
         assert(false);
-        return ret;
     }
-    else
-    {
-        return evaluate_inputs(file, repeat-1);
-    }
+
+    return ret;
 }
 
 

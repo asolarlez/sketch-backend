@@ -102,194 +102,6 @@ public:
 
     enum parseLineOut {end_of_file__empty_row, more_bits, incomplete_row, complete_row};
 
-    parseLineOut parseLine(ifstream& in, FloatManager& floats, const vector<bool_node*>& inputNodes, VarStore* inputs) {
-
-        auto vsi = inputs->begin();
-        VarStore::objP* arrit = nullptr;
-        VarStore::objP* prevArrit = nullptr;
-        bool inArray = false;
-
-        int inputId = 0;
-
-        char ch = 0;
-        assert(!in.eof());
-        in.get(ch);
-//        cout << ch << "("<<(int)ch<<")'";
-        if(in.eof())
-        {
-            AssertDebug((int)ch == 0, "ch: " + std::to_string(ch));
-            return end_of_file__empty_row;
-        }
-        string line;
-        while (ch == '#') {
-            assert(!in.eof());
-            std::getline(in, line);
-            assert(!in.eof());
-            in.get(ch);
-//            cout << ch << "("<<(int)ch<<")''";
-        }
-
-        int cur=0;
-        bool neg = false;
-        int depth = 0;
-        bool hasCaptured = true;
-        bool outOfRange = false;
-        bool isFloat = false;
-        double floatVal = 0.0;
-
-        auto regval = [&]() {
-            if (!hasCaptured) {
-
-                if (isFloat) {
-                    cur = floats.getIdx(floatVal);
-                }
-
-                if (depth == 0) {
-                    //we just finished a number, and we are not inside an array.
-                    outOfRange = !vsi->setValSafe(neg ? (-cur) : cur);
-//                    cout << "[" << (int)outOfRange <<"]";
-                    ++vsi;
-                    ++inputId;
-                }
-                else {
-                    if (!inArray) {
-                        cerr << "Error parsing the input. Was expecting a line with the following format" << endl;
-                        for (auto it = inputs->begin(); it != inputs->end(); ++it) {
-                            auto type = it->otype != nullptr? it->otype->str() : "scalar";
-                            const auto isArr = it->arrSize() > 1;
-                            if (isArr) {
-                                cerr << "{" << type << " }  ";
-                            }
-                            else {
-                                cerr << type << "  ";
-                            }
-                        }
-                        cerr << endl;
-                        cerr << "corresponding to inputs "<<endl;
-                        for (auto it = inputs->begin(); it != inputs->end(); ++it) {
-                            cerr << it->getName()<<"  ";
-                        }
-                        cerr << endl;
-                        throw BasicError(string("file parsing error"), "name");
-
-                    }
-                    if (arrit == nullptr) {
-                        prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
-                        arrit = prevArrit->next;
-                        ((SRC_node*)inputNodes[inputId])->arrSz++;
-                    }
-
-                    //we just finished a number, and we are inside an array.
-                    outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
-//                    cout << "[" << (int)outOfRange <<"]'" << endl;
-                    prevArrit = arrit;
-                    arrit = arrit->next;
-                }
-            }
-            hasCaptured = true;
-        };
-        auto reset = [&]() {
-            cur = 0;
-            neg = false;
-            isFloat = false;
-        };
-
-        while (ch != '\n') {
-            switch (ch) {
-                case '{': {
-                    regval();
-                    reset();
-                    if (depth == 0) {
-                        arrit = &(*vsi);
-                        inArray = true;
-                    }
-                    depth++;
-                    break;
-                }
-                case '}': {
-                    regval();
-                    reset();
-                    depth--;
-                    if (depth == 0) {
-                        while (arrit != nullptr) {
-                            arrit->setValSafe(0);
-                            arrit = arrit->next;
-                        }
-                        inArray = false;
-                        ++vsi;
-                        ++inputId;
-                    }
-                    break;
-                }
-                case ' ': {
-                    regval();
-                    reset();
-                    break;
-                }
-                case ',': {
-                    regval();
-                    reset();
-                    break;
-                }
-                case '-': {
-                    neg = true;
-                    break;
-                }
-                default: {
-                    if (ch >= '0' && ch <= '9') {
-                        if (isFloat) {
-                            floatVal = floatVal + ((double) (ch - '0') / cur);
-                            cur = cur * 10;
-                        } else {
-                            hasCaptured = false;
-                            cur = cur * 10 + (ch - '0');
-                        }
-                    } else if (ch == '.') {
-                        isFloat = true;
-                        floatVal = (double) cur;
-                        cur = 10;
-                    } else {
-                        Assert(false, "Unknown character <" << ch
-                                                            << "> in file on line " + std::to_string((int) size()) +
-                                                               ".");
-                    }
-                    break;
-                }
-            }
-            if (outOfRange) {
-                return more_bits;
-            }
-            assert(!in.eof());
-            in.get(ch);
-//            cout << ch << "("<<(int)ch<<")'''";
-            if (in.eof()) {
-                regval();
-                assert(!outOfRange);
-                if(vsi == inputs->end()){
-                    return complete_row;
-                }
-                else {
-                    AssertDebug(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
-                    return incomplete_row;
-                }
-            }
-        }
-        regval();
-        if(outOfRange){
-            return more_bits;
-        }
-        else
-        {
-            if(vsi == inputs->end()){
-                return complete_row;
-            }
-            else{
-                AssertDebug(false, "Incomplete row in input file row" + std::to_string((int)size()) + ".");
-                return incomplete_row;
-            }
-        }
-    }
-
     parseLineOut parseLine(string _line, FloatManager& floats, const vector<bool_node*>& inputNodes, VarStore* inputs) {
 //
 //        AssertDebug(false, "IF YOU GET TO HERE IT SHOULD MEAN THAT YOU HAVE INTEGRATED THIS FUNCTION IN THE EXPECTED WAY.");
@@ -310,24 +122,7 @@ public:
             AssertDebug(it!='#', "COMMENTS SHOULD HAVE BEEN PRE-PROCESSED OUT");
         }
 
-//    assert(!in.eof());
         ch = _line[at_ch_id++];
-//    in.get(ch);
-//        cout << ch << "("<<(int)ch<<")'";
-//    if(in.eof())
-//    {
-//        AssertDebug((int)ch == 0, "ch: " + std::to_string(ch));
-//        return end_of_file__empty_row;
-//    }
-//    string line;
-//    while (ch == '#') {
-//        assert(at_ch_id < _line.size());
-////        assert(!in.eof());
-//        std::getline(in, line);
-//        assert(!in.eof());
-//        in.get(ch);
-////            cout << ch << "("<<(int)ch<<")''";
-//    }
 
         int cur=0;
         bool neg = false;
@@ -375,7 +170,7 @@ public:
                     }
                     if (arrit == nullptr) {
                         prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
-                        arrit = prevArrit->next;
+                        arrit = prevArrit->get_next();
                         ((SRC_node*)inputNodes[inputId])->arrSz++;
                     }
 
@@ -383,7 +178,7 @@ public:
                     outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
 //                    cout << "[" << (int)outOfRange <<"]'" << endl;
                     prevArrit = arrit;
-                    arrit = arrit->next;
+                    arrit = arrit->get_next();
                 }
             }
             hasCaptured = true;
@@ -413,7 +208,7 @@ public:
                     if (depth == 0) {
                         while (arrit != nullptr) {
                             arrit->setValSafe(0);
-                            arrit = arrit->next;
+                            arrit = arrit->get_next();
                         }
                         inArray = false;
                         ++vsi;
@@ -492,61 +287,6 @@ public:
             }
         }
     }
-
-    Result parseFile(const string& fname, FloatManager& floats, const vector<bool_node*>& inputNodes, const VarStore& inputs) {
-        light_clear();
-        ifstream file;
-        file.open(fname);
-
-        if (!file.is_open() || file.fail()) {
-            AssertDebug(false, "File " + fname + " could not be opened!!");
-            Assert(false, "File " << fname << " could not be opened!!");
-            return NO_FILE;
-        }
-
-        bool allow_new_iter = true;
-        while (!file.eof()) {
-            assert(allow_new_iter);
-            VarStore* new_row = inputs.clone();
-            parseLineOut ok;
-            try {
-                ok = parseLine(file, floats, inputNodes, new_row);
-            }
-            catch (BasicError& e) {
-                file.close();
-                assert(false);
-                throw e;
-            }
-
-
-
-            if (ok == more_bits) {
-                file.close();
-                new_row->clear();
-                return MOREBITS;
-            }
-            else if(ok == complete_row)
-            {
-                push_back(new_row);
-            }
-            else if(ok == end_of_file__empty_row)
-            {
-                new_row->clear();
-                assert(file.eof());
-                allow_new_iter = false;
-            }
-            else
-            {
-                AssertDebug(false, "MISSING CASE for 'Result parseFile'.")
-            }
-            if (PARAMS->verbosity > 12) {
-                new_row->printContent(cout);
-            }
-        }
-        file.close();
-        return DONE;
-    }
-
 
     Result parseFile(GenericFile* generic_file, FloatManager& floats, const vector<bool_node*>& input_nodes, const VarStore& var_store);
 

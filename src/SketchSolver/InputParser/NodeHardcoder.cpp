@@ -20,26 +20,9 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
         if(val != nullptr) {
             assert(inode->isArrType());
         }
-		
-		while(val != nullptr){
-			bool_node* cnst;
-            assert(val->element_size() == nbits);
-			if(nbits==1){
-				cnst= getCnode( val->getInt() ==1 );
-			}else{
-				if (otype == OutType::FLOAT_ARR) {
-					cnst = getCnode( floats.getFloat(val->getInt()) );
-				}
-				else {
-					cnst = getCnode(val->getInt());
-				}
-			}
-			while(multi_mother.size()< val->index){
-				multi_mother.push_back( getCnode(0) );
-			}
-			multi_mother.push_back( cnst );
-			val = val->next;
-		}
+
+        val->populate_multi_mother_nodeForINode(multi_mother, this, nbits, floats);
+
 		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother, getCnode(0));
 		acn->addToParents();		
 		if(showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
@@ -150,20 +133,9 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 			auto val = &(values.getObjConst(sstr.str()));
 			int nbits = val->element_size();
 			vector<bool_node*> multi_mother;
-			
-			while(val != NULL){
-				bool_node* cnst;
-				if(nbits==1){
-					cnst= getCnode( val->getInt() ==1 );
-				}else{
-					cnst= getCnode( val->getInt() );
-				}
-				while(multi_mother.size()< val->index){
-					multi_mother.push_back( getCnode(0) );
-				}
-				multi_mother.push_back( cnst );
-				val = val->next;
-			}
+
+            val->populate_multi_mother_nodeForFun(multi_mother, this, nbits);
+
 			ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother, getCnode(0));
 			
 			acn->addToParents();					

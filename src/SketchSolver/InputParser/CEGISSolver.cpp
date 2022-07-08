@@ -404,56 +404,6 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 	prevSolutionFound = true;
 }
 
-
-
-
-bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse){
-	int arrsz = -1;
-  if (inode->type == bool_node::SRC) {
-    SRC_node* src_ = dynamic_cast<SRC_node*>(inode);
-    if (src_->isTuple) {
-      Assert(false, "Not possible");
-    }
-  }
-	if(inode->type== bool_node::SRC){	
-		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
-	}
-	if(arrsz>=0){
-		auto val = &(values.getObjConst(inode->get_name()));
-		int nbits = inode->get_nbits();
-		vector<bool_node*> multi_mother;
-		
-		while(val != NULL){
-			bool_node* cnst;
-			if(nbits==1){
-				cnst= cse.getCnode( val->getInt() ==1 );
-			}else{
-				cnst= cse.getCnode( val->getInt() );
-			}
-			while(multi_mother.size()< val->index){
-				multi_mother.push_back( cse.getCnode(0) );
-			}
-			multi_mother.push_back( cnst );
-			val = val->next;
-		}
-		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother, cse.getCnode(0));		
-		acn->addToParents();
-		cse.addNode(acn);
-		if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
-		return acn;
-	}else{
-		int nbits = inode->get_nbits();		
-		bool_node* onode;
-		if(nbits==1){
-			onode= cse.getCnode( values[inode->get_name()]==1 );
-		}else{
-			onode= cse.getCnode( values[inode->get_name()] );
-		}
-		if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< onode->lprint() <<endl; }
-		return onode;
-	}
-}
-
  void BitSet::print(ostream& os){
 		int i=next(-1);
 		os<<"{";

@@ -52,10 +52,13 @@ public:
         const string original_name;
         string source_dag_name;
         bool_node::Type type = bool_node::NO_TYPE;
+        objP* next;
 	public:
+        objP* get_next() const {
+            return next;
+        }
 		string name;
 
-		objP* next;
 		OutType* otype;
 		int index;
 		vector<int> vals;
@@ -439,6 +442,29 @@ public:
             assert(type != bool_node::NO_TYPE);
             return type;
         }
+
+        void relabel(const string new_name) {
+            objP* at = this;
+            string prev_name = at->name;
+            do {
+                assert(at->name == prev_name);
+                at->name = new_name;
+                at = at->next;
+            }while(at != nullptr);
+        }
+
+        void populate_vec(int *vv, int sz) const {
+            auto op = this;
+            while(op != nullptr){
+                Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
+                vv[op->index] = op->getInt();
+                op = op->next;
+            }
+        }
+
+        void populate_multi_mother_nodeForINode(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const;
+
+        void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const;
     };
 
 private:
@@ -725,20 +751,14 @@ public:
 
     void relabel(const vector<bool_node*>& inputs){
 
-        Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
-        Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+        Assert(synths.empty(), "TODO: implement copy logic for synths.");
+        Assert(synthouts.empty(), "TODO: implement copy logic for synthouths.");
 
         assert(inputs.size() == objs.size());
         index.clear();
         for(int i = 0;i<objs.size();i++)
         {
-            objP* at = &objs[i];
-            string prev_name = at->name;
-            do {
-                assert(at->name == prev_name);
-                at->name = inputs[i]->get_name();
-                at = at->next;
-            }while(at != nullptr);
+            objs[i].relabel(inputs[i]->get_name());
             index[objs[i].name] = i;
         }
     }

@@ -92,12 +92,8 @@ public:
 	cpvec(int sz, const VarStore::objP* op):vv(new int[sz]){
 		// NOTE xzL: set uninitialized value to be 0
 		memset(vv, 0, sz*sizeof(int));
-		bnd = sz;	
-		while(op != NULL){
-			Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
-			vv[op->index] = op->getInt();
-			op = op->next;
-		}
+		bnd = sz;
+        op->populate_vec(vv, sz);
 		parent = NULL;
 		idx[0] = UNSET;
 		idx[1] = UNSET;
@@ -175,7 +171,7 @@ protected:
     vector<cptuple*> tuplevalues;
 	vector<bool> changes;
 	vector<bool> isset;
-	VarStore* inputs;
+	const VarStore* inputs;
 	bool failedAssert;
 	bool failedHAssert;
 	bool trackChange;

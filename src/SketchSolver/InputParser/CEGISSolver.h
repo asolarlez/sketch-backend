@@ -59,8 +59,6 @@ protected:
 	void declareControl(CTRL_node* cnode);
 	bool solveCore();
 
-	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
-
 	void normalizeInputStore();
 
 //-- internal wrappers arround the checker methods

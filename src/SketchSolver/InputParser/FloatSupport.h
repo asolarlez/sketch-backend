@@ -83,7 +83,7 @@ public:
 		return getFloat(id);
 	}
 
-	double getFloatSafe(int id)
+	double getFloatSafe(int id) const
 	{
 		Assert(id >= 0, "getFloatSafe should take input id >= 0.");
 		if(id >= floats.size())
@@ -98,7 +98,7 @@ public:
 
 	}
 
-	double getFloat(int id) {
+	double getFloat(int id) const {
 		if (id < 0) {
 			return -getFloatSafe(-id);
 		}
