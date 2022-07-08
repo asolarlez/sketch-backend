@@ -353,7 +353,7 @@ public:
                 {
                     string hole_name = local_hole_names[i];
                     if(hole_name != "#PC") {
-                        var_store_used_for_concretization->insertObj(hole_name, var_store_used_for_concretization->size(), VarStore::objP(
+                        var_store_used_for_concretization->insertObj(hole_name, var_store_used_for_concretization->size(), objP(
                                 _var_store->getObjConst(hole_name)));
                     }
                 }

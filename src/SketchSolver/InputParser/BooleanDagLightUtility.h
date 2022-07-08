@@ -121,14 +121,14 @@ protected:
     }
 
     bool contains_var(
-            const VarStore::objP& obj) const
+            const objP& obj) const
     {
         assert(contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
         return true;
     }
 
     bool insert_var(
-            const VarStore::objP& obj)
+            const objP& obj)
     {
         assert(get_dag_name() == obj.get_source_dag_name());
         assert(obj.get_type() == bool_node::CTRL);
@@ -140,7 +140,7 @@ protected:
             assert(unconc_hole_original_name_to_name[obj.get_original_name()].find(get_dag_name()) != unconc_hole_original_name_to_name[obj.get_original_name()].end());
             assert(unconc_hole_original_name_to_name[obj.get_original_name()][get_dag_name()] == obj.name);
             unconc_hole_original_name_to_name.erase(obj.get_original_name());
-            var_store->insertObj(obj.name, var_store->size(), VarStore::objP(obj));
+            var_store->insertObj(obj.name, var_store->size(), objP(obj));
 //            var_store->newVar(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name());
         }
         else
@@ -163,7 +163,7 @@ protected:
     }
 
     bool rename_var(
-            const VarStore::objP& obj, const string& new_name, const string& new_source_dag) const
+            const objP& obj, const string& new_name, const string& new_source_dag) const
     {
         assert(contains_var(obj));
         var_store->rename(obj, new_name, new_source_dag);
@@ -308,7 +308,7 @@ public:
         const VarStore* _var_store = LightSkFuncSetter::get_var_store();
         assert(_var_store != nullptr || LightSkFuncSetter::_get_num_unconcretized_holes() == 0);
         if(_var_store != nullptr){
-            for(const VarStore::objP& obj : *_var_store)
+            for(const objP& obj : *_var_store)
             {
                 assert(to_check->contains(obj, path));
             }
@@ -527,14 +527,14 @@ public:
     }
 
     bool contains_var(
-            const VarStore::objP& obj) const
+            const objP& obj) const
     {
         const LightInliningTree* target = get_target(obj.get_source_dag_name());
         assert(target->LightSkFuncSetter::contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
         return true;
     }
 
-    void insert_var(const VarStore::objP& obj)
+    void insert_var(const objP& obj)
     {
         LightInliningTree* target = get_target_non_const(obj.get_source_dag_name());
         target->LightSkFuncSetter::insert_var(obj);
@@ -547,7 +547,7 @@ public:
         target->LightSkFuncSetter::set_var_val(name, val, nbits, otype, type, original_name, source_dag_name);
     }
 
-    void rename_var(const VarStore::objP& obj, const string& new_name, const string& new_source_dag) const
+    void rename_var(const objP& obj, const string& new_name, const string& new_source_dag) const
     {
         const string& prev_source_dag_name = obj.get_source_dag_name();
         const LightInliningTree* target = get_target(prev_source_dag_name);

@@ -27,8 +27,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		acn->addToParents();		
 		if(showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
 		return optAdd(acn);
-	}else{				
-		int nbits = inode->get_nbits();
+	}else{
 		bool_node* onode;
 		if(!values.contains(inode->get_name()))
 		{

@@ -89,7 +89,7 @@ public:
 		idx[2] = UNSET;
 		flip = 0;
 	}
-	cpvec(int sz, const VarStore::objP* op):vv(new int[sz]){
+	cpvec(int sz, const objP* op):vv(new int[sz]){
 		// NOTE xzL: set uninitialized value to be 0
 		memset(vv, 0, sz*sizeof(int));
 		bnd = sz;

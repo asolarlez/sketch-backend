@@ -107,8 +107,8 @@ public:
 //        AssertDebug(false, "IF YOU GET TO HERE IT SHOULD MEAN THAT YOU HAVE INTEGRATED THIS FUNCTION IN THE EXPECTED WAY.");
 
         auto vsi = inputs->begin();
-        VarStore::objP* arrit = nullptr;
-        VarStore::objP* prevArrit = nullptr;
+        objP* arrit = nullptr;
+        objP* prevArrit = nullptr;
         bool inArray = false;
 
         int inputId = 0;

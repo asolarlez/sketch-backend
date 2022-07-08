@@ -376,7 +376,7 @@ void VarStore::change_id(const string &prev_name, int new_id) {
     inlining_tree->change_id(prev_name, new_id);
 }
 
-bool VarStore::contains(const VarStore::objP &obj, vector<string> *path) const
+bool VarStore::contains(const objP &obj, vector<string> *path) const
 {
     assert(var_name_to_dag_name_to_name.find(obj.get_original_name()) != var_name_to_dag_name_to_name.end());
     assert(var_name_to_dag_name_to_name.at(obj.get_original_name()).find(obj.get_source_dag_name()) != var_name_to_dag_name_to_name.at(obj.get_original_name()).end());
@@ -425,47 +425,4 @@ const VarStore *VarStore::produce_restrict(const vector<string>& subdomain) cons
         ret->insertObj(name, idx++, getObjConst(name));
     }
     return ret;
-}
-
-void VarStore::objP::populate_multi_mother_nodeForINode(vector<bool_node *>& multi_mother, DagOptim *for_cnodes, int nbits, const FloatManager& floats) const {
-    auto val = this;
-    while(val != nullptr){
-        bool_node* cnst;
-        assert(val->element_size() == nbits);
-        if(nbits==1){
-            cnst= for_cnodes->getCnode( val->getInt() ==1 );
-        }else{
-            if (otype == OutType::FLOAT_ARR) {
-                cnst = for_cnodes->getCnode( floats.getFloat(val->getInt()) );
-            }
-            else {
-                cnst = for_cnodes->getCnode(val->getInt());
-            }
-        }
-        while(multi_mother.size()< val->index){
-            multi_mother.push_back( for_cnodes->getCnode(0) );
-        }
-        multi_mother.push_back( cnst );
-        val = val->next;
-    }
-}
-
-void VarStore::objP::populate_multi_mother_nodeForFun(
-        vector<bool_node *> &multi_mother, DagOptim *for_cnodes, int nbits) const
-{
-    auto val = this;
-    while(val != nullptr){
-        bool_node* cnst;
-        if(nbits==1){
-            cnst= for_cnodes->getCnode( val->getInt() ==1 );
-        }else{
-            cnst= for_cnodes->getCnode( val->getInt() );
-        }
-
-        while(multi_mother.size()< val->index){
-            multi_mother.push_back( for_cnodes->getCnode(0) );
-        }
-        multi_mother.push_back( cnst );
-        val = val->next;
-    }
 }
