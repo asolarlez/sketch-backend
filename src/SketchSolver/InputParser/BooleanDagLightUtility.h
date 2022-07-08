@@ -107,7 +107,7 @@ protected:
     }
 
     bool contains_var(
-            const string &name, int nbits, OutType *otype, bool_node::Type type, const string& original_name, const string& source_dag_name) const
+            const string &name, int nbits, const OutType *otype, bool_node::Type type, const string& original_name, const string& source_dag_name) const
     {
         assert(get_dag_name() == source_dag_name);
         assert(type == bool_node::CTRL);
@@ -155,7 +155,7 @@ protected:
     }
 
     bool set_var_val(
-            const string &name, int val, int nbits, OutType *otype, bool_node::Type type, const string& original_name, const string& source_dag_name) const
+            const string &name, int val, int nbits, const OutType *otype, bool_node::Type type, const string& original_name, const string& source_dag_name) const
     {
         assert(contains_var(name, nbits, otype, type, original_name, source_dag_name));
         var_store->setVarVal(name, val, otype, type);
@@ -519,7 +519,7 @@ public:
     void print(int ntabs = 0, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const;
 
     bool contains_var(
-            const string &name, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
+            const string &name, int nbits, const OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
     {
         const LightInliningTree* target = get_target(source_dag_name);
         assert(target->LightSkFuncSetter::contains_var(name, nbits, otype, type, original_name, source_dag_name));
@@ -541,7 +541,7 @@ public:
     }
 
     void set_var_val(
-            const string &name, int val, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
+            const string &name, int val, int nbits, const OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
     {
         const LightInliningTree* target = get_target(source_dag_name);
         target->LightSkFuncSetter::set_var_val(name, val, nbits, otype, type, original_name, source_dag_name);

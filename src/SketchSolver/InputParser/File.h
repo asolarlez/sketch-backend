@@ -169,7 +169,7 @@ public:
 
                     }
                     if (arrit == nullptr) {
-                        prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
+                        prevArrit->makeArr(prevArrit->get_index(), prevArrit->get_index() + 2);
                         arrit = prevArrit->get_next();
                         ((SRC_node*)inputNodes[inputId])->arrSz++;
                     }

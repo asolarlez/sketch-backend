@@ -309,13 +309,13 @@ bool VarStore::check_rep_and_clear() {
     return ret;
 }
 
-void VarStore::newVar(const string &name, int nbits, OutType *otype, bool_node::Type type, string original_name,
+void VarStore::newVar(const string &name, int nbits, const OutType *otype, bool_node::Type type, string original_name,
                       string source_dag_name) {
     if(contains(name)) {
         auto obj = getObjConst(name);
         assert(obj.getName() == name);
         assert(obj.get_size() == nbits && obj.element_size() == nbits);
-        assert(obj.getOtype() == otype);
+        assert(obj.otype == otype);
         assert(obj.get_original_name() == original_name);
         assert(obj.get_source_dag_name() == source_dag_name);
         if(inlining_tree != nullptr)
@@ -334,7 +334,7 @@ void VarStore::newVar(const string &name, int nbits, OutType *otype, bool_node::
     assert(!objs[index[name]].get_is_array());
 }
 
-void VarStore::setVarVal(const string &name, int val, OutType *otype, bool_node::Type type) {
+void VarStore::setVarVal(const string &name, int val, const OutType *otype, bool_node::Type type) {
     AssertDebug(contains(name), "IF THIS FAILS, REWRITE THIS FUNCTION TO USE newVar FIRST.");
     if(inlining_tree != nullptr) {
         auto obj = getObjConst(name);

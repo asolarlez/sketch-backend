@@ -154,9 +154,9 @@ public:
         assert(objs[index[name]].get_is_array());
 	}
 
-	void newVar(const string& name, int nbits, OutType* otype, bool_node::Type type, string original_name, string source_dag_name);
+	void newVar(const string& name, int nbits, const OutType* otype, bool_node::Type type, string original_name, string source_dag_name);
 
-	void setVarVal(const string& name, int val, OutType* otype, bool_node::Type type);
+	void setVarVal(const string& name, int val, const OutType* otype, bool_node::Type type);
 
 	void resizeVar(const string& name, int size){
 		int idx = getId(name);

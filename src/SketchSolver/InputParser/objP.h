@@ -49,20 +49,19 @@ class objP{
     bool_node::Type type = bool_node::NO_TYPE;
     objP* next;
     vector<int> vals;
+    int index;
 public:
+    int get_index() const {
+        return index;
+    }
     objP* get_next() const {
         return next;
     }
+
     string name;
+    const OutType* const otype;
 
-    OutType* otype;
-    int index;
     bool isNeg;
-
-    OutType* getOtype() const
-    {
-        return otype;
-    }
 
     int get_size() const
     {
@@ -90,7 +89,9 @@ public:
         defined = false;
     }
 
-    objP(string  name, int size, OutType* _otype, bool_node::Type _type, const string& _original_name = "", const string _source_dag_name = ""):
+    objP(
+            string  name, int size, const OutType* _otype,
+            bool_node::Type _type, const string& _original_name = "", const string _source_dag_name = ""):
             name(std::move(name)),vals(size),otype(_otype), type(_type), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name), source_dag_name(_source_dag_name){
         assert(_otype != nullptr);
         if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
