@@ -211,25 +211,6 @@ public:
 		}
 	}
 
-	void parseContent(istream& in){
-		while(in){
-			string t;
-			in>>t;
-			if(t.size()==0){ break; }
-
-			int s  = t.find(':');
-			string name = t.substr(0, s);
-			string val = t.substr(s+1);
-			if(index.count(name)==0){
-				continue;
-			}
-			auto oo = this->getObjConst(name);
-			oo.setVal(atoi(val.c_str()));
-		}
-
-	}
-
-
 	bool contains(const string& name) const{
 		return index.count(name)>0;
 	}

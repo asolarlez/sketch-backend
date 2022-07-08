@@ -7,6 +7,7 @@
 
 #include "BooleanNodes.h"
 
+#include <utility>
 #include <vector>
 #include <string>
 #include <cassert>
@@ -42,15 +43,15 @@ public:
     const OutType* const otype;
 
     VarStoreElementHeader(
-            bool_node::Type _type, const string& _name,
-            const OutType* _otype,  const string& _original_name,
-            const string& _source_dag_name):
-        type(_type), name(_name), otype(_otype), original_name(_original_name), source_dag_name(_source_dag_name) {}
+            bool_node::Type _type, string _name,
+            const OutType* _otype, string _original_name,
+            string _source_dag_name):
+        type(_type), name(std::move(_name)), otype(_otype), original_name(std::move(_original_name)), source_dag_name(std::move(_source_dag_name)) {}
 
     VarStoreElementHeader(const VarStoreElementHeader& old):
             type(old.type), name(old.name), otype(old.otype), original_name(old.original_name), source_dag_name(old.source_dag_name) {}
 
-    string get_name() const
+    const string& get_name() const
     {
         return name;
     }
@@ -65,52 +66,201 @@ public:
             AssertDebug(!source_dag_name.empty(), "check why this fails and act accordingly.")
         return source_dag_name;
     }
+
+    void rename(const string &new_name, const string &subdag_name) {
+        name = new_name;
+        source_dag_name = subdag_name;
+    }
+
+    bool_node::Type get_type() const {
+        assert(type != bool_node::NO_TYPE);
+        return type;
+    }
 };
 
-class objP: public VarStoreElementHeader{
-    bool defined = false;
+class VarStoreElementTrait: public VarStoreElementHeader{
+private:
+    int nbits;
+protected:
+    VarStoreElementTrait(const string& _name, int _nbits, const OutType* _otype, bool_node::Type _type, const string& _original_name="",
+         const string& _source_dag_name=""): nbits(_nbits),
+         VarStoreElementHeader(_type, _name, _otype, _original_name, _source_dag_name){}
+
+    VarStoreElementTrait(const VarStoreElementTrait& old): VarStoreElementHeader(old) {}
+public:
+
+    virtual int get_index() const {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual VarStoreElementTrait* get_next() const {
+        AssertDebug(false, "not implemented.");
+        return nullptr;
+    }
+
+    virtual int get_size() const {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual ~VarStoreElementTrait() = default;
+
+    virtual void clear() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void makeArr(int start, int end) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual int arrSize() {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual int element_size() const {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual int globalSize() const {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual int resize(int n) {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual VarStoreElementTrait* setBit(size_t i, int val) {
+        AssertDebug(false, "not implemented.");
+        return nullptr;
+    }
+
+    virtual int getInt() const {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual int getInt(int idx) const {
+        AssertDebug(false, "not implemented.");
+        return 0;
+    }
+
+    virtual void setArr(const vector<int> *arr) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    ///Return false if VarStoreElementTrait did not have enough bits to be made equal to v.
+    virtual bool setValSafe(int v) {
+        AssertDebug(false, "not implemented.");
+        return false;
+    }
+
+    virtual void setVal(size_t v) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void printBit(ostream& out) const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void printContent(ostream& out) const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual bool increment() {
+        AssertDebug(false, "not implemented.");
+        return false;
+    }
+
+    // If it is an array, then after the first N elements, we set to zero with probability 1-sparseDeg
+    virtual void makeRandom(float sparseDeg, int n=10) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void makeRandom() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void zeroOut() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual bool get_is_array() const {
+        AssertDebug(false, "not implemented.");
+        return false;
+    }
+
+    virtual void relabel(const string new_name) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void populate_vec(int *vv, int sz) const{
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void populate_multi_mother_nodeForINode(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const{
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const{
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void append_vals(vector<int>& out) const{
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual bool operator == (const VarStoreElementTrait& other) const{
+        AssertDebug(false, "not implemented.");
+        return false;
+    }
+};
+
+
+class objP: public VarStoreElementTrait {
     bool is_array;
     objP* next;
     vector<int> vals;
     int index;
     bool isNeg;
 public:
-    int get_index() const {
+    int get_index() const override {
         return index;
     }
 
-    objP* get_next() const {
+    VarStoreElementTrait* get_next() const override {
         return next;
     }
 
-    int get_size() const
+    int get_size() const override
     {
         return globalSize();
     }
 
-
 private:
     bool in_clear = false;
 public:
-    ~objP(){
+    ~objP() override{
         clear();
     }
 
-    void clear()
+    void clear() override
     {
         assert(!in_clear);
         in_clear = true;
         vals.clear();
         if(next != nullptr) {delete next; next = nullptr; };
-        defined = false;
     }
 
-    objP(
-            string  _name, int _size, const OutType* _otype,
-            bool_node::Type _type, const string& _original_name = "", const string& _source_dag_name = ""):
-            vals(_size), isNeg(false), index(0), next(nullptr), defined(true),
-            VarStoreElementHeader(_type, _name, _otype, _original_name, _source_dag_name)
-            {
+    objP(string  _name, int _size, const OutType* _otype,
+         bool_node::Type _type, const string& _original_name="", const string& _source_dag_name=""):
+         vals(_size), isNeg(false), index(0), next(nullptr),
+         VarStoreElementTrait(_name, _size, _otype, _type, _original_name, _source_dag_name)
+     {
         assert(_otype != nullptr);
         if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
             is_array = true;
@@ -121,23 +271,22 @@ public:
             is_array = false;
             assert(!_otype->isArr);
         }
-        assert(source_dag_name != "program_lvl0__id26__id38");
     }
 
     objP(const objP& old):
-            vals(old.vals), isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array),
-            VarStoreElementHeader(old){
+            vals(old.vals), isNeg(old.isNeg), index(old.index), is_array(old.is_array),
+            VarStoreElementTrait(old){
         if(old.next != nullptr){
             next=new objP(*old.next);
         }
         else{next=nullptr;}
     }
 
-    objP operator=(const objP& old){
+    objP operator=(const objP& old) {
         return objP(old);
     }
 
-    void makeArr(int start, int end){
+    void makeArr(int start, int end) override{
         assert(is_array);
         Assert(start < end, "Empty arr");
         index = start;
@@ -154,7 +303,7 @@ public:
         }
     }
 
-    int arrSize(){
+    int arrSize() override{
         assert(is_array);
         if(next==nullptr){
             return 1;
@@ -163,18 +312,18 @@ public:
         }
     }
 
-    int element_size() const {
+    int element_size() const override{
         return vals.size();
     }
 
-    int globalSize() const {
+    int globalSize() const override{
         if(next == nullptr){
             return element_size();
         }
         return next->globalSize() + element_size();
     }
 
-    int resize(int n){
+    int resize(int n) override{
         int x=0;
         vals.resize(n);
         if(next != nullptr){
@@ -182,7 +331,7 @@ public:
         } return x+n;
     }
 
-    objP* setBit(size_t i, int val){
+    VarStoreElementTrait* setBit(size_t i, int val) override{
         if(i<vals.size()){
             vals[i] = val;
             return this;
@@ -192,12 +341,12 @@ public:
         }
     }
 
-    int getInt() const{
+    int getInt() const override{
         int t = intFromBV(vals, 0, vals.size());
         return isNeg? -t : t;
     }
 
-    int getInt(int idx) const{
+    int getInt(int idx) const override{
         assert(!is_array);
         if(this->index==idx){
             return getInt();
@@ -208,19 +357,19 @@ public:
         Assert(false,"Control shouldn't reach here");
     }
 
-    void setArr(const vector<int> *arr) {
+    void setArr(const vector<int> *arr) override {
         assert(is_array);
         objP* at = this;
         for(int i = 0;i<arr->size();i++)
         {
-            assert(at != nullptr && at->defined);
+            assert(at != nullptr);
             at->setVal(arr->at(i));
             at = at->next;
         }
     }
 
     ///Return false if objP did not have enough bits to be made equal to v.
-    bool setValSafe(int v) {
+    bool setValSafe(int v) override {
         if(v<0){
             v = -v;
             isNeg = true;
@@ -242,7 +391,7 @@ public:
         }
     }
 
-    void setVal(size_t v){
+    void setVal(size_t v) override{
         if(v<0){
             v = -v;
             isNeg = true;
@@ -259,18 +408,18 @@ public:
             }
         }
     }
-    void printBit(ostream& out) const{
+    void printBit(ostream& out) const override{
         for(size_t i=0; i<vals.size(); ++i){
             out<<(vals[i]==1?1:0);
         }
         if(next!= nullptr){ out<<"|"; next->printBit(out); }
     }
-    void printContent(ostream& out) const{
+    void printContent(ostream& out) const override{
         out << getInt();
         if(next!= nullptr){ out<<"|"; next->printContent(out); }
     }
 
-    bool increment(){
+    bool increment() override{
         for(size_t i=0; i<vals.size(); ++i){
             if(vals[i]==-1){
                 vals[i] = 1;
@@ -289,7 +438,7 @@ public:
     /**
     If it is an array, then after the first N elements, we set to zero with probability 1-sparseDeg
     */
-    void makeRandom(float sparseDeg, int n=10){
+    void makeRandom(float sparseDeg, int n=10) override{
         int P  = 10000;
         int q = P*sparseDeg;
 
@@ -305,34 +454,24 @@ public:
         if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
     }
 
-    void makeRandom(){/* Bias towards zeros */
+    void makeRandom() override{/* Bias towards zeros */
         for(size_t i=0; i<vals.size(); ++i){
             vals[i] = (rand() & 0x3) > 0? -1 : 1;
         }
         if(next!= nullptr){ next->makeRandom(); }
     }
-    void zeroOut(){/* Bias towards zeros */
+    void zeroOut() override{/* Bias towards zeros */
         for(size_t i=0; i<vals.size(); ++i){
             vals[i] = -1;
         }
         if(next!= nullptr){ next->zeroOut(); }
     }
 
-    bool get_is_array() const {
+    bool get_is_array() const override {
         return is_array;
     }
 
-    void rename(const string &new_name, const string &subdag_name) {
-        name = new_name;
-        source_dag_name = subdag_name;
-    }
-
-    bool_node::Type get_type() const {
-        assert(type != bool_node::NO_TYPE);
-        return type;
-    }
-
-    void relabel(const string new_name) {
+    void relabel(const string new_name) override {
         objP* at = this;
         string prev_name = at->name;
         do {
@@ -342,7 +481,7 @@ public:
         }while(at != nullptr);
     }
 
-    void populate_vec(int *vv, int sz) const {
+    void populate_vec(int *vv, int sz) const override {
         auto op = this;
         while(op != nullptr){
             Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
@@ -351,11 +490,12 @@ public:
         }
     }
 
-    void populate_multi_mother_nodeForINode(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const;
+    void populate_multi_mother_nodeForINode(
+            vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const override;
 
-    void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const;
+    void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const override;
 
-    void append_vals(vector<int>& out) const;
+    void append_vals(vector<int>& out) const override;
 
     bool operator == (const objP& other) const
     {
@@ -431,14 +571,6 @@ public:
             return false;
         }
         if(index != other.index)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(defined != other.defined)
         {
             if(debug) {
                 cout << "return false" << endl;

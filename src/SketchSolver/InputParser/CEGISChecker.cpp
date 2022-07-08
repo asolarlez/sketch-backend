@@ -648,7 +648,7 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
 			Assert( cnt == it->globalSize(), "baseCheck: SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<< " " << cname << endl);
-			objP* tmp = &(*it);
+            VarStoreElementTrait* tmp = &(*it);
 			for(int i=0; i<cnt; ++i){				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
 				int qq = tmp->element_size() * tmp->get_index();
