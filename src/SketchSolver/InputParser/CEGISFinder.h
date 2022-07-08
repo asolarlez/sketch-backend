@@ -202,7 +202,7 @@ public:
 		long long sum = 0;
 		//Save outputControls in (VarStore) controls
 		for(auto it = controls.begin(); it !=controls.end(); ++it){
-			const string& cname = it->getName();
+			const string& cname = it->get_name();
 			cout << "cname = " << cname << endl;
 			OutType* out_type = allInputsDag->get_node(cname)->getOtype();
 			cout << "out_type = " <<  out_type->str() << endl;

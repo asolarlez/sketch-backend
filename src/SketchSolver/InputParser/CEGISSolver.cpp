@@ -421,8 +421,8 @@ void CEGISSolver::normalizeInputStore(){
 	NodeSlicer slicer(empty, tmp, *getProblem(), floats);
 	slicer.process(*getProblem());
 	for(auto it = checker->get_input_store().begin(); it != checker->get_input_store().end(); ++it){
-		if(!slicer.isInfluential(it->getName())){
-			it->setVal(last_input[it->getName()]);		
+		if(!slicer.isInfluential(it->get_name())){
+			it->setVal(last_input[it->get_name()]);
 		}
 	}
 }

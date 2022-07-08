@@ -101,7 +101,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	//Get the values of the Controls.6-
 
 	for(auto it = controls.begin(); it !=controls.end(); ++it){
-		const string& cname = it->getName();
+		const string& cname = it->get_name();
 		int cnt = dirFind.getArrSize(cname);
 		Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
 		for(int i=0; i<cnt; ++i){

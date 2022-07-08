@@ -644,7 +644,7 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
     
     
 	for(auto it = input.begin(); it !=input.end(); ++it){
-		const string& cname = it->getName();
+		const string& cname = it->get_name();
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
 			Assert( cnt == it->globalSize(), "baseCheck: SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<< " " << cname << endl);

@@ -36,7 +36,7 @@ void VarStore::rename(const objP& _obj, const string &new_name, const string& ne
     assert(index.find(obj_name) != index.end());
     auto &obj = _getObj(obj_name);
     assert(obj.get_original_name() == original_name);
-    assert(obj_name == obj.name);
+    assert(obj_name == obj.get_name());
     string prev_source_dag_name = obj.get_source_dag_name();
     assert(prev_source_dag_name == _prev_source_dag_name);
     assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) !=
@@ -48,7 +48,7 @@ void VarStore::rename(const objP& _obj, const string &new_name, const string& ne
     int prev_index = index[obj_name];
     index.erase(obj_name);
     index[new_name] = prev_index;
-    assert(objs[index[new_name]].name == new_name);
+    assert(objs[index[new_name]].get_name() == new_name);
     var_name_to_dag_name_to_name[original_name].erase(prev_source_dag_name);
     var_name_to_dag_name_to_name[original_name][new_source_dag] = new_name;
 
@@ -62,7 +62,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
 
     if(contains(new_name)){
         const objP& obj = getObjConst(new_name);
-        assert(obj.name == new_name);
+        assert(obj.get_name() == new_name);
         assert(obj.get_original_name() == original_name);
         assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
         if(obj.get_source_dag_name() == new_source_dag) {
@@ -147,7 +147,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
             objP& obj = _getObj(obj_name);
 
             assert(obj.get_original_name() == original_name);
-            assert(obj_name == obj.name);
+            assert(obj_name == obj.get_name());
             string prev_source_dag_name = obj.get_source_dag_name();
             assert(prev_source_dag_name == matching_subdag_name);
             assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) !=
@@ -164,7 +164,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
                 int prev_index = index[obj_name];
                 index.erase(obj_name);
                 index[new_name] = prev_index;
-                assert(objs[index[new_name]].name == new_name);
+                assert(objs[index[new_name]].get_name() == new_name);
                 var_name_to_dag_name_to_name[original_name].erase(prev_source_dag_name);
                 var_name_to_dag_name_to_name[original_name][new_source_dag] = new_name;
             }
@@ -229,7 +229,7 @@ bool VarStore::check_rep() const {
         assert(var_name_to_dag_name_to_name.at(original_name).at(dag_name) == it.first);
 
         assert(inlining_tree->contains(dag_name));
-        assert(inlining_tree->contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
+        assert(inlining_tree->contains_var(obj.get_name(), obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
 
     }
     inlining_tree->check_rep(this);
@@ -309,11 +309,11 @@ bool VarStore::check_rep_and_clear() {
     return ret;
 }
 
-void VarStore::newVar(const string &name, int nbits, const OutType *otype, bool_node::Type type, string original_name,
-                      string source_dag_name) {
+void VarStore::newVar(const string &name, int nbits, const OutType *otype, bool_node::Type type, const string& original_name,
+                      const string& source_dag_name) {
     if(contains(name)) {
         auto obj = getObjConst(name);
-        assert(obj.getName() == name);
+        assert(obj.get_name() == name);
         assert(obj.get_size() == nbits && obj.element_size() == nbits);
         assert(obj.otype == otype);
         assert(obj.get_original_name() == original_name);
@@ -380,13 +380,13 @@ bool VarStore::contains(const objP &obj, vector<string> *path) const
 {
     assert(var_name_to_dag_name_to_name.find(obj.get_original_name()) != var_name_to_dag_name_to_name.end());
     assert(var_name_to_dag_name_to_name.at(obj.get_original_name()).find(obj.get_source_dag_name()) != var_name_to_dag_name_to_name.at(obj.get_original_name()).end());
-    assert(var_name_to_dag_name_to_name.at(obj.get_original_name()).at(obj.get_source_dag_name()) == obj.name);
+    assert(var_name_to_dag_name_to_name.at(obj.get_original_name()).at(obj.get_source_dag_name()) == obj.get_name());
 
-    assert(contains(obj.name));
+    assert(contains(obj.get_name()));
 
     const LightInliningTree* subtree = inlining_tree;
     for (int i = 0; i < path->size(); i++) {
-        subtree->contains(obj.name);
+        subtree->contains(obj.get_name());
         subtree = subtree->get_sub_inlining_tree((*path)[i]);
     }
 
@@ -406,7 +406,7 @@ map<string, string> VarStore::to_map_str_str(FloatManager& floats) {
         {
             str << it->getInt();
         }
-        values[it->getName()] = str.str();
+        values[it->get_name()] = str.str();
     }
     for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
         //stringstream str;

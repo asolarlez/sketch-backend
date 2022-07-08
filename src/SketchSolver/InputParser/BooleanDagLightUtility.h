@@ -123,7 +123,7 @@ protected:
     bool contains_var(
             const objP& obj) const
     {
-        assert(contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
+        assert(contains_var(obj.get_name(), obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
         return true;
     }
 
@@ -135,18 +135,18 @@ protected:
         if(var_store == nullptr) {
             var_store = new VarStore();
         }
-        if(!var_store->contains(obj.name)) {
+        if(!var_store->contains(obj.get_name())) {
             assert(unconc_hole_original_name_to_name.find(obj.get_original_name()) != unconc_hole_original_name_to_name.end());
             assert(unconc_hole_original_name_to_name[obj.get_original_name()].find(get_dag_name()) != unconc_hole_original_name_to_name[obj.get_original_name()].end());
-            assert(unconc_hole_original_name_to_name[obj.get_original_name()][get_dag_name()] == obj.name);
+            assert(unconc_hole_original_name_to_name[obj.get_original_name()][get_dag_name()] == obj.get_name());
             unconc_hole_original_name_to_name.erase(obj.get_original_name());
-            var_store->insertObj(obj.name, var_store->size(), objP(obj));
-//            var_store->newVar(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name());
+            var_store->insertObj(obj.get_name(), var_store->size(), objP(obj));
+//            var_store->newVar(obj.get_name(), obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name());
         }
         else
         {
-            auto _obj = var_store->getObjConst(obj.name);
-            assert(obj.name == _obj.name && obj.element_size() == _obj.element_size() &&
+            auto _obj = var_store->getObjConst(obj.get_name());
+            assert(obj.get_name() == _obj.get_name() && obj.element_size() == _obj.element_size() &&
                    obj.get_type() == _obj.get_type() &&
                    obj.get_original_name() == _obj.get_original_name() &&
                    obj.get_source_dag_name() == _obj.get_source_dag_name());
@@ -530,7 +530,7 @@ public:
             const objP& obj) const
     {
         const LightInliningTree* target = get_target(obj.get_source_dag_name());
-        assert(target->LightSkFuncSetter::contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
+        assert(target->LightSkFuncSetter::contains_var(obj.get_name(), obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
         return true;
     }
 

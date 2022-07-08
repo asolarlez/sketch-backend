@@ -132,10 +132,10 @@ public:
     {
 	    AssertDebug(index.find(name) == index.end(), name + " should not be present in index.");
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
-	    assert(name == obj.name);
+	    assert(name == obj.get_name());
         objs.push_back(obj);
 	    index[name] = idx;
-        insert_name_in_original_name_to_dag_name_to_name(obj.name, obj.get_original_name(), obj.get_source_dag_name());
+        insert_name_in_original_name_to_dag_name_to_name(obj.get_name(), obj.get_original_name(), obj.get_source_dag_name());
     }
 
 	void newArr(const string& name, int nbits, int arrsz, OutType* otype, bool_node::Type type){
@@ -154,7 +154,7 @@ public:
         assert(objs[index[name]].get_is_array());
 	}
 
-	void newVar(const string& name, int nbits, const OutType* otype, bool_node::Type type, string original_name, string source_dag_name);
+	void newVar(const string& name, int nbits, const OutType* otype, bool_node::Type type, const string& original_name, const string& source_dag_name);
 
 	void setVarVal(const string& name, int val, const OutType* otype, bool_node::Type type);
 
@@ -200,7 +200,7 @@ public:
 	}
 	void printContent(ostream& out) const{
 		for(size_t i=0; i<objs.size(); ++i){
-			out << objs[i].name << ":";
+			out << objs[i].get_name() << ":";
 			objs[i].printContent(out);
 			out << endl;
 		}
@@ -308,7 +308,7 @@ public:
         for(int i = 0;i<objs.size();i++)
         {
             objs[i].relabel(inputs[i]->get_name());
-            index[objs[i].name] = i;
+            index[objs[i].get_name()] = i;
         }
     }
 
@@ -354,7 +354,7 @@ inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
 {
 	VarStore* ret = _v1.clone();
 	for(int i = 0; i < v2.objs.size(); i++) {
-		ret->insertObj(v2.objs[i].name, ret->objs.size(), objP(v2.objs[i]));
+		ret->insertObj(v2.objs[i].get_name(), ret->objs.size(), objP(v2.objs[i]));
 	}
 	ret->bitsize += v2.bitsize;
 	return ret;
@@ -364,7 +364,7 @@ inline void append_join(VarStore& _v1, const VarStore& v2)
 {
     VarStore* ret = &_v1;
     for(int i = 0; i < v2.objs.size(); i++) {
-        ret->insertObj(v2.objs[i].name, ret->objs.size(), objP(v2.objs[i]));
+        ret->insertObj(v2.objs[i].get_name(), ret->objs.size(), objP(v2.objs[i]));
     }
     ret->bitsize += v2.bitsize;
 }
@@ -373,7 +373,7 @@ inline void append_join(VarStore& _v1, const VarStore& v2)
 //{
 //    VarStore* ret = &_v1;
 //    for(int i = 0; i < v2.objs.size(); i++) {
-//        ret->insertObj(v2.objs[i].name, ret->objs.size(), v2.objs[i]);
+//        ret->insertObj(v2.objs[i].get_name(), ret->objs.size(), v2.objs[i]);
 //    }
 //    ret->bitsize += v2.bitsize;
 ////    return ret;

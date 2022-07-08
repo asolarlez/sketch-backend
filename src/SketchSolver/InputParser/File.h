@@ -162,7 +162,7 @@ public:
                         cerr << endl;
                         cerr << "corresponding to inputs "<<endl;
                         for (auto it = inputs->begin(); it != inputs->end(); ++it) {
-                            cerr << it->getName()<<"  ";
+                            cerr << it->get_name() << "  ";
                         }
                         cerr << endl;
                         throw BasicError(string("file parsing error"), "name");

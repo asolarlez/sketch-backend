@@ -50,6 +50,8 @@ class objP{
     objP* next;
     vector<int> vals;
     int index;
+    bool isNeg;
+    string name;
 public:
     int get_index() const {
         return index;
@@ -58,17 +60,14 @@ public:
         return next;
     }
 
-    string name;
     const OutType* const otype;
-
-    bool isNeg;
 
     int get_size() const
     {
         return globalSize();
     }
 
-    string getName() const
+    string get_name() const
     {
         return name;
     }
