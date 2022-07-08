@@ -537,7 +537,7 @@ public:
             }
             else
             {
-                Assert(false, "missing case for parseLineOut.")
+                AssertDebug(false, "MISSING CASE for 'Result parseFile'.")
             }
             if (PARAMS->verbosity > 12) {
                 new_row->printContent(cout);

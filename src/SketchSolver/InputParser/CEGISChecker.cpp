@@ -579,7 +579,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 				continue;
 			}
             default:
-                Assert(false, "missing check case.");
+                Assert(false, "MISSING CASE in CEGISChecker::check.");
 		}
 	}while(!rv);
 	popProblem();

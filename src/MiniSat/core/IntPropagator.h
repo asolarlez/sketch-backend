@@ -352,7 +352,6 @@ inline const Range& RangeTracker::getRange(iVar varid, int& maxidx) {
 	}	
 }
 
-
 inline void RangeTracker::popRanges(int level) {	
 	if (level <= highestlevel) {		
 		int lastidx = ranges.size();
@@ -377,51 +376,6 @@ inline void RangeTracker::popRanges(int level) {
 		ranges.shrink(ranges.size() - lastidx);			
 	}
 }
-
-
-class BaseArray {
-public:
-	virtual Val val(int idx) = 0;
-};
-
-class ArrayCr : public BaseArray{
-	vector<Val> vals;
-public:
-	Val val(int idx) {
-		return vals[idx];
-	}
-};
-
-class ArrayUpdate : public BaseArray {
-	BaseArray& parent;
-	Val idx;
-	Val value;
-public:
-	Val val(int _idx) {
-		if (idx.isDef()) {
-			if (idx.v() == _idx) {
-				return value;
-			}
-			else {
-				parent.val(_idx);
-			}
-		}
-		else {
-			return Val();
-		}		
-	}
-};
-
-
-class ArrayPropagator {
-	vector<BaseArray*> avals;
-
-
-
-};
-
-
-
 
 class IntPropagator{
 	// Map from variable id to values.

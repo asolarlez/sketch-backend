@@ -77,6 +77,8 @@ public:
 			case Eq: return "==";
 			case Neqc:
 			case Neq: return "!=";
+            default:
+                AssertDebug(false, "MISSING CASE IN NT2str.");
 		}
 		Assert(false,"Control can't reach here")
 	}

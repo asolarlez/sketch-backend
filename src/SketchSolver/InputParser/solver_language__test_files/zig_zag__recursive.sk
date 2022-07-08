@@ -34,13 +34,13 @@ int composite_predicate(int x)
 
 int dummy_program(int x) {return 1;}
 
-@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness int eval_program_main(int x, int out)
 {
     return dummy_program(x);
 }
 
-@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void sketch_main(int x, int out)
 {
     assert(composite_predicate(x) == out);

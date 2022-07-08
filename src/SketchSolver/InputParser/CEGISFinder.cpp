@@ -88,7 +88,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	    		case SAT_ABORTED:  throw new SolverException(result, "SAT_ABORTED"); break;
 
                 default:
-                    Assert(false, "missing result case.");
+                    Assert(false, "MISSING CASE in CEGISFinder::find.");
 	    	}    			
     	}
 		if(this->stoppedEarly){

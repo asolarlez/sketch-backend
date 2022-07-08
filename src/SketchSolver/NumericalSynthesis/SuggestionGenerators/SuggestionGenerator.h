@@ -8,4 +8,5 @@ public:
     virtual pair<int, int> getUnsatSuggestion(const gsl_vector* state) = 0;
     virtual SClause* getUnsatClause(const gsl_vector* state, const gsl_vector* initState)  = 0;
     virtual SClause* getUnsatClause(const gsl_vector* state)  = 0;
+    virtual ~SuggestionGenerator() {};
 };

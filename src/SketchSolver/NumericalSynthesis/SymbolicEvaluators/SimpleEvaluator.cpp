@@ -232,6 +232,7 @@ double SimpleEvaluator::getBoolCtrlError(bool_node* node) {
     if (ival == DEFAULT_INPUT) {
     	return -1.0;
     }
+    return 0.0;
 }
 
 double SimpleEvaluator::getBoolExprError(bool_node* node) {

@@ -894,7 +894,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             AssertDebug(false, "_inits should never be erased or superseded.")
             break;
         default:
-            AssertDebug(false, "missing cases.");
+            AssertDebug(false, "MISSING CASE.");
     }
 
     return nullptr;

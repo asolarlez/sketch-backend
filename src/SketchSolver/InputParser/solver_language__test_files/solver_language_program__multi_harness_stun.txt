@@ -37,13 +37,13 @@ int composite_predicate(int x)
 
 int dummy_program(int x) {return 1;}
 
-@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness int eval_program_main(int x, int out)
 {
     return dummy_program(x);
 }
 
-@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void sketch_main(int x, int out)
 {
     assert(composite_predicate(x) == out);
@@ -222,9 +222,9 @@ Solver best_effort_synthesized_program(harness2, file, num_trials, num_rows_per_
 Solver main()
 {
 
-    return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
+    //return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
     //return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
-    //return recursive_function_stun();
+    return recursive_function_stun();
 
 
     //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
@@ -447,7 +447,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
 
                     file = File(file_name, new_best_sketch_main_lvl1);
                     dag_for_score = new_best_sketch_main_lvl1.produce_executable();
-                    int score = count_passing_inputs(dag_for_score, file);
+                    int score = dag_for_score.vectorized_count_passing_inputs(file);
 
                     print("new_score:", score);
 
@@ -595,7 +595,7 @@ Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_
             harness_levels.append(mhw_lvl_i);
         }
 
-        if(true)
+        if(false)
         {
             to_eval = eval_program_main.produce_replace("dummy_program", harness_levels[i].get("sketch_main").get("composite_predicate"));
             to_eval = to_eval.produce_executable();
@@ -614,7 +614,7 @@ Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_
             }
         }
 
-        score = count_passing_inputs(harness_levels[i], file);
+        score = harness_levels[i].vectorized_count_passing_inputs(file);
 
         print("score[", i, "] =", score);
     }
@@ -630,10 +630,10 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 2;
+    num_trials = 8;
     num_rows_per_sample = 3;
 
-    int stun_depth = 2;
+    int stun_depth = 3;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 
@@ -690,7 +690,7 @@ Solver recursive_function_stun()
         print("cp_lvl_i, i =", i);
         local_sketch_main.replace("composite_predicate", cp_lvl_i);
 
-        {
+        if(false){
             to_eval = eval_program_main.produce_replace("dummy_program", cp_lvl_i);
             to_eval = to_eval.produce_executable();
 
@@ -708,14 +708,14 @@ Solver recursive_function_stun()
             }
         }
 
-        score_predicted = count_passing_inputs(local_sketch_main__Wrapper.produce_executable(), file);
+        score_predicted = local_sketch_main__Wrapper.produce_executable().vectorized_count_passing_inputs(file);
         //END
 
         //START
         print("at_level, i =", i);
         local_sketch_main.replace("composite_predicate", at_level);
 
-        {
+        if(false){
             to_eval = eval_program_main.produce_replace("dummy_program", at_level);
             to_eval = to_eval.produce_executable();
 
@@ -733,7 +733,7 @@ Solver recursive_function_stun()
             }
         }
 
-        score_ground_truth = count_passing_inputs(local_sketch_main__Wrapper.produce_executable(), file);
+        score_ground_truth = local_sketch_main__Wrapper.produce_executable().vectorized_count_passing_inputs(file);
         //END
 
         print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
@@ -829,7 +829,7 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
 Solver get_score(SketchFunction harness3, Solution solution, File file)
 {
     SketchFunction program = harness3.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
-    int score2 = count_passing_inputs(program, file); // count how many input-output examples are solved with this solution
+    int score2 = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
     program.clear();
     return score2;
 }
@@ -949,7 +949,7 @@ Solver Solution beam_search_sketch_main()
 
 Solver Solution repeat_greedy_sketch_main()
 {
-    string file_name = "/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
+    string file_name = "/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
     File file = File(file_name, sketch_main_lvl2__Wrapper);
     int n = file.size();
 
@@ -1083,6 +1083,7 @@ Solver best_effort_synthesis(SketchFunction harness6, File file, int num_trials,
 	return ret;
 }
 
+/*
 //subroutine to count the number of passing input-output examples.
 Solver int count_passing_inputs(SketchFunction program, File file)
 {
@@ -1101,4 +1102,4 @@ Solver int count_passing_inputs(SketchFunction program, File file)
 	}
 	print("count_passing_inputs returns", score);
 	return score;
-}
+}*/

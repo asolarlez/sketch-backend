@@ -2033,6 +2033,7 @@ void parse_solver_langauge_program(SolverProgramState* state, string solver_prog
 	yylex_init(&scanner);
 
 	FILE* file_pointer = fopen(solver_program_file.c_str(), "r");
+    cout << file_pointer << endl;
 	yyset_in(file_pointer, scanner);
 	int rv = yyparse(scanner, state);
 	free(scanner);

@@ -31,19 +31,19 @@ int line_lvl2(int x)
     return compound_line(line_lvl1(x), x);
 }
 
-@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void main_lvl2(int x, int y)
 {
     assert(line_lvl2(x) == y);
 }
 
-@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void main_lvl1(int x, int y)
 {
     assert(line_lvl1(x) == y);
 }
 
-@FromFile("/home/kliment/CLionProjects/sketch-source/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void main_lvl0(int x, int y)
 {
     assert(line_lvl0(x) == y);

@@ -973,8 +973,7 @@ void run(StateType* state);
             return type_params->at(idx);
         }
 
-        virtual size_t size()
-        {
+        virtual size_t size() {
             assert(type_params != nullptr);
             if(type_params == nullptr)
             {
@@ -1087,7 +1086,7 @@ void run(StateType* state);
             return vector<SL::VarVal*>::end();
         }
 
-        size_t size(){
+        size_t size() override {
             return vector<SL::VarVal*>::size();
         }
 
@@ -1565,7 +1564,7 @@ namespace SL {
             return find(key) != end();
         }
 
-        size_t size(){
+        size_t size() override{
             return map<string, SL::VarVal*>::size();
         }
 

@@ -270,8 +270,8 @@ private:
             case ARR_CREATE: return "ARR_CREATE";
             case TUPLE_CREATE: return "TUPLE_CREATE";
             case TUPLE_R: return "TUPLE_R";
+            default: AssertDebug(false, "MISSING CASE IN get_tname.");
         }
-        //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
     }
 	string getSMTnode(OutType* ot_needed){
@@ -350,6 +350,7 @@ private:
             case ARR_CREATE: return "ARRC";
             case TUPLE_CREATE: return "TUPC";
             case TUPLE_R: return "TUPR";
+            default: AssertDebug(false, "MISSING CASE in get_smtop.");
         }
         //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
@@ -2203,7 +2204,7 @@ public:
 			case Hard: str<<id<<"= HASSERT "; break;
 			case Assume: str<<id<<"= Assume "; break;
             default:
-                Assert(false, "Missing assertType.");
+                Assert(false, "Missing CASE in lprint.");
 		}		
 		str<<mother()->lid()<<" : "<<msg;		
 		return str.str();
@@ -2248,6 +2249,7 @@ inline bool_node* newNode( bool_node::Type type, int size=0){
 		case bool_node::ARR_CREATE: return ARR_CREATE_node::create(size);
 		case bool_node::TUPLE_CREATE: return TUPLE_CREATE_node::create(size);
 		case bool_node::TUPLE_R: return TUPLE_R_node::create();
+        default: AssertDebug(false, "Missing CASE in newNode.");
 	}
 	return NULL;
 }

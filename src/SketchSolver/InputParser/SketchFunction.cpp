@@ -867,12 +867,12 @@ int SketchFunction::count_passing_inputs(File *file, bool do_assert) {
     return predicted_ret;
 }
 
-#include <cilk/cilk.h>
-#include <cilk/cilk_api.h>
+//#include <cilk/cilk.h>
+//#include <cilk/cilk_api.h>
 
-//#define cilk_spawn
-//#define cilk_sync
-//#define cilk_for for
+#define cilk_spawn
+#define cilk_sync
+#define cilk_for for
 
 
 
@@ -910,9 +910,9 @@ SL::PolyVec* SketchFunction::evaluate_inputs(File *file) {
 
     cout << "END MEASURING TIME (evaluate_inputs)" << endl;
     cout << "ELAPSED: " << elapsed << " (microseconds)" << endl;
-    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
-    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
-    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
+//    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
+//    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
+//    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
 
     return ret;
 }

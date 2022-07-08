@@ -850,8 +850,8 @@ void DagOptim::visit( PLUS_node& node ){
 		return;
 	}
 	
-	
-	if( typeid(*node.father()) == typeid(node) ){
+	auto node_father = node.father();
+	if( typeid(*node_father) == typeid(node) ){
 		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.father());
 		bool_node* tt1 = parent.father();
 		bool_node* tt2 = parent.mother();
@@ -871,8 +871,8 @@ void DagOptim::visit( PLUS_node& node ){
 		}
 	}
 	
-	
-	if( typeid(*node.mother()) == typeid(node) ){
+	auto node_mother = node.mother();
+	if( typeid(*node_mother) == typeid(node) ){
 		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.mother());
 		bool_node* tt1 = parent.father();
 		bool_node* tt2 = parent.mother();
@@ -1025,7 +1025,8 @@ void DagOptim::visit( NEG_node& node ){
 		}	
 		return;
 	}
-	if( typeid(*(node.mother())) == typeid(node)  ){// - -x == x;
+    auto node_mother = node.mother();
+	if( typeid(*node_mother) == typeid(node)  ){// - -x == x;
 		rvalue = node.mother()->mother();
 		return;
 	}

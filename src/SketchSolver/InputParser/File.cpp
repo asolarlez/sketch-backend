@@ -323,7 +323,7 @@ File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, co
         }
         else
         {
-            Assert(false, "missing case for parseLineOut.")
+            Assert(false, "MISSING CASE for File::parseFile.")
         }
         if (PARAMS->verbosity > 12) {
             new_row->printContent(cout);

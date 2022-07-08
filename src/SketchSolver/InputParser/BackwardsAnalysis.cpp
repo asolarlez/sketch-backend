@@ -430,7 +430,7 @@ bool_node* BackwardsAnalysis::localModify(ARRASS_node* node, Info& t){
 	if(t.getValue(node->mother(), v)){
 				
 		bool_node* tmp;
-		if ((v == node->quant)) {
+		if (v == node->quant) {
 			tmp = modifyNode(node->getNewVal(), t);
 		} else {
 			tmp = modifyNode(node->getOldVal(), t);

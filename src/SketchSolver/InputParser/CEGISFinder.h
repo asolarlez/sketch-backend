@@ -25,11 +25,10 @@ protected:
     BooleanDAG* allInputsDag = nullptr;
 public:
     explicit CEGISFinderSpec(FloatManager& _floats): floats(_floats) {}
-	virtual bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged)
-	{
-		Assert(false, "CEGISFinderSpec is just an interface.");
-		return false;
-	}
+	virtual bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) {
+        Assert(false, "CEGISFinderSpec is just an interface.");
+        return false;
+    }
 
 	virtual bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes)
 	{
@@ -89,7 +88,7 @@ public:
 
 	}
 
-    void clear()
+    void clear() override
     {
         find_node_ids.clear();
         find_history.clear();
@@ -245,6 +244,7 @@ public:
 	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override
 	{
 		//do nothing
+        AssertDebug(false, "TODO: return something meaningful here. Not sure what needs to be returned here.");
 	}
 
 	void declareControl(CTRL_node* cnode) override

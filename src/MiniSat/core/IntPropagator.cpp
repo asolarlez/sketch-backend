@@ -101,29 +101,31 @@ namespace MSsolverNS {
 	void Intclause::print() {
 		Intclause& c = *this;
 		switch (c.tp()) {
-		case PLUS: cout << "PLUS"; break;
-		case MINUS: cout << "MINUS"; break;
-		case TIMES: cout << "TIMES"; break;
-		case EXACTDIV: cout << "EXACTDIV"; break;
-		case LT: cout << "LT"; break;
-		case EQ: cout << "EQ"; break;
-		case BMUX: cout << "BMUX"; break;
-		case MOD: cout << "MOD"; break;
-		case DIV: cout << "DIV"; break;
-		case CONF: cout << "CONF";
-			for (int j = 0; j < c.size(); ++j) {
-				iVar val = c[c.size() + j];
-				long long int vv = val;
-				if (vv > INT_MAX) {
-					vv = vv - UINT_MAX;
-					vv = vv - 1;
-				}
-				cout << ", " << c[j] << "=" << vv;
-			}
+            case PLUS: cout << "PLUS"; break;
+            case MINUS: cout << "MINUS"; break;
+            case TIMES: cout << "TIMES"; break;
+            case EXACTDIV: cout << "EXACTDIV"; break;
+            case LT: cout << "LT"; break;
+            case EQ: cout << "EQ"; break;
+            case BMUX: cout << "BMUX"; break;
+            case MOD: cout << "MOD"; break;
+            case DIV: cout << "DIV"; break;
+            case CONF: cout << "CONF";
+                for (int j = 0; j < c.size(); ++j) {
+                    iVar val = c[c.size() + j];
+                    long long int vv = val;
+                    if (vv > INT_MAX) {
+                        vv = vv - UINT_MAX;
+                        vv = vv - 1;
+                    }
+                    cout << ", " << c[j] << "=" << vv;
+                }
 
-			cout << "       " << c.activity();
-			cout << endl;
-			return;
+                cout << "       " << c.activity();
+                cout << endl;
+                return;
+            default:
+                AssertDebug(false, "MISSING CASE in Intclause::print().");
 		}
 		for (int j = 0; j < c.size(); ++j) {
 			cout << ", " << c[j];

@@ -209,7 +209,8 @@ public:
 				outParent(out, node->mother());
 				out << ";" << endl;
 				break;
-				
+            default:
+                AssertDebug(false, "MISSING CASE in DeductiveSolver.h::print.");
 			}
 
 		}
