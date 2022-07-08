@@ -70,7 +70,8 @@ void CallGraphAnalysis::populateCG(BooleanDAG& dag, map<string, BooleanDAG*>& fu
 	while(!tosee.empty()){		
 		BooleanDAG* cur = tosee.top(); tosee.pop();		
 		for(BooleanDAG::iterator it = cur->begin(); it != cur->end(); ++it){
-			if(typeid(**it) == typeid(UFUN_node)){
+            auto star_it = *it;
+			if(typeid(*star_it) == typeid(UFUN_node)){
 				UFUN_node* node = dynamic_cast<UFUN_node*>(*it);
 				if(funMap.count(node->get_ufun_name()) > 0){
 					BooleanDAG* callee=funMap[node->get_ufun_name()];

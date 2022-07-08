@@ -219,7 +219,8 @@ void ComplexInliner::unify(){
 	int maxDif = -1;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
-		if(typeid(*dag[i]) == typeid(UFUN_node)){
+        auto dag_i = dag[i];
+		if(typeid(*dag_i) == typeid(UFUN_node)){
 			UFUN_node* ufun = dynamic_cast<UFUN_node*>(dag[i]);
 			const string& name = ufun->get_ufun_name();
 			if(checkFunName(name)){
