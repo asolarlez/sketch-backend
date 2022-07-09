@@ -653,17 +653,23 @@ public:
 
 class SuccinctBitVectorVector
 {
+    static const int max_num_bits = 30;
     int num_bits_per_vector;
     int total_num_bits;
     vector<int> vector_of_vectors;
 public:
     SuccinctBitVectorVector(int _num_vectors, int _num_bits_per_vector):
         num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
+        assert(num_bits_per_vector <= max_num_bits);
         vector_of_vectors = vector<int>(_num_vectors, 0);
     }
     explicit SuccinctBitVectorVector(const SuccinctBitVectorVector* to_copy):
             num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits) {
         vector_of_vectors = to_copy->vector_of_vectors;
+    }
+
+    size_t get_num_vectors() {
+        return vector_of_vectors.size();
     }
 
     int get_num_bits_per_vector() const {
@@ -673,6 +679,7 @@ public:
     void resize_num_bits_per_vector(int new_num_bits_per_vector)
     {
         assert(new_num_bits_per_vector >= num_bits_per_vector);
+        assert(new_num_bits_per_vector <= max_num_bits);
         num_bits_per_vector = new_num_bits_per_vector;
     }
 
@@ -1039,12 +1046,10 @@ public:
     }
 
     void populate_vec(int *vv, int sz) const override {
-        auto op = this;
-        while(op != nullptr){
-            Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
-            vv[op->index] = op->getInt();
-            op = op->next;
-        }
+        assert(is_head);
+        assert(index == 0);
+        AssertDebug(array->get_num_vectors() <= sz, "Out of bounds error in solver ;alkwebbn");
+        std::copy(array->begin(), array->end(), vv);
     }
 
     void populate_multi_mother_nodeForINode(
