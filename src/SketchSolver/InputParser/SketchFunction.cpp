@@ -1043,12 +1043,12 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *sk
                     std::to_string(remaining_holes) + " remaining_holes.");
     }
 
-    auto the_var_store = new VarStore(*_the_var_store);
+//    auto the_var_store = new VarStore(*_the_var_store);
 
     NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
-    bool fails = node_evaluator.run(*the_var_store);
+    bool fails = node_evaluator.run(*_the_var_store);
 
-    the_var_store->clear();
+//    the_var_store->clear();
 
     if(new_clone) {
         the_dag->clear();

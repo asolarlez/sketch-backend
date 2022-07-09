@@ -14,6 +14,7 @@ using namespace std;
 class CounterexampleFinder :
 	public NodeEvaluator
 {
+    VarStore* inputs = nullptr;
 	float sparseArray;
 	Ostore<unsigned> store;
 	vector<BitSet* >  influences;
@@ -106,7 +107,6 @@ public:
     bool parseLine(const VarStore* var_store)
     {
         *inputs = *var_store;
-//        inputs = new VarStore(*var_store);
         return true;
     }
 	Result fromFile(const File *file, FloatManager& floats, vector<bool_node*>& inputNodes);
@@ -156,6 +156,7 @@ public:
 					}
 					if(eq->father()->type==bool_node::SRC){
 						int fv = this->getValue(eq->mother());
+                        AssertDebug(false, "THIS CHANGE IS NOT TESTED!!!");
                         VarStore* _inputs = new VarStore(*inputs);
 						bool inrange = _inputs->_getObj(eq->father()->get_name()).setValSafe(fv);
                         inputs = _inputs;
@@ -170,6 +171,7 @@ public:
 				}
 				int jmp = bdsz;
 				for(;it != -1; it = inf->next(it)){
+                    AssertDebug(false, "THIS CHANGE IS NOT TESTED!!!");
                     VarStore* _inputs = new VarStore(*inputs);
 					if(sparseArray > 0.000001){
                         _inputs->_getObj(it).makeRandom(sparseArray);

@@ -516,22 +516,9 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					map<string, BooleanDAG*> empty;
 					BooleanDAG* dag = getProblemDag();
 					CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);
-					VarStore& tmpin = input;
-					eval.init(tmpin);
+					eval.init(input);
 					auto inputs = dag->getNodesByType(bool_node::SRC);
 					CounterexampleFinder::Result res = eval.fromFile(files[curProblem], floats,  inputs);
-					
-					while (res == CounterexampleFinder::MOREBITS) {
-                        assert(false); //After introducing File, this is no longer an issue.
-						BooleanDAG* dag = getProblemDag();
-						if (PARAMS->verbosity > 5) {
-							cout << "CONTROL: growing l=" << problemLevel() << " inputs to size " << (dag->getIntSize() + 1) << endl;
-						}
-						growInputs(input, dag, oriProblem, (problemLevel() - 1) == 1);
-						res = eval.fromFile(files[curProblem], floats, inputs);
-					}
-//					TO ASK ARMANDO: Isn't this always the case?
-//					if (dag != oriProblem)
 
                     assert(dag != oriProblem);
 
@@ -544,6 +531,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 							}
 						}
 					}
+
 					rv = (res == CounterexampleFinder::FOUND);
 
 					continue;
