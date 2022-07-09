@@ -773,6 +773,10 @@ public:
         }
         return ret;
     }
+
+    const vector<int> *get_vector_of_vectors_pointer() {
+        return &vector_of_vectors;
+    }
 };
 
 
@@ -807,6 +811,11 @@ class SuccinctobjP: public VarStoreElementTrait {
         array->push_back();
     }
 public:
+    const vector<int>* get_vector_of_vectors_pointer() const
+    {
+        return array->get_vector_of_vectors_pointer();
+    }
+
     int get_index() const override {
         return index;
     }
@@ -1043,13 +1052,6 @@ public:
             at->name = new_name;
             at = at->next;
         }while(at != nullptr);
-    }
-
-    void populate_vec(int *vv, int sz) const override {
-        assert(is_head);
-        assert(index == 0);
-        AssertDebug(array->get_num_vectors() <= sz, "Out of bounds error in solver ;alkwebbn");
-        std::copy(array->begin(), array->end(), vv);
     }
 
     void populate_multi_mother_nodeForINode(

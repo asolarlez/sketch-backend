@@ -45,12 +45,10 @@ class cpvec{
 	int idx[3];
 	int flip;
 public:
-	int* vv;
-	~cpvec(){
-		if(vv != NULL){
-			delete[] vv;
-		}
-	}
+//	int* vv;
+    vector<int>* const mutable_vv = nullptr;
+    const vector<int>* const vv = nullptr;
+	~cpvec(){}
 
 	void update(cpvec* pp, int ii, int v){
 		Assert(vv==NULL, "qwejh;u88");
@@ -74,14 +72,13 @@ public:
 		flip = 0;
 	}
 
-
-
 	cpvec(cpvec* pp, int ii, int v):vv(NULL){		
 		update(pp, ii, v);
 	}
-	cpvec(int sz):vv(new int[sz]){
-		// NOTE xzL: set uninitialized value to be 0
-		memset(vv, 0, sz*sizeof(int));
+	cpvec(int sz):
+    // NOTE xzL: set uninitialized value to be 0
+    mutable_vv(new vector<int>(sz, 0)), vv(mutable_vv) {
+        assert(vv == mutable_vv);
 		bnd = sz;		
 		parent = NULL;
 		idx[0] = UNSET;
@@ -89,11 +86,12 @@ public:
 		idx[2] = UNSET;
 		flip = 0;
 	}
-	cpvec(int sz, const objP* op):vv(new int[sz]){
+	cpvec(int sz, const objP* op):vv(op->get_vector_of_vectors_pointer()){
 		// NOTE xzL: set uninitialized value to be 0
-		memset(vv, 0, sz*sizeof(int));
+//		memset(vv, 0, sz*sizeof(int));
+        assert(vv->size() == sz);
 		bnd = sz;
-        op->populate_vec(vv, sz);
+//        op->populate_vec(vv, sz);
 		parent = NULL;
 		idx[0] = UNSET;
 		idx[1] = UNSET;
@@ -106,7 +104,7 @@ public:
 	bool lget(int ii, int& rv){
 		if(vv != NULL){ 
 			if(ii>=bnd){ return false; }		
-			rv= vv[ii]; 
+			rv = (*vv)[ii];
 			return true;
 		}
 
@@ -153,7 +151,6 @@ public:
 		os << "]";
 	}
 };
-
 
 
 
