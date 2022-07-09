@@ -108,20 +108,3 @@ void SuccinctobjP::append_vals(vector<int>& out) const {
     out.insert(out.end(), vals.begin(), vals.end());
 }
 #endif
-
-
-int intFromBV(const vector_int& bv, int start, int nbits)
-{
-    int nval = 0;
-    int t = 1;
-
-    for(int i=0; i<nbits; ++i){
-        int the_bit = bv.get(start + i, true);
-        assert(the_bit == 0 || the_bit == 1 || the_bit == -1);
-        if( the_bit > 0){
-            nval += t;
-        }
-        t = t*2;
-    }
-    return nval;
-}

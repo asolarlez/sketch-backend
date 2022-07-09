@@ -16,85 +16,6 @@ using namespace std;
 class FloatManager;
 class DagOptim;
 
-class vector_int: private vector<int>
-{
-    bool invariant_0(int val) const
-    {
-        return val == 0 || val == 1;
-    }
-    bool invariant_neg1(int val) const
-    {
-        return invariant_0(val) || val == -1;
-    }
-    int map_neg1_to_0(int val)
-    {
-        if(val == -1) return 0;
-        return val;
-    }
-public:
-    explicit vector_int(size_t n): vector<int>(n){}
-
-    void push_back(int val) {
-        assert(invariant_0(val));
-        vector<int>::push_back(val);
-    }
-    void set(size_t idx, int val, bool inv_neg1 = false)
-    {
-        if(inv_neg1) {
-            assert(invariant_neg1(val));
-        }
-        else {
-            assert(invariant_0(val));
-        }
-//        if(allow_neg1) {
-//            val = map_neg1_to_0(val);
-//        }
-//        assert(invariant_0(val));
-        vector<int>::operator[](idx) = val;
-    }
-
-    int operator[](size_t idx) const
-    {
-        int ret = vector<int>::at(idx);
-        assert(invariant_0(ret));
-        return ret;
-    }
-
-    int get(size_t idx, bool inv_neg1 = false) const
-    {
-        int ret = vector<int>::at(idx);
-        if(inv_neg1) {
-            assert(invariant_neg1(ret));
-        }
-        else {
-            assert(invariant_0(ret));
-        }
-        return ret;
-    }
-
-    void resize(size_t n, int val = 0)
-    {
-        assert(invariant_0(val));
-        vector<int>::resize(n, val);
-    }
-    size_t size() const
-    {
-        return vector<int>::size();
-    }
-    void clear()
-    {
-        vector<int>::clear();
-    }
-    auto begin()const {
-        return vector<int>::begin();
-    }
-    auto end()const {
-        return vector<int>::end();
-    }
-};
-
-int intFromBV(const vector_int& bv, int start, int nbits);
-
 template<typename T>
 int intFromBV(const T& bv, int start, int nbits){
     int nval = 0;
@@ -110,7 +31,6 @@ int intFromBV(const T& bv, int start, int nbits){
     }
     return nval;
 }
-
 
 class VarStoreElementHeader
 {
@@ -158,15 +78,7 @@ public:
     }
 };
 
-class VarStoreElementTrait: public VarStoreElementHeader{
-private:
-    int nbits;
-protected:
-    VarStoreElementTrait(string _name, int _nbits, const OutType* _otype, bool_node::Type _type, string _original_name="",
-         string _source_dag_name=""): nbits(_nbits),
-         VarStoreElementHeader(_type, std::move(_name), _otype, std::move(_original_name), std::move(_source_dag_name)){}
-
-    VarStoreElementTrait(const VarStoreElementTrait& old): VarStoreElementHeader(old) {}
+class VarStoreElementTrait {
 public:
 
     virtual int get_index() const {
@@ -296,361 +208,6 @@ public:
     }
 };
 
-
-//#define USE_objP
-
-#ifdef USE_objP
-class objP: public VarStoreElementTrait {
-    bool is_array = false;
-    objP* next = nullptr;
-    vector_int vals;
-    int index = 0;
-    bool isNeg = false;
-public:
-    int get_index() const override {
-        return index;
-    }
-
-    VarStoreElementTrait* get_next() const override {
-        return next;
-    }
-
-    int get_size() const override
-    {
-        return globalSize();
-    }
-
-private:
-    bool in_clear = false;
-
-    void clear()
-    {
-        assert(!in_clear);
-        in_clear = true;
-        vals.clear();
-        if(next != nullptr) {delete next; next = nullptr; };
-    }
-public:
-    ~objP() override {
-        objP::clear();
-    }
-
-
-    objP(string  _name, int _size, const OutType* _otype,
-         bool_node::Type _type, string _original_name="", string _source_dag_name=""):
-         vals(_size), isNeg(false), index(0), next(nullptr),
-         VarStoreElementTrait(std::move(_name), _size, _otype, _type, std::move(_original_name), std::move(_source_dag_name))
-     {
-        assert(_otype != nullptr);
-        if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
-            is_array = true;
-            assert(_otype->isArr);
-        }
-        else
-        {
-            is_array = false;
-            assert(!_otype->isArr);
-        }
-    }
-
-    objP(const objP& old):
-            vals(old.vals), isNeg(old.isNeg), index(old.index), is_array(old.is_array),
-            VarStoreElementTrait(old){
-        if(old.next != nullptr){
-            next=new objP(*old.next);
-        }
-        else{next=nullptr;}
-    }
-
-    objP operator=(const objP& old) {
-        return objP(old);
-    }
-
-    void makeArr(int start, int end) override{
-        assert(is_array);
-        Assert(start < end, "Empty arr");
-        index = start;
-        if(start+1 < end){
-            if(next == nullptr){
-                next = new objP(name, vals.size(), otype, type);
-            }
-            next->makeArr(start+1, end);
-        }else{
-            if(next != nullptr){
-                delete next;
-                next = nullptr;
-            }
-        }
-    }
-
-    int arrSize() override{
-        assert(is_array);
-        if(next==nullptr){
-            return 1;
-        }else{
-            return next->arrSize() + 1;
-        }
-    }
-
-    int element_size() const override{
-        return vals.size();
-    }
-
-    int globalSize() const override{
-        if(next == nullptr){
-            return element_size();
-        }
-        return next->globalSize() + element_size();
-    }
-
-    int resize(int n) override{
-        int x=0;
-        vals.resize(n);
-        if(next != nullptr){
-            x=next->resize(n);
-        } return x+n;
-    }
-
-    VarStoreElementTrait* setBit(size_t i, int val) override{
-        assert(val == 0 || val == 1);
-        if(i<vals.size()){
-            vals.set(i, val);
-            return this;
-        }else{
-            Assert(next != nullptr, "bad bad");
-            return next->setBit(i-vals.size(), val);
-        }
-    }
-
-    int getInt() const override{
-        int t = intFromBV(vals, 0, vals.size());
-        int ret = isNeg? -t : t;
-//        cout << "objP.getInt() = " << ret << endl;
-        return ret;
-    }
-
-    int getInt(int idx) const override{
-        assert(!is_array);
-        if(this->index==idx){
-            return getInt();
-        }else{
-            if(next != nullptr){ return next->getInt(idx); }
-            else {return -1;}
-        }
-        Assert(false,"Control shouldn't reach here");
-    }
-
-    void setArr(const vector<int> *arr) override {
-        assert(is_array);
-        objP* at = this;
-        for(int i = 0;i<arr->size();i++)
-        {
-            assert(at != nullptr);
-            at->setVal(arr->at(i));
-            at = at->next;
-        }
-    }
-
-    ///Return false if objP did not have enough bits to be made equal to v.
-    bool setValSafe(int v) override {
-        if(v<0){
-            v = -v;
-            isNeg = true;
-        }
-        {
-            size_t t = vals.size();
-            vals.clear();
-            while(v != 0){
-                vals.push_back(v&1);
-                v = v >> 1;
-                if(vals.size()==t && v != 0){
-                    return false;
-                }
-            }
-            if(t > vals.size()){
-                vals.resize(t, 0);
-            }
-            return true;
-        }
-    }
-
-    void setVal(int v) override{
-        if(v<0){
-            v = -v;
-            isNeg = true;
-        }
-        {
-            size_t t = vals.size();
-            vals.clear();
-            while(v != 0){
-                vals.push_back(v&1);
-                v = v >> 1;
-            }
-            if(t > vals.size()){
-                vals.resize(t, 0);
-            }
-        }
-    }
-    void printBit(ostream& out) const override{
-        for(size_t i=0; i<vals.size(); ++i){
-            out<<(vals.get(i, true)==1?1:0);
-        }
-        if(next!= nullptr){ out<<"|"; next->printBit(out); }
-    }
-    void printContent(ostream& out) const override{
-        out << getInt();
-        if(next!= nullptr){ out<<"|"; next->printContent(out); }
-    }
-
-    bool increment() override{
-        for(size_t i=0; i<vals.size(); ++i){
-            if(vals[i]==-1){
-                vals.set(i, 1);
-                return true;
-            }else{
-                vals.set(i, -1);
-            }
-        }
-        if(next != nullptr){
-            return next->increment();
-        }else{
-            return false;
-        }
-    }
-
-    /**
-    If it is an array, then after the first N elements, we set to zero with probability 1-sparseDeg
-    */
-    void makeRandom(float sparseDeg, int n=10) override{
-        int P  = 10000;
-        int q = P*sparseDeg;
-
-        if(n > 0 || (rand() % P) < q ){
-            for(size_t i=0; i<vals.size(); ++i){
-                vals.set(i, (rand() & 0x3) > 0? -1 : 1);
-            }
-        }else{
-            for(size_t i=0; i<vals.size(); ++i){
-                vals.set(i, -1);
-            }
-        }
-        if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
-    }
-
-    void makeRandom() override{/* Bias towards zeros */
-        for(size_t i=0; i<vals.size(); ++i){
-            vals.set(i, (rand() & 0x3) > 0? -1 : 1, true);
-        }
-        if(next!= nullptr){ next->makeRandom(); }
-    }
-    void zeroOut() override{/* Bias towards zeros */
-        for(size_t i=0; i<vals.size(); ++i){
-            vals.set(i, -1);
-        }
-        if(next!= nullptr){ next->zeroOut(); }
-    }
-
-    bool get_is_array() const override {
-        return is_array;
-    }
-
-    void relabel(const string new_name) override {
-        objP* at = this;
-        string prev_name = at->name;
-        do {
-            assert(at->name == prev_name);
-            at->name = new_name;
-            at = at->next;
-        }while(at != nullptr);
-    }
-
-    void populate_vec(int *vv, int sz) const override {
-        auto op = this;
-        while(op != nullptr){
-            Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
-            vv[op->index] = op->getInt();
-            op = op->next;
-        }
-    }
-
-    void populate_multi_mother_nodeForINode(
-            vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const override;
-
-    void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const override;
-
-    void append_vals(vector<int>& out) const override;
-};
-#endif
-
-template<typename T>
-class VectorTrait
-{
-public:
-    virtual T get(int idx) const = 0;
-    virtual void set(int idx, T) = 0;
-//    virtual void push_back(T val) = 0;
-};
-
-
-class SuccinctBitVector : public VectorTrait<bool>
-{
-    typedef uint32_t WORD_TYPE;
-    static const int word_size_bits = 5;
-    static_assert(sizeof(WORD_TYPE)*8 == 1<<word_size_bits, "WORD_TYPE and word_size_bits are inconsistent.");
-    static const int word_size = 1<<word_size_bits;
-    static const int low_order_bits_mask = (1<<word_size_bits)-1;
-    int num_bits;
-    vector<WORD_TYPE> bits;
-public:
-    SuccinctBitVector() = default;
-    explicit SuccinctBitVector(int _num_bits): num_bits(_num_bits)
-    {
-        bits = vector<WORD_TYPE>((num_bits+word_size-1) >> word_size_bits, 0);
-    }
-
-    bool get(int idx) const override {
-        bool ret = (bits[idx >> word_size_bits] & ((WORD_TYPE)1 << (idx & low_order_bits_mask))) != 0;
-        return ret;
-    }
-    void set(int idx,  bool val) override {
-        int at_word = idx >> word_size_bits;
-        WORD_TYPE original_word = bits[at_word];
-        if(val) {
-            bits[at_word] |= ((WORD_TYPE)1 << (idx & low_order_bits_mask));
-        }
-        else {
-            bits[at_word] &= ~((WORD_TYPE)1 << (idx & low_order_bits_mask));
-        }
-    }
-
-    size_t size() const {
-        return num_bits;
-    }
-
-    // Minimum required for range-for loop
-    struct Iterator {
-        int at_idx;
-        const SuccinctBitVector* _this;
-        int operator * () const { return _this->get(at_idx); }
-        bool operator != (const Iterator& rhs) const {
-            return at_idx != rhs.at_idx;
-        }
-        void operator ++() {
-            at_idx++;
-        }
-    };
-
-    // auto return requires C++14
-    auto begin() const {
-        int at_idx = 0;
-        return Iterator{at_idx, this};
-    }
-    auto end() const {
-        return Iterator{num_bits, this};
-    }
-};
-
-
 class SuccinctBitVectorVector
 {
     static const int max_num_bits = 30;
@@ -779,11 +336,9 @@ public:
     }
 };
 
-
-#ifndef USE_objP
 #define SuccinctobjP objP
 
-class SuccinctobjP: public VarStoreElementTrait {
+class SuccinctobjP: public VarStoreElementTrait, public VarStoreElementHeader {
     bool is_array;
     //if is_array == true; then array.size() == number of elements in the array and array holds the array.
     //if is_array == false; then array.size() == 1 and array[0] holds the value.
@@ -796,7 +351,7 @@ class SuccinctobjP: public VarStoreElementTrait {
     SuccinctobjP(string _name, SuccinctBitVectorVector* _array, const OutType* _otype,
                  bool_node::Type _type, string _original_name="", string _source_dag_name=""):
             array(_array), is_head(false), index(0), next(nullptr),
-            VarStoreElementTrait(std::move(_name), _array->get_num_bits_per_vector(), _otype, _type, std::move(_original_name), std::move(_source_dag_name))
+            VarStoreElementHeader(_type, std::move(_name), _otype, std::move(_original_name), std::move(_source_dag_name))
     {
         assert(_otype != nullptr);
         if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
@@ -849,7 +404,7 @@ public:
     SuccinctobjP(string  _name, int _size, const OutType* _otype,
          bool_node::Type _type, string _original_name="", string _source_dag_name=""):
             array(new SuccinctBitVectorVector(1, _size)), is_head(true), index(0), next(nullptr),
-            VarStoreElementTrait(std::move(_name), _size, _otype, _type, std::move(_original_name), std::move(_source_dag_name))
+            VarStoreElementHeader(_type, std::move(_name), _otype, std::move(_original_name), std::move(_source_dag_name))
     {
         assert(_otype != nullptr);
         if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
@@ -865,7 +420,7 @@ public:
 
     SuccinctobjP(const SuccinctobjP& old, SuccinctBitVectorVector* array):
             array(array), is_head(false), index(old.index), is_array(old.is_array),
-            VarStoreElementTrait(old){
+            VarStoreElementHeader(old){
         assert(!old.is_head);
         if(old.next != nullptr){
             next=new SuccinctobjP(*old.next, array);
@@ -875,7 +430,7 @@ public:
 
     SuccinctobjP(const SuccinctobjP& old):
             array(new SuccinctBitVectorVector(old.array)), is_head(true), index(old.index), is_array(old.is_array),
-            VarStoreElementTrait(old){
+            VarStoreElementHeader(old){
         assert(old.is_head);
         if(old.next != nullptr){
             next=new SuccinctobjP(*old.next, array);
@@ -1062,7 +617,5 @@ public:
     void append_vals(vector<int>& out) const override;
 
 };
-
-#endif
 
 #endif //SKETCH_OBJP_H
