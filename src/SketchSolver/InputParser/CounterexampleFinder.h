@@ -102,6 +102,7 @@ public:
 	const string* message;
 	void init(VarStore& vs){
 		inputs = &vs;
+        set_inputs(inputs);
 		computeInfluences();
 	}
     bool parseLine(const VarStore* var_store)

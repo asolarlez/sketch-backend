@@ -297,7 +297,7 @@ public:
 };
 
 
-#define USE_objP
+//#define USE_objP
 
 #ifdef USE_objP
 class objP: public VarStoreElementTrait {
@@ -651,16 +651,15 @@ public:
 };
 
 
-typedef uint32_t WORD_TYPE;
 class SuccinctBitVectorVector
 {
     int num_bits_per_vector;
     int total_num_bits;
-    vector<WORD_TYPE> vector_of_vectors;
+    vector<int> vector_of_vectors;
 public:
     SuccinctBitVectorVector(int _num_vectors, int _num_bits_per_vector):
         num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
-        vector_of_vectors = vector<WORD_TYPE>(_num_vectors, 0);
+        vector_of_vectors = vector<int>(_num_vectors, 0);
     }
     explicit SuccinctBitVectorVector(const SuccinctBitVectorVector* to_copy):
             num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits) {
@@ -683,7 +682,7 @@ public:
 
     bool increment()
     {
-        const WORD_TYPE max_num = (1<<num_bits_per_vector)-1;
+        const int max_num = (1<<num_bits_per_vector)-1;
         for(int i = 0;i<vector_of_vectors.size();i++)
         {
             if(vector_of_vectors[i] != max_num)
@@ -695,7 +694,7 @@ public:
         return false;
     }
 
-    WORD_TYPE get(size_t idx) const {
+    int get(size_t idx) const {
         assert(0 <= idx && idx < vector_of_vectors.size());
         return vector_of_vectors[idx];
     }
@@ -715,10 +714,10 @@ public:
     void setBit(size_t word_id, size_t local_bit_id, int val) {
         assert(val ==  0 || val == 1);
         if(val == 0) {
-            vector_of_vectors[word_id] &= ~((WORD_TYPE)1 << local_bit_id);
+            vector_of_vectors[word_id] &= ~((int)1 << local_bit_id);
         }
         else if(val == 1) {
-            vector_of_vectors[word_id] |= ((WORD_TYPE)1 << local_bit_id);
+            vector_of_vectors[word_id] |= ((int)1 << local_bit_id);
         }
         else {
             assert(false);
@@ -780,13 +779,12 @@ class SuccinctobjP: public VarStoreElementTrait {
     SuccinctBitVectorVector* array = nullptr;
     SuccinctobjP* next = nullptr;
     int index = 0;
-    bool isNeg = false;
     bool is_head = true;
 
     //ONLY CALLED FROM SuccinctobjP CONSTRUCTOR TO PUSH A NEXT ELEMENT IN THE ARRAY.
     SuccinctobjP(string _name, SuccinctBitVectorVector* _array, const OutType* _otype,
                  bool_node::Type _type, string _original_name="", string _source_dag_name=""):
-            array(_array), is_head(false), isNeg(false), index(0), next(nullptr),
+            array(_array), is_head(false), index(0), next(nullptr),
             VarStoreElementTrait(std::move(_name), _array->get_num_bits_per_vector(), _otype, _type, std::move(_original_name), std::move(_source_dag_name))
     {
         assert(_otype != nullptr);
@@ -834,7 +832,7 @@ public:
 
     SuccinctobjP(string  _name, int _size, const OutType* _otype,
          bool_node::Type _type, string _original_name="", string _source_dag_name=""):
-            array(new SuccinctBitVectorVector(1, _size)), is_head(true), isNeg(false), index(0), next(nullptr),
+            array(new SuccinctBitVectorVector(1, _size)), is_head(true), index(0), next(nullptr),
             VarStoreElementTrait(std::move(_name), _size, _otype, _type, std::move(_original_name), std::move(_source_dag_name))
     {
         assert(_otype != nullptr);
@@ -850,7 +848,7 @@ public:
     }
 
     SuccinctobjP(const SuccinctobjP& old, SuccinctBitVectorVector* array):
-            array(array), is_head(false), isNeg(old.isNeg), index(old.index), is_array(old.is_array),
+            array(array), is_head(false), index(old.index), is_array(old.is_array),
             VarStoreElementTrait(old){
         assert(!old.is_head);
         if(old.next != nullptr){
@@ -860,7 +858,7 @@ public:
     }
 
     SuccinctobjP(const SuccinctobjP& old):
-            array(new SuccinctBitVectorVector(old.array)), is_head(true), isNeg(old.isNeg), index(old.index), is_array(old.is_array),
+            array(new SuccinctBitVectorVector(old.array)), is_head(true), index(old.index), is_array(old.is_array),
             VarStoreElementTrait(old){
         assert(old.is_head);
         if(old.next != nullptr){
@@ -931,10 +929,7 @@ public:
     }
 
     int getInt() const override {
-        int t = array->get(index);
-        int ret = isNeg? -t : t;
-//        cout << "SuccintobjP.getInt() = " << ret << endl;
-        return ret;
+        return array->get(index);
     }
 
     int getInt(int idx) const override{
@@ -961,49 +956,31 @@ public:
 
     ///Return false if SuccinctobjP did not have enough bits to be made equal to v.
     bool setValSafe(int v) override {
-        if(v<0){
-            v = -v;
-            isNeg = true;
-        }
-        {
-            size_t t = array->get_num_bits_per_vector();
-            array->set(index, v);
-            int len = 0;
-            while(v != 0){
-                len+=1;
-                v = v >> 1;
-                if(len==t && v != 0){
-                    return false;
-                }
+        size_t t = array->get_num_bits_per_vector();
+        array->set(index, v);
+        int len = 0;
+        while(v != 0){
+            len+=1;
+            v = v >> 1;
+            if(len==t && v != 0){
+                return false;
             }
-            return true;
         }
+        return true;
     }
 
-    void setVal(int v) override{
-        if(v<0){
-            v = -v;
-            isNeg = true;
+    void setVal(int v) override {
+        array->set(index, v);
+        int len = 0;
+        while(v != 0){
+            len+=1;
+            v = v >> 1;
         }
-
-        {
-            size_t t = array->get_num_bits_per_vector();
-            array->set(index, v);
-            int len = 0;
-            while(v != 0){
-                len+=1;
-                v = v >> 1;
-            }
-            array->resize_num_bits_per_vector(len);
-        }
+        array->resize_num_bits_per_vector(len);
     }
     void printBit(ostream& out) const override{
         assert(is_head);
         out << array->to_bit_string();
-//        for(size_t i=0; i<vals.size(); ++i){
-//            out<<(vals[i]==1?1:0);
-//        }
-//        if(next!= nullptr){ out<<"|"; next->printBit(out); }
     }
     void printContent(ostream& out) const override{
         out << getInt();

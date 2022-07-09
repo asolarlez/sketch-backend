@@ -163,6 +163,9 @@ class NodeEvaluator :
 private:
     const VarStore* inputs = nullptr;
 protected:
+    void set_inputs(const VarStore* _inputs) {
+        inputs = _inputs;
+    }
 	float epsilon;
 	FloatManager& floats;
 	map<string, vector<pair<int, vector<int> > > > funargs;
