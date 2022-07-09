@@ -784,10 +784,10 @@ class SuccinctobjP: public VarStoreElementTrait {
     bool is_head = true;
 
     //ONLY CALLED FROM SuccinctobjP CONSTRUCTOR TO PUSH A NEXT ELEMENT IN THE ARRAY.
-    SuccinctobjP(string _name, SuccinctBitVectorVector* array, const OutType* _otype,
+    SuccinctobjP(string _name, SuccinctBitVectorVector* _array, const OutType* _otype,
                  bool_node::Type _type, string _original_name="", string _source_dag_name=""):
-            array(array), is_head(false), isNeg(false), index(0), next(nullptr),
-            VarStoreElementTrait(std::move(_name), array->get_num_bits_per_vector(), _otype, _type, std::move(_original_name), std::move(_source_dag_name))
+            array(_array), is_head(false), isNeg(false), index(0), next(nullptr),
+            VarStoreElementTrait(std::move(_name), _array->get_num_bits_per_vector(), _otype, _type, std::move(_original_name), std::move(_source_dag_name))
     {
         assert(_otype != nullptr);
         if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
@@ -799,6 +799,7 @@ class SuccinctobjP: public VarStoreElementTrait {
             is_array = false;
             assert(!_otype->isArr);
         }
+        array->push_back();
     }
 public:
     int get_index() const override {
@@ -932,7 +933,7 @@ public:
     int getInt() const override {
         int t = array->get(index);
         int ret = isNeg? -t : t;
-        cout << "SuccintobjP.getInt() = " << ret << endl;
+//        cout << "SuccintobjP.getInt() = " << ret << endl;
         return ret;
     }
 
@@ -960,9 +961,6 @@ public:
 
     ///Return false if SuccinctobjP did not have enough bits to be made equal to v.
     bool setValSafe(int v) override {
-        assert(is_head);
-        assert(!is_array);
-        assert(index == 0);
         if(v<0){
             v = -v;
             isNeg = true;
