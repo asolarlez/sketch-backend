@@ -652,7 +652,7 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
 			for(int i=0; i<cnt; ++i){				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
 				int qq = tmp->element_size() * tmp->get_index();
-				tmp = tmp->setBit(i-qq, (val==1)? 1 : 0);
+				tmp = tmp->setBit(i, (val==1)? 1 : 0);
 			}
 			Dout( cout<<" input "<<cname<<"  has value "<<it->getInt()<<endl );
 		}

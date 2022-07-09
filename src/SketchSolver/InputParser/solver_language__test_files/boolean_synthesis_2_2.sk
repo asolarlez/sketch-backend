@@ -309,13 +309,13 @@ bit program_lvl2(Data data, int l0, int l1)
 int meta_l0 = 2;
 int meta_l1 = 2;
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
 {
     main_lvl2(num_bools, bools, out);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness void main_lvl2(int num_bools, bit[num_bools] bools, bit out)
 {
     Data data = new Data(num_bools = num_bools, bools = bools);
@@ -325,7 +325,7 @@ harness void main_lvl2(int num_bools, bit[num_bools] bools, bit out)
     //minimize(num_units);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness void main_lvl1(int num_bools, bit[num_bools] bools, bit out)
 {
     Data data = new Data(num_bools = num_bools, bools = bools);
@@ -334,7 +334,7 @@ harness void main_lvl1(int num_bools, bit[num_bools] bools, bit out)
     assert(program_lvl1(data, l0, l1) == out);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness void main_lvl0(int num_bools, bit[num_bools] bools, bit out)
 {
     Data data = new Data(num_bools = num_bools, bools = bools);

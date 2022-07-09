@@ -25,7 +25,7 @@ const string VERSION_INFO = "vlarrays";
 
 class CommandLineArgs{
 	public:
-    string solver_program_file_name = "/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/solver_language_program__multi_harness_stun.txt";
+    string solver_program_file_name = "/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/solver_language_program__multi_harness_stun.txt";
     int input_idx;
     int seedsize;
     int seed;

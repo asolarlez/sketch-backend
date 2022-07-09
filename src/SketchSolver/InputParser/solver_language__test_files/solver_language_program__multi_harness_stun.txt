@@ -37,13 +37,13 @@ int composite_predicate(int x)
 
 int dummy_program(int x) {return 1;}
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness int eval_program_main(int x, int out)
 {
     return dummy_program(x);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void sketch_main(int x, int out)
 {
     assert(composite_predicate(x) == out);
@@ -223,8 +223,8 @@ Solver main()
 {
 
     //return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
-    //return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
-    return recursive_function_stun();
+    return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
+    //return recursive_function_stun();
 
 
     //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
@@ -949,7 +949,7 @@ Solver Solution beam_search_sketch_main()
 
 Solver Solution repeat_greedy_sketch_main()
 {
-    string file_name = "/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
+    string file_name = "/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
     File file = File(file_name, sketch_main_lvl2__Wrapper);
     int n = file.size();
 

@@ -40,19 +40,19 @@ int predicate_lvl1(int x)
     );
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void main_lvl1(int x, int y)
 {
     assert(predicate_lvl1(x) == y);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void main_lvl0_left(int x, int y)
 {
     assert(predicate_lvl0_left(x) == y);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void main_lvl0_right(int x, int y)
 {
     assert(predicate_lvl0_right(x) == y);

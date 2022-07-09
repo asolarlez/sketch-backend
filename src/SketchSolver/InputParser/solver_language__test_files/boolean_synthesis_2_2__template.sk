@@ -218,19 +218,19 @@ bit program_lvl0(int num_bools, bit[num_bools] bools) {
 
 bit dummy_program(int num_bools, bit[num_bools] bools) {return 1;}
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
 {
     assert(dummy_program(num_bools, bools) == out);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness bit eval_program_main(int num_bools, bit[num_bools] bools, bit out)
 {
     return dummy_program(num_bools, bools);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness void dummy_main(int num_bools, bit[num_bools] bools, bit out)
 {
     assert(eval_program_main(num_bools, bools, out));

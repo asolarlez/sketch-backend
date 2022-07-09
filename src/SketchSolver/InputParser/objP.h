@@ -16,8 +16,87 @@ using namespace std;
 class FloatManager;
 class DagOptim;
 
+class vector_int: private vector<int>
+{
+    bool invariant_0(int val) const
+    {
+        return val == 0 || val == 1;
+    }
+    bool invariant_neg1(int val) const
+    {
+        return invariant_0(val) || val == -1;
+    }
+    int map_neg1_to_0(int val)
+    {
+        if(val == -1) return 0;
+        return val;
+    }
+public:
+    explicit vector_int(size_t n): vector<int>(n){}
+
+    void push_back(int val) {
+        assert(invariant_0(val));
+        vector<int>::push_back(val);
+    }
+    void set(size_t idx, int val, bool inv_neg1 = false)
+    {
+        if(inv_neg1) {
+            assert(invariant_neg1(val));
+        }
+        else {
+            assert(invariant_0(val));
+        }
+//        if(allow_neg1) {
+//            val = map_neg1_to_0(val);
+//        }
+//        assert(invariant_0(val));
+        vector<int>::operator[](idx) = val;
+    }
+
+    int operator[](size_t idx) const
+    {
+        int ret = vector<int>::at(idx);
+        assert(invariant_0(ret));
+        return ret;
+    }
+
+    int get(size_t idx, bool inv_neg1 = false) const
+    {
+        int ret = vector<int>::at(idx);
+        if(inv_neg1) {
+            assert(invariant_neg1(ret));
+        }
+        else {
+            assert(invariant_0(ret));
+        }
+        return ret;
+    }
+
+    void resize(size_t n, int val = 0)
+    {
+        assert(invariant_0(val));
+        vector<int>::resize(n, val);
+    }
+    size_t size() const
+    {
+        return vector<int>::size();
+    }
+    void clear()
+    {
+        vector<int>::clear();
+    }
+    auto begin()const {
+        return vector<int>::begin();
+    }
+    auto end()const {
+        return vector<int>::end();
+    }
+};
+
+int intFromBV(const vector_int& bv, int start, int nbits);
+
 template<typename T>
-int intFromBV(T& bv, int start, int nbits){
+int intFromBV(const T& bv, int start, int nbits){
     int nval = 0;
     int t = 1;
 
@@ -31,6 +110,7 @@ int intFromBV(T& bv, int start, int nbits){
     }
     return nval;
 }
+
 
 class VarStoreElementHeader
 {
@@ -82,9 +162,9 @@ class VarStoreElementTrait: public VarStoreElementHeader{
 private:
     int nbits;
 protected:
-    VarStoreElementTrait(const string& _name, int _nbits, const OutType* _otype, bool_node::Type _type, const string& _original_name="",
-         const string& _source_dag_name=""): nbits(_nbits),
-         VarStoreElementHeader(_type, _name, _otype, _original_name, _source_dag_name){}
+    VarStoreElementTrait(string _name, int _nbits, const OutType* _otype, bool_node::Type _type, string _original_name="",
+         string _source_dag_name=""): nbits(_nbits),
+         VarStoreElementHeader(_type, std::move(_name), _otype, std::move(_original_name), std::move(_source_dag_name)){}
 
     VarStoreElementTrait(const VarStoreElementTrait& old): VarStoreElementHeader(old) {}
 public:
@@ -105,10 +185,6 @@ public:
     }
 
     virtual ~VarStoreElementTrait() = default;
-
-    virtual void clear() {
-        AssertDebug(false, "not implemented.");
-    }
 
     virtual void makeArr(int start, int end) {
         AssertDebug(false, "not implemented.");
@@ -159,7 +235,7 @@ public:
         return false;
     }
 
-    virtual void setVal(size_t v) {
+    virtual void setVal(int v) {
         AssertDebug(false, "not implemented.");
     }
 
@@ -221,12 +297,15 @@ public:
 };
 
 
+#define USE_objP
+
+#ifdef USE_objP
 class objP: public VarStoreElementTrait {
-    bool is_array;
-    objP* next;
-    vector<int> vals;
-    int index;
-    bool isNeg;
+    bool is_array = false;
+    objP* next = nullptr;
+    vector_int vals;
+    int index = 0;
+    bool isNeg = false;
 public:
     int get_index() const override {
         return index;
@@ -243,23 +322,24 @@ public:
 
 private:
     bool in_clear = false;
-public:
-    ~objP() override{
-        clear();
-    }
 
-    void clear() override
+    void clear()
     {
         assert(!in_clear);
         in_clear = true;
         vals.clear();
         if(next != nullptr) {delete next; next = nullptr; };
     }
+public:
+    ~objP() override {
+        objP::clear();
+    }
+
 
     objP(string  _name, int _size, const OutType* _otype,
-         bool_node::Type _type, const string& _original_name="", const string& _source_dag_name=""):
+         bool_node::Type _type, string _original_name="", string _source_dag_name=""):
          vals(_size), isNeg(false), index(0), next(nullptr),
-         VarStoreElementTrait(_name, _size, _otype, _type, _original_name, _source_dag_name)
+         VarStoreElementTrait(std::move(_name), _size, _otype, _type, std::move(_original_name), std::move(_source_dag_name))
      {
         assert(_otype != nullptr);
         if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
@@ -332,8 +412,9 @@ public:
     }
 
     VarStoreElementTrait* setBit(size_t i, int val) override{
+        assert(val == 0 || val == 1);
         if(i<vals.size()){
-            vals[i] = val;
+            vals.set(i, val);
             return this;
         }else{
             Assert(next != nullptr, "bad bad");
@@ -343,7 +424,9 @@ public:
 
     int getInt() const override{
         int t = intFromBV(vals, 0, vals.size());
-        return isNeg? -t : t;
+        int ret = isNeg? -t : t;
+//        cout << "objP.getInt() = " << ret << endl;
+        return ret;
     }
 
     int getInt(int idx) const override{
@@ -391,7 +474,7 @@ public:
         }
     }
 
-    void setVal(size_t v) override{
+    void setVal(int v) override{
         if(v<0){
             v = -v;
             isNeg = true;
@@ -410,7 +493,7 @@ public:
     }
     void printBit(ostream& out) const override{
         for(size_t i=0; i<vals.size(); ++i){
-            out<<(vals[i]==1?1:0);
+            out<<(vals.get(i, true)==1?1:0);
         }
         if(next!= nullptr){ out<<"|"; next->printBit(out); }
     }
@@ -422,10 +505,10 @@ public:
     bool increment() override{
         for(size_t i=0; i<vals.size(); ++i){
             if(vals[i]==-1){
-                vals[i] = 1;
+                vals.set(i, 1);
                 return true;
             }else{
-                vals[i] = -1;
+                vals.set(i, -1);
             }
         }
         if(next != nullptr){
@@ -444,11 +527,11 @@ public:
 
         if(n > 0 || (rand() % P) < q ){
             for(size_t i=0; i<vals.size(); ++i){
-                vals[i] = (rand() & 0x3) > 0? -1 : 1;
+                vals.set(i, (rand() & 0x3) > 0? -1 : 1);
             }
         }else{
             for(size_t i=0; i<vals.size(); ++i){
-                vals[i] = -1 ;
+                vals.set(i, -1);
             }
         }
         if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
@@ -456,13 +539,13 @@ public:
 
     void makeRandom() override{/* Bias towards zeros */
         for(size_t i=0; i<vals.size(); ++i){
-            vals[i] = (rand() & 0x3) > 0? -1 : 1;
+            vals.set(i, (rand() & 0x3) > 0? -1 : 1, true);
         }
         if(next!= nullptr){ next->makeRandom(); }
     }
     void zeroOut() override{/* Bias towards zeros */
         for(size_t i=0; i<vals.size(); ++i){
-            vals[i] = -1;
+            vals.set(i, -1);
         }
         if(next!= nullptr){ next->zeroOut(); }
     }
@@ -496,124 +579,508 @@ public:
     void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const override;
 
     void append_vals(vector<int>& out) const override;
+};
+#endif
 
-    bool operator == (const objP& other) const
+template<typename T>
+class VectorTrait
+{
+public:
+    virtual T get(int idx) const = 0;
+    virtual void set(int idx, T) = 0;
+//    virtual void push_back(T val) = 0;
+};
+
+
+class SuccinctBitVector : public VectorTrait<bool>
+{
+    typedef uint32_t WORD_TYPE;
+    static const int word_size_bits = 5;
+    static_assert(sizeof(WORD_TYPE)*8 == 1<<word_size_bits, "WORD_TYPE and word_size_bits are inconsistent.");
+    static const int word_size = 1<<word_size_bits;
+    static const int low_order_bits_mask = (1<<word_size_bits)-1;
+    int num_bits;
+    vector<WORD_TYPE> bits;
+public:
+    SuccinctBitVector() = default;
+    explicit SuccinctBitVector(int _num_bits): num_bits(_num_bits)
     {
-        const bool debug = true;
-        if(other.vals.size() != vals.size())
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
+        bits = vector<WORD_TYPE>((num_bits+word_size-1) >> word_size_bits, 0);
+    }
+
+    bool get(int idx) const override {
+        bool ret = (bits[idx >> word_size_bits] & ((WORD_TYPE)1 << (idx & low_order_bits_mask))) != 0;
+        return ret;
+    }
+    void set(int idx,  bool val) override {
+        int at_word = idx >> word_size_bits;
+        WORD_TYPE original_word = bits[at_word];
+        if(val) {
+            bits[at_word] |= ((WORD_TYPE)1 << (idx & low_order_bits_mask));
         }
-        for(int i = 0;i<vals.size();i++) {
-            if (vals[i] != other.vals[i]) {
-                if(vals[i] == 0 && other.vals[i] == -1) {
-                    //TODO: fix this. Artifact from CEGISSolver. -1 interpreted as 0 in int intFromBV(T& bv, int start, int nbits)
-                }
-                else {
-                    if (debug) {
-                        cout << "return false" << endl;
-                        AssertDebug(false, "not eq");
-                    }
-                    return false;
-                }
-            }
+        else {
+            bits[at_word] &= ~((WORD_TYPE)1 << (idx & low_order_bits_mask));
         }
-        if(name != other.name)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
+    }
+
+    size_t size() const {
+        return num_bits;
+    }
+
+    // Minimum required for range-for loop
+    struct Iterator {
+        int at_idx;
+        const SuccinctBitVector* _this;
+        int operator * () const { return _this->get(at_idx); }
+        bool operator != (const Iterator& rhs) const {
+            return at_idx != rhs.at_idx;
         }
-        if(original_name != other.original_name)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
+        void operator ++() {
+            at_idx++;
         }
-        if(source_dag_name != other.source_dag_name)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(otype != other.otype)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(type != other.type)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(isNeg!= other.isNeg)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(index != other.index)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(is_array != other.is_array)
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if((next == nullptr) != (other.next == nullptr))
-        {
-            if(debug) {
-                cout << "return false" << endl;
-                AssertDebug(false, "not eq");
-            }
-            return false;
-        }
-        if(next != nullptr)
-        {
-            bool ret = (*next == *other.next);
-            if(debug) {
-                if (!ret) {
-                    cout << "return false" << endl;
-                    AssertDebug(false, "not eq");
-                }
-                else{
-                    cout << "return true" << endl;
-                }
-            }
-            return ret;
-        }
-        if(debug) {
-            cout << "return true" << endl;
-        }
-        return true;
+    };
+
+    // auto return requires C++14
+    auto begin() const {
+        int at_idx = 0;
+        return Iterator{at_idx, this};
+    }
+    auto end() const {
+        return Iterator{num_bits, this};
     }
 };
 
+
+typedef uint32_t WORD_TYPE;
+class SuccinctBitVectorVector
+{
+    int num_bits_per_vector;
+    int total_num_bits;
+    vector<WORD_TYPE> vector_of_vectors;
+public:
+    SuccinctBitVectorVector(int _num_vectors, int _num_bits_per_vector):
+        num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
+        vector_of_vectors = vector<WORD_TYPE>(_num_vectors, 0);
+    }
+    explicit SuccinctBitVectorVector(const SuccinctBitVectorVector* to_copy):
+            num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits) {
+        vector_of_vectors = to_copy->vector_of_vectors;
+    }
+
+    int get_num_bits_per_vector() const {
+        return num_bits_per_vector;
+    }
+
+    void resize_num_bits_per_vector(int new_num_bits_per_vector)
+    {
+        assert(new_num_bits_per_vector >= num_bits_per_vector);
+        num_bits_per_vector = new_num_bits_per_vector;
+    }
+
+    int get_total_num_bits() {
+        return total_num_bits;
+    }
+
+    bool increment()
+    {
+        const WORD_TYPE max_num = (1<<num_bits_per_vector)-1;
+        for(int i = 0;i<vector_of_vectors.size();i++)
+        {
+            if(vector_of_vectors[i] != max_num)
+            {
+                vector_of_vectors[i]++;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    WORD_TYPE get(size_t idx) const {
+        assert(0 <= idx && idx < vector_of_vectors.size());
+        return vector_of_vectors[idx];
+    }
+
+    void set(int idx, int val) {
+        assert(0 <= idx && idx < vector_of_vectors.size());
+        vector_of_vectors[idx] = val;
+    }
+
+    void setBit(size_t bit_id, int val) {
+        assert(val ==  0 || val == 1);
+        int word_id = bit_id/num_bits_per_vector;
+        int local_bit_id = bit_id - word_id*num_bits_per_vector;
+        setBit(word_id, local_bit_id, val);
+    }
+
+    void setBit(size_t word_id, size_t local_bit_id, int val) {
+        assert(val ==  0 || val == 1);
+        if(val == 0) {
+            vector_of_vectors[word_id] &= ~((WORD_TYPE)1 << local_bit_id);
+        }
+        else if(val == 1) {
+            vector_of_vectors[word_id] |= ((WORD_TYPE)1 << local_bit_id);
+        }
+        else {
+            assert(false);
+        }
+    }
+
+    bool get_bit(size_t idx, size_t bit_id)
+    {
+        assert(idx < vector_of_vectors.size());
+        assert(bit_id < num_bits_per_vector);
+        return (vector_of_vectors[idx] & (1<<bit_id)) != 0;
+    }
+
+    void push_back() {
+        vector_of_vectors.push_back(0);
+    }
+
+    auto begin() const {
+        return vector_of_vectors.begin();
+    }
+    auto end() const {
+        return vector_of_vectors.end();
+    }
+
+    void clear() {
+        vector_of_vectors.clear();
+        delete this;
+    }
+
+    string to_bit_string()
+    {
+        string ret;
+        for(int i = 0;i<vector_of_vectors.size();i++)
+        {
+            if(i >= 1)
+            {
+                ret += "|";
+            }
+            string bit_string;
+            for(int j = 0;j<num_bits_per_vector; j++)
+            {
+                bit_string += (char)((int)'0'+get_bit(i, j));
+            }
+            reverse(bit_string.begin(), bit_string.end());
+            ret += bit_string;
+        }
+        return ret;
+    }
+};
+
+
+#ifndef USE_objP
+#define SuccinctobjP objP
+
+class SuccinctobjP: public VarStoreElementTrait {
+    bool is_array;
+    //if is_array == true; then array.size() == number of elements in the array and array holds the array.
+    //if is_array == false; then array.size() == 1 and array[0] holds the value.
+    SuccinctBitVectorVector* array = nullptr;
+    SuccinctobjP* next = nullptr;
+    int index = 0;
+    bool isNeg = false;
+    bool is_head = true;
+
+    //ONLY CALLED FROM SuccinctobjP CONSTRUCTOR TO PUSH A NEXT ELEMENT IN THE ARRAY.
+    SuccinctobjP(string _name, SuccinctBitVectorVector* array, const OutType* _otype,
+                 bool_node::Type _type, string _original_name="", string _source_dag_name=""):
+            array(array), is_head(false), isNeg(false), index(0), next(nullptr),
+            VarStoreElementTrait(std::move(_name), array->get_num_bits_per_vector(), _otype, _type, std::move(_original_name), std::move(_source_dag_name))
+    {
+        assert(_otype != nullptr);
+        if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
+            is_array = true;
+            assert(_otype->isArr);
+        }
+        else
+        {
+            is_array = false;
+            assert(!_otype->isArr);
+        }
+    }
+public:
+    int get_index() const override {
+        return index;
+    }
+
+    VarStoreElementTrait* get_next() const override {
+        return next;
+    }
+
+    int get_size() const override
+    {
+        return globalSize();
+    }
+
+private:
+    bool in_clear = false;
+
+    void clear()
+    {
+        assert(!in_clear);
+        in_clear = true;
+        if(is_head) {
+            array->clear();
+        }
+        if(next != nullptr) {delete next; next = nullptr; };
+    }
+public:
+    ~SuccinctobjP() override{
+        SuccinctobjP::clear();
+    }
+
+    SuccinctobjP(string  _name, int _size, const OutType* _otype,
+         bool_node::Type _type, string _original_name="", string _source_dag_name=""):
+            array(new SuccinctBitVectorVector(1, _size)), is_head(true), isNeg(false), index(0), next(nullptr),
+            VarStoreElementTrait(std::move(_name), _size, _otype, _type, std::move(_original_name), std::move(_source_dag_name))
+    {
+        assert(_otype != nullptr);
+        if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
+            is_array = true;
+            assert(_otype->isArr);
+        }
+        else
+        {
+            is_array = false;
+            assert(!_otype->isArr);
+        }
+    }
+
+    SuccinctobjP(const SuccinctobjP& old, SuccinctBitVectorVector* array):
+            array(array), is_head(false), isNeg(old.isNeg), index(old.index), is_array(old.is_array),
+            VarStoreElementTrait(old){
+        assert(!old.is_head);
+        if(old.next != nullptr){
+            next=new SuccinctobjP(*old.next, array);
+        }
+        else{next=nullptr;}
+    }
+
+    SuccinctobjP(const SuccinctobjP& old):
+            array(new SuccinctBitVectorVector(old.array)), is_head(true), isNeg(old.isNeg), index(old.index), is_array(old.is_array),
+            VarStoreElementTrait(old){
+        assert(old.is_head);
+        if(old.next != nullptr){
+            next=new SuccinctobjP(*old.next, array);
+        }
+        else{next=nullptr;}
+    }
+
+    SuccinctobjP operator=(const SuccinctobjP& old) {
+        return SuccinctobjP(old);
+    }
+
+    void makeArr(int start, int end) override{
+        assert(is_array);
+        Assert(start < end, "Empty arr");
+        index = start;
+        if(start+1 < end){
+            if(next == nullptr){
+                next = new SuccinctobjP(name, array, otype, type);
+            }
+            next->makeArr(start+1, end);
+        }else{
+            if(next != nullptr){
+                delete next;
+                next = nullptr;
+            }
+        }
+    }
+
+    int arrSize() override{
+        assert(is_array);
+        if(next==nullptr){
+            return 1;
+        }else{
+            return next->arrSize() + 1;
+        }
+    }
+
+    int element_size() const override{
+        return array->get_num_bits_per_vector();
+    }
+
+    int globalSize() const override{
+        if(next == nullptr){
+            return element_size();
+        }
+        return next->globalSize() + element_size();
+    }
+
+    int resize(int n) override{
+        assert(is_head);
+        array->resize_num_bits_per_vector(n);
+        return array->get_total_num_bits();
+    }
+
+    VarStoreElementTrait* setBit(size_t i, int val) override {
+        assert(val == 0 || val == 1);
+        if(is_head) {
+            array->setBit(i, val);
+        }
+
+        if(i<array->get_num_bits_per_vector()){
+            return this;
+        }else{
+            Assert(next != nullptr, "bad bad");
+            return next->setBit(i-array->get_num_bits_per_vector(), val);
+        }
+    }
+
+    int getInt() const override {
+        int t = array->get(index);
+        int ret = isNeg? -t : t;
+        cout << "SuccintobjP.getInt() = " << ret << endl;
+        return ret;
+    }
+
+    int getInt(int idx) const override{
+        assert(!is_array);
+        if(this->index==idx){
+            return getInt();
+        }else{
+            if(next != nullptr){ return next->getInt(idx); }
+            else {return -1;}
+        }
+        Assert(false,"Control shouldn't reach here");
+    }
+
+    void setArr(const vector<int> *arr) override {
+        assert(is_array);
+        SuccinctobjP* at = this;
+        for(int i = 0;i<arr->size();i++)
+        {
+            assert(at != nullptr);
+            at->setVal(arr->at(i));
+            at = at->next;
+        }
+    }
+
+    ///Return false if SuccinctobjP did not have enough bits to be made equal to v.
+    bool setValSafe(int v) override {
+        assert(is_head);
+        assert(!is_array);
+        assert(index == 0);
+        if(v<0){
+            v = -v;
+            isNeg = true;
+        }
+        {
+            size_t t = array->get_num_bits_per_vector();
+            array->set(index, v);
+            int len = 0;
+            while(v != 0){
+                len+=1;
+                v = v >> 1;
+                if(len==t && v != 0){
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    void setVal(int v) override{
+        if(v<0){
+            v = -v;
+            isNeg = true;
+        }
+
+        {
+            size_t t = array->get_num_bits_per_vector();
+            array->set(index, v);
+            int len = 0;
+            while(v != 0){
+                len+=1;
+                v = v >> 1;
+            }
+            array->resize_num_bits_per_vector(len);
+        }
+    }
+    void printBit(ostream& out) const override{
+        assert(is_head);
+        out << array->to_bit_string();
+//        for(size_t i=0; i<vals.size(); ++i){
+//            out<<(vals[i]==1?1:0);
+//        }
+//        if(next!= nullptr){ out<<"|"; next->printBit(out); }
+    }
+    void printContent(ostream& out) const override{
+        out << getInt();
+        if(next!= nullptr){ out<<"|"; next->printContent(out); }
+    }
+
+    bool increment() override{
+        assert(is_head);
+        return array->increment();
+    }
+
+    /**
+    If it is an array, then after the first N elements, we set to zero with probability 1-sparseDeg
+    */
+    void makeRandom(float sparseDeg, int n=10) override{
+        int P  = 10000;
+        int q = P*sparseDeg;
+
+        if(n > 0 || (rand() % P) < q ){
+            for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
+                array->setBit(index, i, (rand() & 0x3) > 0? -1 : 1);
+            }
+        }else{
+            for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
+                array->setBit(index, i, 0);
+            }
+        }
+        if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
+    }
+
+    void makeRandom() override{/* Bias towards zeros */
+        for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
+            array->setBit(index, i, (rand() & 0x3) > 0? 0 : 1);
+        }
+        if(next!= nullptr){ next->makeRandom(); }
+    }
+    void zeroOut() override{/* Bias towards zeros */
+        for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
+            array->setBit(index, i, 0);
+        }
+        if(next!= nullptr){ next->zeroOut(); }
+    }
+
+    bool get_is_array() const override {
+        return is_array;
+    }
+
+    void relabel(const string new_name) override {
+        SuccinctobjP* at = this;
+        string prev_name = at->name;
+        do {
+            assert(at->name == prev_name);
+            at->name = new_name;
+            at = at->next;
+        }while(at != nullptr);
+    }
+
+    void populate_vec(int *vv, int sz) const override {
+        auto op = this;
+        while(op != nullptr){
+            Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
+            vv[op->index] = op->getInt();
+            op = op->next;
+        }
+    }
+
+    void populate_multi_mother_nodeForINode(
+            vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const override;
+
+    void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const override;
+
+    void append_vals(vector<int>& out) const override;
+
+};
+
+#endif
 
 #endif //SKETCH_OBJP_H

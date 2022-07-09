@@ -808,7 +808,9 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_solver_program = params.solver_program_file_name != "";
+        bool do_solver_program =
+//                false &&
+                params.solver_program_file_name != "";
 
         if(do_solver_program)
         {

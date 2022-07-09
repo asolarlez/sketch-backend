@@ -131,7 +131,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/FunctionMapTransformerDag.h \
     InputParser/function_map_transformer_language_yacc.h \
     InputParser/SolverLanguage.h \
-    InputParser/SolverLanguagePrimitives.h
+    InputParser/SolverLanguagePrimitives.h \
+    InputParser/objP.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -208,7 +209,8 @@ libcegis_a_SOURCES =				\
     InputParser/FunctionMapTransformerDag.cpp \
     InputParser/function_map_transformer_language_yacc.cpp \
     InputParser/SolverLanguage.cpp \
-    InputParser/SolverLanguagePrimitives.cpp
+    InputParser/SolverLanguagePrimitives.cpp \
+    InputParser/objP.cpp
 
 
 
