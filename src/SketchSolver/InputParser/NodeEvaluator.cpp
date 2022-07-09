@@ -505,10 +505,10 @@ void NodeEvaluator::printNodeValue(int i){
 	}
 }
 
-bool NodeEvaluator::run(const VarStore &_inputs){
+bool NodeEvaluator::run(VarStore &_inputs){
     funargs.clear();
     inputs = &_inputs;
-//	inputs = new VarStore(inputs_p);
+//    inputs = new VarStore(_inputs);
 	int i=0;
 	failedAssert = false;
 	failedHAssert = false;

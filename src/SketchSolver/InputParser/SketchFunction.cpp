@@ -1010,7 +1010,7 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *sk
     return ret;
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const VarStore* the_var_store, bool do_assert)
+SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const VarStore* _the_var_store, bool do_assert)
 {
     if(do_assert) {
         assert(false);
@@ -1043,8 +1043,12 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *sk
                     std::to_string(remaining_holes) + " remaining_holes.");
     }
 
+    auto the_var_store = new VarStore(*_the_var_store);
+
     NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
     bool fails = node_evaluator.run(*the_var_store);
+
+    the_var_store->clear();
 
     if(new_clone) {
         the_dag->clear();

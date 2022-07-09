@@ -171,7 +171,7 @@ protected:
     vector<cptuple*> tuplevalues;
 	vector<bool> changes;
 	vector<bool> isset;
-	const VarStore* inputs;
+	VarStore* inputs;
 	bool failedAssert;
 	bool failedHAssert;
 	bool trackChange;
@@ -246,7 +246,7 @@ public:
     virtual void visit( TUPLE_CREATE_node &node);
     virtual void visit( TUPLE_R_node &node);
 
-	bool run(const VarStore &inputs_p);
+	bool run(VarStore &inputs_p);
 	void display(ostream& out);
 	// get unchanged node, but only starting from start
 	int scoreNodes(int start = 0);
