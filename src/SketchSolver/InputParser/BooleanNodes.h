@@ -1246,6 +1246,7 @@ public:
 	}
 };
 
+class NodeEvaluator;
 /* Input nodes */
 class SRC_node: public INTER_node{
 public: 
@@ -1263,6 +1264,9 @@ private:
 	}
 
 public:
+    NodeEvaluator* current_node_evaluator = nullptr;
+    int local_id_in_inputs = -1;
+
 	static inline SRC_node* create(){
 		return new SRC_node();
 	}

@@ -918,7 +918,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     cilk_for(int i = 0;i<file->size();i++) {
 
-        bool fails = node_evaluator.run(*file->at(i));
+        bool fails = node_evaluator.run(*file->at(i), false);
         ret->set(i, new SL::VarVal(!fails));
 
 /// FOR EXECUTION (i.e. getting the output, rather whether or not it passes).
@@ -930,6 +930,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //            ret->push_back(nullptr);
 //        }
     }
+    node_evaluator.reset_src_to_input_id();
     skfunc->clear();
 
     auto end = chrono::steady_clock::now();

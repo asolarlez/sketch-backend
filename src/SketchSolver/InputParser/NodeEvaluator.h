@@ -153,12 +153,12 @@ public:
 };
 
 
-
 class NodeEvaluator :
 	public NodeVisitor
 {
 private:
     const VarStore* inputs = nullptr;
+    bool src_name_id_linking_done = false;
 protected:
     void set_inputs(const VarStore* _inputs) {
         inputs = _inputs;
@@ -247,7 +247,17 @@ public:
     virtual void visit( TUPLE_CREATE_node &node);
     virtual void visit( TUPLE_R_node &node);
 
-	bool run(const VarStore &inputs_p);
+	bool run(const VarStore &inputs_p, bool reset_src_to_input_id = true);
+    void reset_src_to_input_id()
+    {
+        for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+            SRC_node &node = *(SRC_node *) it;
+            assert(node.current_node_evaluator == this);
+            node.current_node_evaluator = nullptr;
+            node.local_id_in_inputs = -1;
+        }
+        src_name_id_linking_done = false;
+    }
 	void display(ostream& out);
 	// get unchanged node, but only starting from start
 	int scoreNodes(int start = 0);

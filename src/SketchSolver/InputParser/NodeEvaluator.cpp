@@ -168,9 +168,8 @@ void NodeEvaluator::visit( SRC_node& node ){
 		// for SRC arrays, anything beyond bounds are 0 by default
 		setbn(node, 0);
 	}else{
-//        assert(node.get_name() != "num_bools_4_0_0");
-		setbn(node, (*inputs)[node.get_name()]);	
-	}
+        setbn(node, (*inputs)[node.local_id_in_inputs]);
+    }
 }
 void NodeEvaluator::visit( DST_node& node ){
     if(false) {
@@ -505,25 +504,51 @@ void NodeEvaluator::printNodeValue(int i){
 	}
 }
 
-bool NodeEvaluator::run(const VarStore &_inputs){
+bool NodeEvaluator::run(const VarStore &_inputs, bool do_reset_src_to_input_id){
     funargs.clear();
     inputs = &_inputs;
+
+    bool enter = false;
+    if(!src_name_id_linking_done) {
+        enter = true;
+        for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+            SRC_node &node = *(SRC_node *) it;
+            assert(node.current_node_evaluator == nullptr);
+            node.current_node_evaluator = this;
+            node.local_id_in_inputs = inputs->getId(node.get_name());
+        }
+        src_name_id_linking_done = true;
+    }
+    else
+    {
+        for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+            SRC_node &node = *(SRC_node *) it;
+            assert(node.current_node_evaluator == this);
+            assert(inputs->getObjConst(node.local_id_in_inputs).get_name() == node.get_name());
+        }
+    }
+
 	int i=0;
 	failedAssert = false;
 	failedHAssert = false;
+    bool ret = false;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
 		if(failedAssert){
-//            inputs->clear();
-			return true;
+			ret = true;
+            break;
 		}
 		if(failedHAssert){
-//            inputs->clear();
-			return false;
+			ret = false;
+            break;
 		}
 	}
-//    inputs->clear();
-	return false;
+
+    if(do_reset_src_to_input_id) {
+        reset_src_to_input_id();
+    }
+
+    return ret;
 }
 
 void NodeEvaluator::display(ostream& out){
