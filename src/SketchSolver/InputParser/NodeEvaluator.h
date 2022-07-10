@@ -160,8 +160,26 @@ private:
     const VarStore* inputs = nullptr;
     bool src_name_id_linking_done = false;
 protected:
-    void set_inputs(const VarStore* _inputs) {
+    void set_inputs(const VarStore* _inputs, bool assert_invariant = true) {
         inputs = _inputs;
+
+        if(!src_name_id_linking_done) {
+            for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+                SRC_node &node = *(SRC_node *) it;
+                assert(node.current_node_evaluator == nullptr);
+                node.current_node_evaluator = this;
+                node.local_id_in_inputs = inputs->getId(node.get_name());
+            }
+            src_name_id_linking_done = true;
+        }
+        else if(assert_invariant)
+        {
+            for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+                SRC_node &node = *(SRC_node *) it;
+                assert(node.current_node_evaluator == this);
+                assert(inputs->getObjConst(node.local_id_in_inputs).get_name() == node.get_name());
+            }
+        }
     }
 	float epsilon;
 	FloatManager& floats;
@@ -247,7 +265,7 @@ public:
     virtual void visit( TUPLE_CREATE_node &node);
     virtual void visit( TUPLE_R_node &node);
 
-	bool run(const VarStore &inputs_p, bool reset_src_to_input_id = true);
+	bool run(const VarStore &inputs_p, bool reset_src_to_input_id = true, bool assert_invariant = true);
     void reset_src_to_input_id()
     {
         for (auto it: bdag.getNodesByType(bool_node::SRC)) {

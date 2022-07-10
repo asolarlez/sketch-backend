@@ -243,7 +243,7 @@ public:
 	int operator[](const string& name) const {
         int id = getId(name);
         AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
-		return objs[getId(name)].getInt();
+		return objs[id].getInt();
 	}
 
 	int operator[](size_t id) const {

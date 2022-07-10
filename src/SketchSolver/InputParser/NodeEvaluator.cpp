@@ -164,7 +164,7 @@ void NodeEvaluator::visit( SRC_node& node ){
 		if(vecvalues[node.id] != NULL){
 			delete vecvalues[node.id];
 		}
-		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObjConst(node.get_name())));
+		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObjConst(node.local_id_in_inputs)));
 		// for SRC arrays, anything beyond bounds are 0 by default
 		setbn(node, 0);
 	}else{
@@ -504,45 +504,26 @@ void NodeEvaluator::printNodeValue(int i){
 	}
 }
 
-bool NodeEvaluator::run(const VarStore &_inputs, bool do_reset_src_to_input_id){
+bool NodeEvaluator::run(const VarStore &_inputs, bool do_reset_src_to_input_id, bool assert_invariant){
     funargs.clear();
     inputs = &_inputs;
-
-    bool enter = false;
-    if(!src_name_id_linking_done) {
-        enter = true;
-        for (auto it: bdag.getNodesByType(bool_node::SRC)) {
-            SRC_node &node = *(SRC_node *) it;
-            assert(node.current_node_evaluator == nullptr);
-            node.current_node_evaluator = this;
-            node.local_id_in_inputs = inputs->getId(node.get_name());
-        }
-        src_name_id_linking_done = true;
-    }
-    else
-    {
-        for (auto it: bdag.getNodesByType(bool_node::SRC)) {
-            SRC_node &node = *(SRC_node *) it;
-            assert(node.current_node_evaluator == this);
-            assert(inputs->getObjConst(node.local_id_in_inputs).get_name() == node.get_name());
-        }
-    }
+    set_inputs(&_inputs, assert_invariant);
 
 	int i=0;
 	failedAssert = false;
 	failedHAssert = false;
     bool ret = false;
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
-		(*node_it)->accept(*this);
-		if(failedAssert){
-			ret = true;
-            break;
-		}
-		if(failedHAssert){
-			ret = false;
-            break;
-		}
+
+	for(auto & node_it : bdag){
+		node_it->accept(*this);
 	}
+
+    if(failedAssert){
+        ret = true;
+    }
+    if(failedHAssert){
+        ret = false;
+    }
 
     if(do_reset_src_to_input_id) {
         reset_src_to_input_id();

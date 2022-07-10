@@ -882,7 +882,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     {
         evaluate_inputs(file, 0);
     }
-    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
+//    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
     auto start = chrono::steady_clock::now();
 
     SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
@@ -916,9 +916,12 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
 
+//    cout << "START MEASURING TIME (core_eval_loop)" << endl;
+    auto start_core_eval_loop = chrono::steady_clock::now();
+
     cilk_for(int i = 0;i<file->size();i++) {
 
-        bool fails = node_evaluator.run(*file->at(i), false);
+        bool fails = node_evaluator.run(*file->at(i), false, false);
         ret->set(i, new SL::VarVal(!fails));
 
 /// FOR EXECUTION (i.e. getting the output, rather whether or not it passes).
@@ -930,15 +933,20 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //            ret->push_back(nullptr);
 //        }
     }
+
+    auto end_core_eval_loop = chrono::steady_clock::now();
+    auto elapsed_core_eval_loop = chrono::duration_cast<chrono::microseconds>(end_core_eval_loop - start_core_eval_loop).count();
+
+    cout << "ELAPSED [core_eval_loop]: " << elapsed_core_eval_loop << " (us)" << endl;
+
     node_evaluator.reset_src_to_input_id();
     skfunc->clear();
 
     auto end = chrono::steady_clock::now();
-
     auto elapsed = chrono::duration_cast<chrono::microseconds>(end - start).count();
 
-    cout << "END MEASURING TIME (evaluate_inputs)" << endl;
-    cout << "ELAPSED: " << elapsed << " (microseconds)" << endl;
+//    cout << "END MEASURING TIME (evaluate_inputs)" << endl;
+    cout << "ELAPSED[evaluate_inputs]: " << elapsed << " (us)" << endl;
 //    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
 //    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
 //    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;

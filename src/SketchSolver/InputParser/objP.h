@@ -127,12 +127,12 @@ public:
         return nullptr;
     }
 
-    virtual int getInt() const {
+    virtual inline int getInt() const {
         AssertDebug(false, "not implemented.");
         return 0;
     }
 
-    virtual int getInt(int idx) const {
+    virtual inline int getInt(int idx) const {
         AssertDebug(false, "not implemented.");
         return 0;
     }
@@ -258,8 +258,8 @@ public:
         return false;
     }
 
-    int get(size_t idx) const {
-        assert(0 <= idx && idx < vector_of_vectors.size());
+    inline int get(size_t idx) const {
+//        assert(0 <= idx && idx < vector_of_vectors.size());
         return vector_of_vectors[idx];
     }
 
@@ -459,11 +459,11 @@ public:
         return setBit_helper(i, val, true);
     }
 
-    int getInt() const override {
+    inline int getInt() const override {
         return array()->get(index);
     }
 
-    int getInt(int idx) const override
+    inline int getInt(int idx) const override
     {
         if(idx < array()->get_num_vectors()) {
             return array()->get(idx);
