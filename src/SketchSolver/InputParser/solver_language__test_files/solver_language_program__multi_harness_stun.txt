@@ -630,7 +630,7 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 8;
+    num_trials = 3;
     num_rows_per_sample = 3;
 
     int stun_depth = 3;

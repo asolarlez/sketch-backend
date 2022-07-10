@@ -885,17 +885,42 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     cout << "START MEASURING TIME (evaluate_inputs)" << endl;
     auto start = chrono::steady_clock::now();
 
-    SketchFunction* concretized_clone = deep_exact_clone_and_fresh_function_map();
-    concretized_clone->increment_shared_ptr();
-    concretized_clone->inline_this_dag(false);
+    SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
+    skfunc->increment_shared_ptr();
+    skfunc->inline_this_dag(false);
+
+    BooleanDAG *the_dag = nullptr;
+    {
+        if(skfunc->get_dag()->get_failed_assert() != nullptr) {
+            return 0;
+        }
+
+        assert(skfunc->get_has_been_concretized());
+        assert(skfunc->get_dag()->get_failed_assert() == nullptr);
+        assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
+        assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
+
+        the_dag = skfunc->get_dag();
+
+        const bool assert_num_remaining_holes_is_0 = true;
+        if (assert_num_remaining_holes_is_0) {
+            size_t remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
+            AssertDebug(remaining_holes == 0,
+                        "This dag should not havey any holes remaining, but it has " +
+                        std::to_string(remaining_holes) + " remaining_holes.");
+        }
+    }
+
+    assert(the_dag != nullptr);
+    NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
+
     SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
 
     cilk_for(int i = 0;i<file->size();i++) {
-        bool passes = SketchFunctionEvaluator::new_passes(
-                concretized_clone, file->at(i), false)->get_bool(true, false);
-        SL::VarVal* passes_var_val = new SL::VarVal(passes);
-        ret->set(i, passes_var_val);
-//        ret->push_back(passes_var_val); //sequential
+
+        bool fails = node_evaluator.run(*file->at(i));
+        ret->set(i, new SL::VarVal(!fails));
+
 /// FOR EXECUTION (i.e. getting the output, rather whether or not it passes).
 //        if(passes) {
 //            SL::VarVal *output = SketchFunctionEvaluator::eval(concretized_clone, file->at(i));
@@ -905,8 +930,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //            ret->push_back(nullptr);
 //        }
     }
-    concretized_clone->clear();
-
+    skfunc->clear();
 
     auto end = chrono::steady_clock::now();
 

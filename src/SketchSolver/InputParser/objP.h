@@ -345,6 +345,7 @@ class VarStoreElementIndexView: public VarStoreElementTrait {
     int index = -1;
 
     explicit VarStoreElementIndexView(objP* _parent): parent(_parent) {
+        index = array()->get_num_vectors();
         array()->push_back();
     }
 protected:
@@ -393,6 +394,7 @@ protected:
         assert(parent == nullptr && index == -1);
         index = 0;
         parent = _parent;
+        assert(array()->get_num_vectors() == 1);
     }
 public:
 
@@ -404,6 +406,7 @@ public:
     {
         assert(is_array());
         Assert(start < end, "Empty arr");
+        assert(index == start);
         index = start;
         if(start+1 < end){
             if(next == nullptr){
@@ -461,14 +464,12 @@ public:
 
     int getInt(int idx) const override
     {
-        assert(!is_array());
-        if(this->index==idx){
-            return getInt();
-        }else{
-            if(next != nullptr){ return next->getInt(idx); }
-            else {return -1;}
+        if(idx < array()->get_num_vectors()) {
+            return array()->get(idx);
         }
-        Assert(false,"Control shouldn't reach here");
+        else {
+            return -1;
+        }
     }
 
     void setArr(const vector<int> *arr) override {

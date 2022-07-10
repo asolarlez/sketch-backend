@@ -1066,7 +1066,7 @@ void run(StateType* state);
     class PolyVec: public PolyType, private vector<SL::VarVal*>
     {
     public:
-        explicit PolyVec(PolyType* _type_params, int size = 0): vector<SL::VarVal*>(size, nullptr), PolyType(_type_params){
+        explicit PolyVec(PolyType* _type_params, size_t size = 0): vector<SL::VarVal*>(size, nullptr), PolyType(_type_params){
             assert(get_type_params()->size() == 1);
             _type_params->clear();
         }
