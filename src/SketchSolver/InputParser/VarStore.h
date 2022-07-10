@@ -16,6 +16,7 @@ class TopologyMatcher;
 //class InliningTree;
 //class BooleanDagUtility;
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
+
 class VarStore{
 private:
 	vector<objP> objs;
@@ -260,13 +261,10 @@ public:
 		return objs.at(id);
 	}
 
-    bool has(const string& name) const {
-        return index.find(name) != index.end();
-    }
-
 	int getId(const string& name) const{
-		AssertDebug(has(name), "Var " + name + " does't exists in this VarStore.")
-		return index.at(name);
+        auto ret_it = index.find(name);
+		AssertDebug(ret_it != index.end(), "Var " + name + " does't exists in this VarStore.")
+		return ret_it->second;
 	}
     objP& _getObj(int id){
         return objs[id];
