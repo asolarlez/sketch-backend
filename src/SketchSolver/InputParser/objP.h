@@ -6,6 +6,7 @@
 #define SKETCH_OBJP_H
 
 #include "BooleanNodes.h"
+#include "VarName.h"
 
 #include <utility>
 #include <vector>
@@ -36,21 +37,21 @@ class VarStoreElementHeader
 {
 protected:
     bool_node::Type type = bool_node::NO_TYPE;
-    string name;
+    VarName name;
     const string original_name;
     string source_dag_name;
 public:
     const OutType* const otype;
 
     VarStoreElementHeader(
-            bool_node::Type _type, string _name,
+            bool_node::Type _type, VarName _name,
             const OutType* _otype, string _original_name,
             string _source_dag_name):
         type(_type), name(std::move(_name)), otype(_otype), original_name(std::move(_original_name)), source_dag_name(std::move(_source_dag_name)) {}
 
     VarStoreElementHeader(const VarStoreElementHeader& old) = default;
 
-    const string& get_name() const
+    const VarName& get_name() const
     {
         return name;
     }
@@ -66,7 +67,7 @@ public:
         return source_dag_name;
     }
 
-    void rename(const string &new_name, const string &subdag_name) {
+    void rename(const VarName &new_name, const string &subdag_name) {
         name = new_name;
         source_dag_name = subdag_name;
     }

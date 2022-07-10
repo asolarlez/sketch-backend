@@ -26,13 +26,9 @@ private:
 
     LightInliningTree* inlining_tree = nullptr;
 
-    void insert_name_in_original_name_to_dag_name_to_name(const string& name, string original_name, string source_dag_name)
+    void insert_name_in_original_name_to_dag_name_to_name(const VarName& name, string original_name, string source_dag_name)
     {
-        if(original_name == "declareInput()") {
-            original_name += "___"+name;
-        } else if(original_name == "declareCtrl()") {
-            original_name += "___"+name;
-        }else if(original_name == "to_var_store()") {
+        if(original_name == "declareInput()" || original_name == "declareCtrl()" || original_name == "to_var_store()") {
             original_name += "___"+name;
         }
         if(var_name_to_dag_name_to_name.find(original_name) == var_name_to_dag_name_to_name.end()) {
@@ -118,7 +114,7 @@ public:
 			objs[i].zeroOut();
 		}
 	}
-	bool increment(const string& name){
+	bool increment(const VarName& name){
 		// cout<<"Upgraded "<<name<<" ";
 		int idx = getId(name);
 		
@@ -129,7 +125,7 @@ public:
 		return rv;
 	}
 
-	void insertObj(const string& name, int idx, const objP obj)
+	void insertObj(const VarName& name, int idx, const objP obj)
     {
 	    AssertDebug(index.find(name) == index.end(), name + " should not be present in index.");
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
@@ -139,7 +135,7 @@ public:
         insert_name_in_original_name_to_dag_name_to_name(obj.get_name(), obj.get_original_name(), obj.get_source_dag_name());
     }
 
-	void newArr(const string& name, int nbits, int arrsz, OutType* otype, bool_node::Type type){
+	void newArr(const VarName& name, int nbits, int arrsz, OutType* otype, bool_node::Type type){
 		Assert(index.count(name)==0, name<<": This array already existed!!");
 		int begidx = objs.size();
 		index[name] = begidx;
@@ -149,17 +145,17 @@ public:
         assert(objs[begidx].get_is_array());
 	}
 
-    void setArr(const string& name, const vector<int>& arr) {
+    void setArr(const VarName& name, const vector<int>& arr) {
 	    Assert(index.find(name) != index.end(), name + " not found.");
         objs[index[name]].setArr(&arr);
         assert(objs[index[name]].get_is_array());
 	}
 
-	void newVar(const string& name, int nbits, const OutType* otype, bool_node::Type type, const string& original_name, const string& source_dag_name);
+	void newVar(const VarName& name, int nbits, const OutType* otype, bool_node::Type type, const string& original_name, const string& source_dag_name);
 
-	void setVarVal(const string& name, int val, const OutType* otype, bool_node::Type type);
+	void setVarVal(const VarName& name, int val, const OutType* otype, bool_node::Type type);
 
-	void resizeVar(const string& name, int size){
+	void resizeVar(const VarName& name, int size){
 		int idx = getId(name);
 		{
 			objP& tmp = objs[idx];
@@ -168,7 +164,7 @@ public:
 			bitsize += x;
 		}
 	}
-	void resizeArr(const string& name, int arrSize){
+	void resizeArr(const VarName& name, int arrSize){
 		int idx = getId(name);
 		{
 			objP& tmp = objs[idx];
@@ -212,7 +208,7 @@ public:
 		}
 	}
 
-	bool contains(const string& name) const{
+	bool contains(const VarName& name) const{
 		return index.count(name)>0;
 	}
 
@@ -244,24 +240,24 @@ public:
 		}
 		Assert(found, "This is a bug");
 	}
-	int operator[](const string& name) const {
+	int operator[](const VarName& name) const {
         int id = getId(name);
         AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
 		return objs[getId(name)].getInt();
 	}
 
-    const objP& getObjConst(const string& name) const {
+    const objP& getObjConst(const VarName& name) const {
         int id = getId(name);
         assert(id < objs.size());
         return objs.at(id);
     }
-	objP& _getObj(const string& name) {
+	objP& _getObj(const VarName& name) {
         int id = getId(name);
         assert(id < objs.size());
 		return objs.at(id);
 	}
 
-	int getId(const string& name) const{
+	int getId(const VarName& name) const{
         auto ret_it = index.find(name);
 		AssertDebug(ret_it != index.end(), "Var " + name + " does't exists in this VarStore.")
 		return ret_it->second;
