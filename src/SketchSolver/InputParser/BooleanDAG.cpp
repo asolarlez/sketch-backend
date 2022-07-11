@@ -883,24 +883,26 @@ void BooleanDAG::print(ostream& out)const{
   out<<"}"<<endl;
 }
 
-void BooleanDAG::mrprint(ostream& out){
-  
-  out<<"dag "<< this->get_name()<<" :"<<endl;
-    for(map<string,OutType*>::iterator itr = OutType::tupleMap.begin(); itr != OutType::tupleMap.end(); ++itr){
-        out<<"TUPLE_DEF "<<itr->first;
-        vector<OutType*> entries = dynamic_cast<Tuple*>(itr->second)->entries;
-        for(int i=0;i< entries.size();i++){
-            out<<" "<<entries[i]->str();
+void BooleanDAG::mrprint(ostream& out, bool print_only_nodes){
+
+    if(!print_only_nodes) {
+        out << "dag " << this->get_name() << " :" << endl;
+        for (map<string, OutType *>::iterator itr = OutType::tupleMap.begin(); itr != OutType::tupleMap.end(); ++itr) {
+            out << "TUPLE_DEF " << itr->first;
+            vector<OutType *> entries = dynamic_cast<Tuple *>(itr->second)->entries;
+            for (int i = 0; i < entries.size(); i++) {
+                out << " " << entries[i]->str();
+            }
+            out << endl;
+            out.flush();
         }
-        out<<endl;
-        out.flush();
     }
-  for(int i=0; i<nodes.size(); ++i){
-  	if(nodes[i] != NULL){
-  		out<<nodes[i]->mrprint()<<endl;
-  	}    
-  }
-  out.flush();
+    for(int i=0; i<nodes.size(); ++i) {
+        if (nodes[i] != NULL) {
+            out << nodes[i]->mrprint() << endl;
+        }
+    }
+    out.flush();
 }
 
 string smt_op(bool_node::Type t){

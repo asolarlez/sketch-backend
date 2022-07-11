@@ -231,4 +231,4 @@ add_executable(sketch main.cpp
         src/SketchSolver/InputParser/function_map_transformer_language_yacc.cpp 
         src/SketchSolver/InputParser/SolverLanguage.cpp 
         src/SketchSolver/InputParser/SolverLanguagePrimitives.cpp
-        src/SketchSolver/InputParser/objP.cpp src/SketchSolver/InputParser/objP.h)
+        src/SketchSolver/InputParser/objP.cpp src/SketchSolver/InputParser/objP.h src/SketchSolver/InputParser/BenchmarkScore.cpp src/SketchSolver/InputParser/BenchmarkScore.h)

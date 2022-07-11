@@ -848,6 +848,7 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 
 #include "GenericFile.h"
 #include "File.h"
+#include "BenchmarkScore.h"
 
 
 #include <chrono>
@@ -874,7 +875,15 @@ int SketchFunction::count_passing_inputs(const File *file, bool do_assert) {
 #define cilk_sync
 #define cilk_for for
 
+string zeros(int n)
+{
+    string ret = "";
+    for(int i = 0;i<n;i++) ret+= "0";
+    return ret;
+}
 
+#include <filesystem>
+using namespace filesystem;
 
 SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
 
@@ -916,8 +925,20 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
 
-//    cout << "START MEASURING TIME (core_eval_loop)" << endl;
-    auto start_core_eval_loop = chrono::steady_clock::now();
+    string size_str = std::to_string(the_dag->size());
+    size_str = zeros(4-size_str.size()) + size_str;
+
+    timestamp(start, "compile_n"+size_str);
+
+//    create_directory("ZigZags");
+
+    ofstream fout( "BooleanDags/""n"+size_str+"-BooleanDag-boolean_synthesis_2_2__recursive.in");
+
+    the_dag->mrprint(fout, true);
+
+    fout.close();
+
+    auto after_prep = chrono::steady_clock::now();
 
     cilk_for(int i = 0;i<file->size();i++) {
 
@@ -934,26 +955,20 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //        }
     }
 
-    auto end_core_eval_loop = chrono::steady_clock::now();
-    auto elapsed_core_eval_loop = chrono::duration_cast<chrono::microseconds>(end_core_eval_loop - start_core_eval_loop).count();
-
-    cout << "ELAPSED [core_eval_loop]: " << elapsed_core_eval_loop << " (us)" << endl;
-
     node_evaluator.reset_src_to_input_id();
     skfunc->clear();
 
-    auto end = chrono::steady_clock::now();
-    auto elapsed = chrono::duration_cast<chrono::microseconds>(end - start).count();
+    timestamp(after_prep, "exec_n"+size_str);
+    timestamp(start, "total[compile + exec]_n"+size_str);
 
-//    cout << "END MEASURING TIME (evaluate_inputs)" << endl;
-    cout << "ELAPSED[evaluate_inputs]: " << elapsed << " (us)" << endl;
 //    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
 //    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
 //    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
 
     if(repeat >= 1)
     {
-        assert(false);
+        print_performance_summary();
+//        assert(false);
     }
 
     return ret;
