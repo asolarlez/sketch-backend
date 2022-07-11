@@ -101,7 +101,8 @@ add_executable(sketch main.cpp
         src/SketchSolver/NumericalSynthesis/Samplers/Sampler.h 	
         src/SketchSolver/NumericalSynthesis/Samplers/BasicSampler.h 
         src/SketchSolver/NumericalSynthesis/Samplers/BoolBasedSampler.h 
-        src/SketchSolver/InputParser/BackwardsAnalysis.h			
+        src/SketchSolver/InputParser/BackwardsAnalysis.h
+        src/SketchSolver/InputParser/BenchmarkScore.h
         src/SketchSolver/InputParser/BooleanDAG.h			
         src/SketchSolver/InputParser/BooleanDAGCreator.h			
         src/SketchSolver/InputParser/BooleanNodes.h			
@@ -180,7 +181,8 @@ add_executable(sketch main.cpp
         src/SketchSolver/NumericalSynthesis/SymbolicEvaluators/KLocalityAutoDiff.cpp 
         src/SketchSolver/NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	
         src/SketchSolver/NumericalSynthesis/SymbolicEvaluators/SimpleGradEvaluator.cpp 
-        src/SketchSolver/InputParser/BackwardsAnalysis.cpp	
+        src/SketchSolver/InputParser/BackwardsAnalysis.cpp
+        src/SketchSolver/InputParser/BenchmarkScore.cpp
         src/SketchSolver/InputParser/BooleanDAG.cpp		
         src/SketchSolver/InputParser/BooleanDAGCreator.cpp	
         src/SketchSolver/InputParser/BooleanNodes.cpp		

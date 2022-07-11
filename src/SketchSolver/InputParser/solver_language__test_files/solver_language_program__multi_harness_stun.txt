@@ -37,13 +37,13 @@ int composite_predicate(int x)
 
 int dummy_program(int x) {return 1;}
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness int eval_program_main(int x, int out)
 {
     return dummy_program(x);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
 harness void sketch_main(int x, int out)
 {
     assert(composite_predicate(x) == out);
@@ -630,10 +630,10 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 8;
-    num_rows_per_sample = 3;
+    num_trials = 1;
+    num_rows_per_sample = 1;
 
-    int stun_depth = 3;
+    int stun_depth = 1000;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 
@@ -949,7 +949,7 @@ Solver Solution beam_search_sketch_main()
 
 Solver Solution repeat_greedy_sketch_main()
 {
-    string file_name = "/Users/klimentserafimov/CLionProjects/sketch/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
+    string file_name = "/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
     File file = File(file_name, sketch_main_lvl2__Wrapper);
     int n = file.size();
 
