@@ -874,7 +874,14 @@ int SketchFunction::count_passing_inputs(const File *file, bool do_assert) {
 #define cilk_sync
 #define cilk_for for
 
+#include "BenchmarkScore.h"
 
+string zeros(int n)
+{
+    string ret = "";
+    for(int i = 0;i<n;i++) ret+= "0";
+    return ret;
+}
 
 SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
 
@@ -882,13 +889,30 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     {
         evaluate_inputs(file, 0);
     }
-    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
+
     auto start = chrono::steady_clock::now();
 
     SketchFunction* concretized_clone = deep_exact_clone_and_fresh_function_map();
     concretized_clone->increment_shared_ptr();
     concretized_clone->inline_this_dag(false);
     SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
+
+    BooleanDAG* the_dag = concretized_clone->get_dag();
+    string size_str = std::to_string(the_dag->size());
+    size_str = zeros(4-size_str.size()) + size_str;
+
+    timestamp(start, "compile_n"+size_str);
+
+//    create_directory("ZigZags");
+
+    if(repeat > 1) {
+        ofstream fout("BooleanDags/""n" + size_str + "-BooleanDag-boolean_synthesis_2_2__recursive.in");
+        the_dag->mrprint(fout, true);
+        fout.close();
+    }
+
+    auto after_prep = chrono::steady_clock::now();
+
 
     cilk_for(int i = 0;i<file->size();i++) {
         bool passes = SketchFunctionEvaluator::new_passes(
@@ -906,23 +930,17 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //        }
     }
     concretized_clone->clear();
+    timestamp(after_prep, "exec_n"+size_str);
+    timestamp(start, "total[compile + exec]_n"+size_str);
 
-
-    auto end = chrono::steady_clock::now();
-
-    auto elapsed = chrono::duration_cast<chrono::microseconds>(end - start).count();
-
-    cout << "END MEASURING TIME (evaluate_inputs)" << endl;
-    cout << "ELAPSED: " << elapsed << " (microseconds)" << endl;
 //    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
 //    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
 //    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
 
     if(repeat >= 1)
     {
-        assert(false);
+        print_performance_summary();
     }
-
     return ret;
 }
 
