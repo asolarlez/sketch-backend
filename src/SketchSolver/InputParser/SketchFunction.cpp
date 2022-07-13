@@ -885,12 +885,19 @@ string zeros(int n)
 
 SL::PolyVec* SketchFunction::evaluate_inputs(File *file, unsigned int repeat) {
 
+    auto start = chrono::steady_clock::now();
     for(int i = 0;i<repeat;i++)
     {
+        if(i%4 == 0)
+        {
+            cout << "repeat #" << i << " / " << repeat << endl;
+        }
         evaluate_inputs(file, 0);
     }
+    if(repeat != 0) {
+        timestamp(start, "repeat_"+std::to_string(repeat));
+    }
 //    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
-    auto start = chrono::steady_clock::now();
 
     SketchFunction* concretized_clone = deep_exact_clone_and_fresh_function_map();
     concretized_clone->increment_shared_ptr();
@@ -903,13 +910,11 @@ SL::PolyVec* SketchFunction::evaluate_inputs(File *file, unsigned int repeat) {
 
     timestamp(start, "compile_n"+size_str);
 
-//    create_directory("ZigZags");
-
-    if(repeat > 1) {
-        ofstream fout("BooleanDags/""n" + size_str + "-BooleanDag-boolean_synthesis_2_2__recursive.in");
-        the_dag->mrprint(fout, true);
-        fout.close();
-    }
+//    if(repeat != 0) {
+//        ofstream fout("BooleanDags_curated/""n" + size_str + "-BooleanDag-boolean_synthesis_2_2__recursive.in");
+//        the_dag->mrprint(fout, true);
+//        fout.close();
+//    }
 
     auto after_prep = chrono::steady_clock::now();
 
@@ -929,6 +934,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(File *file, unsigned int repeat) {
 //            ret->push_back(nullptr);
 //        }
     }
+    bool assert_false = concretized_clone->get_dag()->size() == 194;
     concretized_clone->clear();
     timestamp(after_prep, "exec_n"+size_str);
     timestamp(start, "total[compile + exec]_n"+size_str);
@@ -937,9 +943,15 @@ SL::PolyVec* SketchFunction::evaluate_inputs(File *file, unsigned int repeat) {
 //    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
 //    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
 
-    if(repeat >= 1)
+    if(repeat != 0)
     {
         print_performance_summary();
+
+        if(assert_false)
+        {
+            cout << "BREAK";
+            assert(false);
+        }
 //        assert(false);
     }
     return ret;
