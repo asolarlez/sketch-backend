@@ -930,13 +930,13 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     timestamp(start, "compile_n"+size_str);
 
-//    create_directory("ZigZags");
-
-    ofstream fout( "BooleanDags/""n"+size_str+"-BooleanDag-boolean_synthesis_2_2__recursive.in");
-
-    the_dag->mrprint(fout, true);
-
-    fout.close();
+//    create_directory("BooleanDags");
+//    ofstream fout( "BooleanDags/""n"+size_str+"-BooleanDag-boolean_synthesis_2_2__recursive.in");
+    if(repeat != 0) {
+        cout << "the_dag" << endl;
+        the_dag->mrprint(cout, true);
+    }
+//    fout.close();
 
     auto after_prep = chrono::steady_clock::now();
 
@@ -968,6 +968,17 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     if(repeat >= 1)
     {
         print_performance_summary();
+
+        vector<bool> vec = ret->to_vector_bool();
+        int sum = 0;
+        for(int i = 0;i<vec.size();i++)
+        {
+            sum+=vec[i];
+            cout << i << " " << vec[i] << " "<< sum << endl;
+        }
+
+        assert(false);
+
 //        assert(false);
     }
 
