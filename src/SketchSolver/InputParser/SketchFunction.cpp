@@ -905,11 +905,11 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
 //    create_directory("ZigZags");
 
-    if(repeat > 1) {
-        ofstream fout("BooleanDags/""n" + size_str + "-BooleanDag-boolean_synthesis_2_2__recursive.in");
-        the_dag->mrprint(fout, true);
-        fout.close();
-    }
+//    if(repeat > 1) {
+//        ofstream fout("BooleanDags/""n" + size_str + "-BooleanDag-boolean_synthesis_2_2__recursive.in");
+//        the_dag->mrprint(fout, true);
+//        fout.close();
+//    }
 
     auto after_prep = chrono::steady_clock::now();
 
