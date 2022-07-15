@@ -932,10 +932,10 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
 //    create_directory("BooleanDags");
 //    ofstream fout( "BooleanDags/""n"+size_str+"-BooleanDag-boolean_synthesis_2_2__recursive.in");
-    if(repeat != 0) {
-        cout << "the_dag" << endl;
-        the_dag->mrprint(cout, true);
-    }
+//    if(repeat != 0) {
+//        cout << "the_dag" << endl;
+//        the_dag->mrprint(cout, true);
+//    }
 //    fout.close();
 
     auto after_prep = chrono::steady_clock::now();
@@ -955,10 +955,11 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //        }
     }
 
+    timestamp(after_prep, "exec_n"+size_str);
+
     node_evaluator.reset_src_to_input_id();
     skfunc->clear();
 
-    timestamp(after_prep, "exec_n"+size_str);
     timestamp(start, "total[compile + exec]_n"+size_str);
 
 //    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
@@ -969,16 +970,14 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     {
         print_performance_summary();
 
-        vector<bool> vec = ret->to_vector_bool();
-        int sum = 0;
-        for(int i = 0;i<vec.size();i++)
-        {
-            sum+=vec[i];
-            cout << i << " " << vec[i] << " "<< sum << endl;
-        }
-
-        assert(false);
-
+//        vector<bool> vec = ret->to_vector_bool();
+//        int sum = 0;
+//        for(int i = 0;i<vec.size();i++)
+//        {
+//            sum+=vec[i];
+//            cout << i << " " << vec[i] << " "<< sum << endl;
+//        }
+//
 //        assert(false);
     }
 
