@@ -86,7 +86,7 @@ public:
 		idx[2] = UNSET;
 		flip = 0;
 	}
-	cpvec(int sz, const objP* op):vv(op->get_vector_of_vectors_pointer()){
+	cpvec(int sz, const objP* op):vv(op->as_vector_int_pointer()){
 		// NOTE xzL: set uninitialized value to be 0
 //		memset(vv, 0, sz*sizeof(int));
         assert(vv->size() == sz);

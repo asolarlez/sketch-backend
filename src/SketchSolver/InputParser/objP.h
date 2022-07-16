@@ -210,6 +210,99 @@ public:
     }
 };
 
+class SuccinctBitVectorVectorTrait {
+public:
+    SuccinctBitVectorVectorTrait(int _num_vectors, int _num_bits_per_vector) {
+        AssertDebug(false, "not implemented.");
+    }
+    explicit SuccinctBitVectorVectorTrait(const SuccinctBitVectorVectorTrait* to_copy) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    size_t get_num_vectors() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    int get_num_bits_per_vector() const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    void resize_num_bits_per_vector(int new_num_bits_per_vector)
+    {
+        AssertDebug(false, "not implemented.");
+    }
+
+    int get_total_num_bits() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    bool increment()
+    {
+        AssertDebug(false, "not implemented.");
+    }
+
+    int get(size_t idx) const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    void set(int idx, int val) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    void setBit(size_t bit_id, int val) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    void setBit(size_t word_id, size_t local_bit_id, int val) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    bool get_bit(size_t idx, size_t bit_id)
+    {
+        AssertDebug(false, "not implemented.");
+    }
+
+    void push_back() {
+        AssertDebug(false, "not implemented.");
+    }
+
+//    auto begin() const {
+//        AssertDebug(false, "not implemented.");
+//    }
+//    auto end() const {
+//        AssertDebug(false, "not implemented.");
+//    }
+
+    void clear() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    string to_bit_string()
+    {
+        string ret;
+        for(int i = 0;i<get_num_vectors();i++)
+        {
+            if(i >= 1)
+            {
+                ret += "|";
+            }
+            string bit_string;
+            for(int j = 0;j<get_num_bits_per_vector(); j++)
+            {
+                bit_string += (char)((int)'0'+get_bit(i, j));
+            }
+            reverse(bit_string.begin(), bit_string.end());
+            ret += bit_string;
+        }
+        return ret;
+    }
+
+    const vector<int> *as_vector_int_pointer() {
+        AssertDebug(false, "not implemented.");
+    }
+};
+
+
 class SuccinctBitVectorVector
 {
     static const int max_num_bits = 30;
@@ -333,8 +426,68 @@ public:
         return ret;
     }
 
-    const vector<int> *get_vector_of_vectors_pointer() {
+    const vector<int> *as_vector_int_pointer() {
         return &vector_of_vectors;
+    }
+};
+
+
+class CompactMask
+{
+    typedef uint32_t WORD_TYPE;
+    static const int word_size_bits = 5;
+    static_assert(sizeof(WORD_TYPE)*8 == 1<<word_size_bits, "WORD_TYPE and word_size_bits are inconsistent.");
+    static const int word_size = 1<<word_size_bits;
+    static const int low_order_bits_mask = (1<<word_size_bits)-1;
+    int num_idxs;
+    vector<WORD_TYPE> visited;
+    size_t num_elements = 0;
+public:
+    explicit CompactMask(int _num_idxs): num_idxs(_num_idxs)
+    {
+        visited = vector<WORD_TYPE>((num_idxs+word_size-1) >> word_size_bits, 0);
+    }
+    bool contains(int idx) const override {
+        bool ret = (visited[idx >> word_size_bits] & (1 << (idx & low_order_bits_mask))) != 0;
+        return ret;
+    }
+    void insert(int idx) override {
+        int at_word = idx >> word_size_bits;
+        WORD_TYPE original_word = visited[at_word];
+        visited[at_word] |= (1 << (idx & low_order_bits_mask));
+        num_elements += original_word != visited[at_word];
+    }
+
+    size_t size() const {
+        return num_elements;
+    }
+
+    // Minimum required for range-for loop
+    struct Iterator {
+        int at_idx;
+        const CompactMask* _this;
+        int operator*() const { return at_idx; }
+        bool operator != (const Iterator& rhs) const {
+            return at_idx != rhs.at_idx;
+        }
+        void operator ++() {
+            at_idx++;
+            while(!_this->contains(at_idx) && at_idx < _this->num_idxs){
+                at_idx++;
+            }
+        }
+    };
+
+    // auto return requires C++14
+    auto begin() const {
+        int at_idx = 0;
+        while(!contains(at_idx) && at_idx < num_idxs){
+            at_idx++;
+        }
+        return Iterator{at_idx, this};
+    }
+    auto end() const {
+        return Iterator{num_idxs, this};
     }
 };
 
@@ -355,9 +508,9 @@ protected:
     VarStoreElementIndexView() = default;
 public:
 
-    const vector<int>* get_vector_of_vectors_pointer() const
+    const vector<int>* as_vector_int_pointer() const
     {
-        return array()->get_vector_of_vectors_pointer();
+        return array()->as_vector_int_pointer();
     }
 
     int get_index() const override {
@@ -566,9 +719,9 @@ public:
         return array;
     }
 
-    const vector<int>* get_vector_of_vectors_pointer() const
+    const vector<int>* as_vector_int_pointer() const
     {
-        return array->get_vector_of_vectors_pointer();
+        return array->as_vector_int_pointer();
     }
 
     int get_size() const override
