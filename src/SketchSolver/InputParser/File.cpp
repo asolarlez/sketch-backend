@@ -206,7 +206,7 @@ void File::set_used(int i) {
 
 #endif
 
-File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
+File *File::produce_filter(std::function< bool(const VarStore*) >& lambda_condition) {
     File* ret = new File(generator);
     for(int i = 0;i<size();i++)
     {
@@ -345,7 +345,7 @@ VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfun
     generic_file.push_back(_line);
     File file = File(skfunc, &generic_file, skfunc->get_env()->get_floats(), skfunc->get_env()->params.seed, var_type);
     assert(file.size() == 1);
-    return file[0];
+    return new VarStore(*file[0]); //todo refactor this, no need to copy.
 }
 
 

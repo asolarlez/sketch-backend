@@ -32,7 +32,7 @@ class TopologyMatcher;
 //class InliningTree;
 //class BooleanDagUtility;
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
-class VarStore{
+class  VarStore{
 private:
 
 public:
@@ -53,7 +53,7 @@ public:
         string source_dag_name;
         bool_node::Type type = bool_node::NO_TYPE;
 	public:
-		string name;
+		mutable string name;
 
 		objP* next;
 		OutType* otype;
@@ -443,7 +443,7 @@ public:
 
 private:
 	vector<objP> objs;
-	map<string, int> index;
+	mutable map<string, int> index;
     map<string, map<string, string> > var_name_to_dag_name_to_name;
 	int bitsize = 0;
 
@@ -483,7 +483,7 @@ public:
         return inlining_tree;
     }
 
-	void clear();
+	void clear() const;
 
     int size() const
     {
@@ -723,7 +723,7 @@ public:
     friend void append_join(VarStore& v1 , const VarStore& v2);
 //    friend VarStore* concatenate_join(VarStore& v1 , const VarStore& v2);
 
-    void relabel(const vector<bool_node*>& inputs){
+    void relabel(const vector<bool_node*>& inputs) const {
 
         Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
         Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
@@ -732,7 +732,7 @@ public:
         index.clear();
         for(int i = 0;i<objs.size();i++)
         {
-            objP* at = &objs[i];
+            const objP* at = &objs[i];
             string prev_name = at->name;
             do {
                 assert(at->name == prev_name);

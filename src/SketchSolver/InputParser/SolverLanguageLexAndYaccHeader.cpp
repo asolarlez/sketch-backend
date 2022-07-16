@@ -411,7 +411,7 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
             assert(condition_method->get_params()->at(0)->get_var()->accepts_type("bool"));
 
             if(is_same<FileType, File>::value) {
-                std::function<bool(VarStore*) > lambda_condition = [&state, &condition_method](VarStore* x) {
+                std::function<bool(const VarStore*) > lambda_condition = [&state, &condition_method](const VarStore* x) {
                     vector<SL::VarVal*> local_inputs;
                     local_inputs.push_back(new VarVal(new InputVarStore(*x)));
                     auto var_val = condition_method->eval(state, local_inputs);
@@ -725,7 +725,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {

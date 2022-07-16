@@ -960,7 +960,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(File *file, unsigned int repeat) {
 
 SL::VarVal *SketchFunctionEvaluator::eval(SketchFunction *skfunc, const string& _line)
 {
-    VarStore* var_store = string_to_var_store(_line, skfunc);
+    const VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
     var_store->clear();
     return ret;
@@ -1035,7 +1035,7 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, const VarStore
 
 SL::VarVal *SketchFunctionEvaluator::new_passes(BooleanDagLightUtility *skfunc, const string& _line)
 {
-    VarStore* var_store = string_to_var_store(_line, skfunc);
+    const VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
     var_store->clear();
     return ret;
