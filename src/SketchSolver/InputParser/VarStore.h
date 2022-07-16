@@ -20,7 +20,7 @@ class TopologyMatcher;
 class VarStore{
 private:
 	vector<objP> objs;
-	map<string, int> index;
+	mutable map<string, int> index;
     map<string, map<string, string> > var_name_to_dag_name_to_name;
 	int bitsize = 0;
 
@@ -56,7 +56,7 @@ public:
         return inlining_tree;
     }
 
-	void clear();
+	void clear() const;
 
     int size() const
     {
@@ -248,7 +248,8 @@ public:
 
 	int operator[](size_t id) const {
         assert(id < objs.size());
-        AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
+        AssertDebug(!objs[id].get_is_array(), "Can't return"
+                                              " array as an int.");
 		return objs[id].getInt();
 	}
 
@@ -279,7 +280,7 @@ public:
     friend void append_join(VarStore& v1 , const VarStore& v2);
 //    friend VarStore* concatenate_join(VarStore& v1 , const VarStore& v2);
 
-    void relabel(const vector<bool_node*>& inputs){
+    void relabel(const vector<bool_node*>& inputs) const {
 
         Assert(synths.empty(), "TODO: implement copy logic for synths.");
         Assert(synthouts.empty(), "TODO: implement copy logic for synthouths.");

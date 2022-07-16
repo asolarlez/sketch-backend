@@ -887,12 +887,17 @@ using namespace filesystem;
 
 SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
 
+//    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
+    auto start = chrono::steady_clock::now();
+
     for(int i = 0;i<repeat;i++)
     {
         evaluate_inputs(file, 0);
     }
-//    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
-    auto start = chrono::steady_clock::now();
+
+    if(repeat != 0) {
+        timestamp(start, "repeat_"+std::to_string(repeat));
+    }
 
     SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
     skfunc->increment_shared_ptr();
@@ -901,7 +906,11 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     BooleanDAG *the_dag = nullptr;
     {
         if(skfunc->get_dag()->get_failed_assert() != nullptr) {
-            return 0;
+            SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
+            for(int i = 0;i<file->size(); i++) {
+                ret->set(i, new SL::VarVal(0));
+            }
+            return ret;
         }
 
         assert(skfunc->get_has_been_concretized());
@@ -954,7 +963,6 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //            ret->push_back(nullptr);
 //        }
     }
-
     timestamp(after_prep, "exec_n"+size_str);
 
     node_evaluator.reset_src_to_input_id();
@@ -987,7 +995,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
 SL::VarVal *SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const string& _line)
 {
-    VarStore* var_store = string_to_var_store(_line, skfunc);
+    const VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
     var_store->clear();
     return ret;
@@ -1062,7 +1070,7 @@ SL::VarVal* SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const Va
 
 SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const string& _line)
 {
-    VarStore* var_store = string_to_var_store(_line, skfunc);
+    const VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
     var_store->clear();
     return ret;

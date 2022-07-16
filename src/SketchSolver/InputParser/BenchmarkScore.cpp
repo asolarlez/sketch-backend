@@ -32,7 +32,7 @@ void print_performance_summary() {
     sorted_benchmarks.reserve(timestamp_counter.size());
     for (const auto &it: timestamp_counter) {
         sorted_benchmarks.emplace_back(it.second, it.first);
-        max_label_width = max(max_label_width, (int)it.first.size());
+        max_label_width = max(max_label_width, (int) it.first.size());
     }
 
 //    sort(sorted_benchmarks.begin(), sorted_benchmarks.end());

@@ -23,7 +23,7 @@ class GenericFile;
 
 //#define CHECK_FILE_INVARIANT
 
-class File: public vector<VarStore*>
+class File: public vector<const VarStore*>
 {
     #ifdef CHECK_FILE_INVARIANT
         vector<int> counterexample_ids_over_time;
@@ -45,7 +45,7 @@ class File: public vector<VarStore*>
             it->clear();
             it = nullptr;
         }
-        vector<VarStore*>::clear();
+        vector<const VarStore*>::clear();
     }
 public:
 
@@ -316,7 +316,7 @@ public:
             return new_file;
         }
         else {
-            vector<VarStore*> samples;
+            vector<const VarStore*> samples;
             sample(begin(), end(), back_inserter(samples),
                    num_rows, generator);
             File* new_file = new File(generator);
@@ -340,7 +340,7 @@ public:
     }
 #endif
 
-    File *produce_filter(std::function< bool(VarStore*) >& lambda_condition);
+    File *produce_filter(std::function< bool(const VarStore*) >& lambda_condition);
 
     void relabel(BooleanDagLightUtility *harness);
 

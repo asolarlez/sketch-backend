@@ -110,7 +110,7 @@ bool VarStoreElementIndexView::is_array() const {
 }
 
 
-void VarStoreElementIndexView::relabel(const string new_name) {
+void VarStoreElementIndexView::relabel(const string new_name) const {
     assert(parent != nullptr);
     parent->relabel(new_name);
 }

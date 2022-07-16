@@ -37,7 +37,7 @@ class VarStoreElementHeader
 {
 protected:
     bool_node::Type type = bool_node::NO_TYPE;
-    string name;
+    mutable string name;
     const string original_name;
     string source_dag_name;
 public:
@@ -182,7 +182,7 @@ public:
         return false;
     }
 
-    virtual void relabel(const string new_name) {
+    virtual void relabel(const string new_name) const {
         AssertDebug(false, "not implemented.");
     }
 
@@ -566,7 +566,7 @@ public:
         out.insert(out.end(), vals.begin(), vals.end());
     }
 
-    void relabel(string new_name) override;
+    void relabel(string new_name) const override;
 
     void populate_multi_mother_nodeForINode(
             vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const override;
@@ -623,7 +623,7 @@ public:
         return is_array;
     }
 
-    void relabel(string new_name) override {
+    void relabel(string new_name) const override {
         name = std::move(new_name);
     }
 
