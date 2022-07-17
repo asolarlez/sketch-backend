@@ -46,10 +46,43 @@ class cpvec{
 public:
     class LocalVectorTrait
     {
-
+    public:
+        virtual int size() const
+        {
+            assert(false);
+            return 0;
+        }
+        virtual int operator [] (int idx) const = 0;
+        virtual void set_int_at_index(int idx, int val) = 0;
     };
-    vector<int>* const mutable_vv = nullptr;
-    const vector<int>* const vv = nullptr;
+
+    class LocalVectorTrait_rep_BitVector: public LocalVectorTrait
+    {
+        objP::BitMetaVector_rep_CHOOSE* const mutable_vv = nullptr;
+        const objP::BitMetaVector_rep_CHOOSE* const vv = nullptr;
+    public:
+        LocalVectorTrait_rep_BitVector(int sz, int init_val):
+        mutable_vv(new objP::BitMetaVector_rep_CHOOSE(sz, init_val)),
+        vv(mutable_vv) {}
+        LocalVectorTrait_rep_BitVector(const objP::BitMetaVector_rep_CHOOSE* _vv): vv(_vv) {}
+
+        int size() const override
+        {
+            return vv->get_num_vectors();
+        }
+
+        int operator [] (int idx) const override {
+            return vv->get_vector_as_int(idx);
+        }
+
+        void set_int_at_index(int idx, int val) override
+        {
+            mutable_vv->set_vector_from_int(idx, val);
+        }
+    };
+
+    LocalVectorTrait* const mutable_vv = nullptr;
+    const LocalVectorTrait* const vv = nullptr;
 	~cpvec(){}
 
 	void update(cpvec* pp, int ii, int v){
@@ -79,7 +112,7 @@ public:
 	}
 	cpvec(int sz):
     // NOTE xzL: set uninitialized value to be 0
-    mutable_vv(new vector<int>(sz, 0)), vv(mutable_vv) {
+    mutable_vv(new LocalVectorTrait_rep_BitVector(sz, 0)), vv(mutable_vv) {
         assert(vv == mutable_vv);
 		bnd = sz;		
 		parent = NULL;
@@ -88,7 +121,7 @@ public:
 		idx[2] = UNSET;
 		flip = 0;
 	}
-	cpvec(int sz, const objP* op):vv(op->as_vector_int_pointer()){
+	cpvec(int sz, const objP* op): vv(new LocalVectorTrait_rep_BitVector(op->as_chosen_rep_pointer())){
 		// NOTE xzL: set uninitialized value to be 0
 //		memset(vv, 0, sz*sizeof(int));
         assert(vv->size() == sz);

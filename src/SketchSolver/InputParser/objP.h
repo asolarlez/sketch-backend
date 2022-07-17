@@ -906,8 +906,10 @@ public:
 };
 
 class objP: public VarStoreElementIndexView, public VarStoreElementHeader {
-
+public:
     typedef BitMetaVector_rep_BitVector BitMetaVector_rep_CHOOSE;
+
+private:
     bool is_array;
     //if is_array == true; then array.size() == number of elements in the array and array holds the array.
     //if is_array == false; then array.size() == 1 and array[0] holds the value.
@@ -916,6 +918,11 @@ class objP: public VarStoreElementIndexView, public VarStoreElementHeader {
 public:
     BitMetaVectorTrait* get_array() const {
         return (BitMetaVectorTrait*)array;
+    }
+
+    const BitMetaVector_rep_CHOOSE* as_chosen_rep_pointer() const
+    {
+        return array;
     }
 
     const vector<int>* as_vector_int_pointer() const
