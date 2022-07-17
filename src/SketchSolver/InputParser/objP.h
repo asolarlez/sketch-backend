@@ -459,7 +459,8 @@ public:
     {
         if(init_val == 0) {
             bits = vector<WORD_TYPE>((num_bits + word_size - 1) >> word_size_bits, 0);
-        } else
+        }
+        else
         {
             assert(init_val == 1);
             WORD_TYPE all_ones = ~0;
@@ -641,7 +642,7 @@ public:
         assert(invariant());
         vector_of_vectors.expand(num_bits_per_vector);
         total_num_bits += num_bits_per_vector;
-        num_vectors ++;
+        num_vectors++;
         assert(invariant());
     }
 
@@ -706,8 +707,7 @@ class VarStoreElementIndexView: public VarStoreElementTrait {
     int index = -1;
 
     //ONLY CALLED FROM SuccinctobjP CONSTRUCTOR TO PUSH A NEXT ELEMENT IN THE ARRAY.
-    explicit VarStoreElementIndexView(objP* _parent): parent(_parent) {
-        array()->push_back();
+    explicit VarStoreElementIndexView(int _index, objP* _parent): index(_index), parent(_parent) {
     }
 protected:
     VarStoreElementIndexView() = default;
@@ -752,10 +752,11 @@ public:
 //    }
 
 protected:
-    void init_from_old(const VarStoreElementIndexView& old, objP* _parent) {
+    VarStoreElementIndexView(const VarStoreElementIndexView& old, objP* _parent) {
         assert(parent == nullptr && index == -1);
         index = old.index;
         parent = _parent;
+        assert(next == nullptr);
         if(old.next != nullptr){
             next = new VarStoreElementIndexView(*old.next, _parent);
         }
@@ -770,11 +771,11 @@ protected:
 
 public:
 
-    VarStoreElementIndexView(const VarStoreElementIndexView& old, objP* _parent) {
-        init_from_old(old, _parent);
-    }
+//    VarStoreElementIndexView(const VarStoreElementIndexView& old, objP* _parent) {
+////        init_from_old(old, _parent);
+//    }
 
-    void makeArr(int start, int end) override;
+    void makeArr(int start, int exclusive_end) override;
 
     int arrSize() override;
 
@@ -1011,8 +1012,8 @@ public:
 
     objP(const objP& old):
             array(new BitMetaVector_rep_CHOOSE(old.array)), is_array(old.is_array),
-            VarStoreElementHeader(old){
-        init_from_old(old, this);
+            VarStoreElementHeader(old), VarStoreElementIndexView(old,this){
+//        init_from_old(old, this);
     }
 
     objP operator=(const objP& old) {

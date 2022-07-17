@@ -103,8 +103,6 @@ public:
     enum parseLineOut {end_of_file__empty_row, more_bits, incomplete_row, complete_row};
 
     parseLineOut parseLine(string _line, FloatManager& floats, const vector<bool_node*>& inputNodes, VarStore* inputs) {
-//
-//        AssertDebug(false, "IF YOU GET TO HERE IT SHOULD MEAN THAT YOU HAVE INTEGRATED THIS FUNCTION IN THE EXPECTED WAY.");
 
         auto vsi = inputs->begin();
         VarStoreElementTrait* arrit = nullptr;

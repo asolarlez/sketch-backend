@@ -128,7 +128,7 @@ public:
 		return rv;
 	}
 
-	void insertObj(const string& name, int idx, const objP obj)
+	void insertObj(const string& name, int idx, const objP& obj)
     {
 	    AssertDebug(index.find(name) == index.end(), name + " should not be present in index.");
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");

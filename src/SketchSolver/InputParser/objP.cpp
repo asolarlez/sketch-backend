@@ -118,20 +118,21 @@ bool VarStoreElementIndexView::is_array() const {
     return parent->get_is_array();
 }
 
-void VarStoreElementIndexView::makeArr(int start, int end){
+void VarStoreElementIndexView::makeArr(int start, int exclusive_end){
     assert(is_array());
-    Assert(start < end, "Empty arr");
+    Assert(start < exclusive_end, "Empty arr");
+    assert(index == start);
     index = start;
-    if(start+1 < end){
+    if(array()->get_num_vectors() <= index) {
+        array()->push_back();
+    }
+    if(start+1 < exclusive_end){
         if(next == nullptr){
-            next = new VarStoreElementIndexView(parent);
+            next = new VarStoreElementIndexView(index+1, parent);
         }
-        next->makeArr(start+1, end);
+        next->makeArr(start+1, exclusive_end);
     }else{
-        if(next != nullptr){
-            delete next;
-            next = nullptr;
-        }
+        AssertDebug(next == nullptr, "MUST NOT CONTRACT ARRAY!!!");
     }
 }
 
@@ -149,10 +150,7 @@ int VarStoreElementIndexView::element_size() const {
 }
 
 int VarStoreElementIndexView::globalSize() const {
-    if(next == nullptr){
-        return element_size();
-    }
-    return next->globalSize() + element_size();
+    return array()->get_total_num_bits();
 }
 
 int VarStoreElementIndexView::resize(int n) {
