@@ -208,8 +208,9 @@ public:
 };
 
 class BitMetaVectorTrait {
+protected:
+    typedef int WORD_TYPE;
 public:
-
     virtual size_t get_num_vectors() const {
         AssertDebug(false, "not implemented.");
     }
@@ -232,11 +233,11 @@ public:
         AssertDebug(false, "not implemented.");
     }
 
-    virtual int get_vector_as_int(size_t idx) const {
+    virtual WORD_TYPE get_vector_as_int(size_t idx) const {
         AssertDebug(false, "not implemented.");
     }
 
-    virtual void set_vector_from_int(size_t idx, int val) {
+    virtual void set_vector_from_int(size_t idx, WORD_TYPE val) {
         AssertDebug(false, "not implemented.");
     }
 
@@ -244,7 +245,7 @@ public:
 //        AssertDebug(false, "not implemented.");
 //    }
 
-    virtual void set_bit(size_t word_id, size_t local_bit_id, int val) {
+    virtual void set_bit(size_t word_id, size_t local_bit_id, bool val) {
         AssertDebug(false, "not implemented.");
     }
 
@@ -280,23 +281,19 @@ public:
         }
         return ret;
     }
-
-    virtual const vector<int> *as_vector_int_pointer() const {
-        AssertDebug(false, "not implemented.");
-    }
 };
 
 class BitMetaVector_rep_VectorInt: public BitMetaVectorTrait
 {
-    static const int max_num_bits = 30;
+    static const int max_num_bits = 8;
     int num_bits_per_vector;
     int total_num_bits;
-    vector<int> vector_of_vectors;
+    vector<WORD_TYPE> vector_of_vectors;
 public:
     BitMetaVector_rep_VectorInt(int _num_vectors, int _num_bits_per_vector):
             num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
         assert(num_bits_per_vector <= max_num_bits);
-        vector_of_vectors = vector<int>(_num_vectors, 0);
+        vector_of_vectors = vector<WORD_TYPE>(_num_vectors, 0);
     }
     explicit BitMetaVector_rep_VectorInt(const BitMetaVector_rep_VectorInt* to_copy):
             num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits) {
@@ -316,6 +313,7 @@ public:
         assert(new_num_bits_per_vector >= num_bits_per_vector);
         assert(new_num_bits_per_vector <= max_num_bits);
         num_bits_per_vector = new_num_bits_per_vector;
+        total_num_bits = num_bits_per_vector * get_num_vectors();
     }
 
     int get_total_num_bits() override {
@@ -324,7 +322,7 @@ public:
 
     bool increment() override
     {
-        const int max_num = (1<<num_bits_per_vector)-1;
+        const WORD_TYPE max_num = (1<<num_bits_per_vector)-1;
         for(int i = 0;i<vector_of_vectors.size();i++)
         {
             if(vector_of_vectors[i] != max_num)
@@ -336,13 +334,11 @@ public:
         return false;
     }
 
-    int get_vector_as_int(size_t idx) const override {
-        assert(0 <= idx && idx < vector_of_vectors.size());
+    WORD_TYPE get_vector_as_int(size_t idx) const override {
         return vector_of_vectors[idx];
     }
 
-    void set_vector_from_int(size_t idx, int val) override {
-        assert(0 <= idx && idx < vector_of_vectors.size());
+    void set_vector_from_int(size_t idx, WORD_TYPE val) override {
         vector_of_vectors[idx] = val;
     }
 
@@ -353,7 +349,7 @@ public:
 //        set_bit(word_id, local_bit_id, val);
 //    }
 
-    void set_bit(size_t word_id, size_t local_bit_id, int val) override {
+    void set_bit(size_t word_id, size_t local_bit_id, bool val) override {
         assert(val ==  0 || val == 1);
         if(val == 0) {
             vector_of_vectors[word_id] &= ~((int)1 << local_bit_id);
@@ -368,13 +364,12 @@ public:
 
     bool get_bit(size_t idx, size_t bit_id) const override
     {
-        assert(idx < vector_of_vectors.size());
-        assert(bit_id < num_bits_per_vector);
         return (vector_of_vectors[idx] & (1<<bit_id)) != 0;
     }
 
     void push_back() override {
         vector_of_vectors.push_back(0);
+        total_num_bits = num_bits_per_vector * get_num_vectors();
     }
 
     auto begin() const {
@@ -407,10 +402,6 @@ public:
             ret += bit_string;
         }
         return ret;
-    }
-
-    const vector<int> *as_vector_int_pointer() const override {
-        return &vector_of_vectors;
     }
 };
 
@@ -466,12 +457,10 @@ public:
     }
 
     bool get(size_t idx) const override {
-        assert(idx < num_bits);
         bool ret = (bits[idx >> word_size_bits] & ((WORD_TYPE)1 << (idx & low_order_bits_mask))) != 0;
         return ret;
     }
     void set(size_t idx,  bool val) override {
-        assert(idx < num_bits);
         int at_word = idx >> word_size_bits;
         if(val) {
             bits[at_word] |= ((WORD_TYPE)1 << (idx & low_order_bits_mask));
@@ -510,95 +499,85 @@ public:
 
 class BitMetaVector_rep_BitVector: public BitMetaVectorTrait
 {
+    size_t bits_in_capacity_per_vector = 0;
+    size_t capacity_per_vector = 0;
     size_t num_bits_per_vector = 0;
     size_t total_num_bits = 0;
     size_t num_vectors = 0;
     BitVector vector_of_vectors;
-    bool invariant(const bool check_invariant = true) const {
-        return !check_invariant ||
-               (
-                       num_vectors == vector_of_vectors.get_num_bits() / num_bits_per_vector &&
-                       total_num_bits == vector_of_vectors.get_num_bits()
-               );
-    }
+
 public:
     BitMetaVector_rep_BitVector(int _num_vectors, int _num_bits_per_vector):
-            num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector), num_vectors(_num_vectors) {
+            num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector), num_vectors(_num_vectors), capacity_per_vector(1) {
         vector_of_vectors = BitVector(total_num_bits, 0);
-        assert(invariant());
+        while(capacity_per_vector < num_bits_per_vector) {
+            capacity_per_vector*=2;
+            bits_in_capacity_per_vector++;
+        }
     }
     explicit BitMetaVector_rep_BitVector(const BitMetaVector_rep_BitVector* to_copy):
-            num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits), num_vectors(to_copy->num_vectors) {
+            num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits), num_vectors(to_copy->num_vectors),
+            capacity_per_vector(to_copy->capacity_per_vector), bits_in_capacity_per_vector(to_copy->bits_in_capacity_per_vector) {
         vector_of_vectors = to_copy->vector_of_vectors;
-        assert(invariant());
     }
 
 public:
 
-    size_t get_num_vectors() const override {
-        assert(invariant());
+    inline size_t get_num_vectors() const override {
         return num_vectors;
     }
 
-    int get_num_bits_per_vector() const override {
-        assert(invariant());
+    inline int get_num_bits_per_vector() const override {
         return num_bits_per_vector;
     }
 
     void resize_num_bits_per_vector(int new_num_bits_per_vector) override {
         assert(new_num_bits_per_vector > get_num_bits_per_vector());
-        BitVector new_vector_of_vectors(get_num_vectors()*new_num_bits_per_vector);
-        for(size_t i = 0;i<get_num_vectors();i++) {
-            for(size_t j = 0;j<get_num_bits_per_vector();j++) {
-                new_vector_of_vectors.set(i*new_num_bits_per_vector + j, get_bit(i, j));
+        if(capacity_per_vector < new_num_bits_per_vector) {
+            while (capacity_per_vector < new_num_bits_per_vector) {
+                capacity_per_vector *= 2;
+                bits_in_capacity_per_vector++;
             }
+            BitVector new_vector_of_vectors(get_num_vectors() * capacity_per_vector);
+            for (size_t i = 0; i < get_num_vectors(); i++) {
+                for (size_t j = 0; j < get_num_bits_per_vector(); j++) {
+                    new_vector_of_vectors.set((i << bits_in_capacity_per_vector) + j, get_bit(i, j));
+                }
+            }
+
+            vector_of_vectors = new_vector_of_vectors;
         }
 
         num_bits_per_vector = new_num_bits_per_vector;
 
-        vector_of_vectors = new_vector_of_vectors;
-        num_bits_per_vector = new_num_bits_per_vector;
-
         total_num_bits = num_vectors * num_bits_per_vector;
-        total_num_bits = get_num_vectors()*get_num_bits_per_vector();
-
-        assert(invariant());
     }
 
     int get_total_num_bits() override {
-        assert(invariant());
         return total_num_bits;
     }
 
-    bool increment() override
-    {
+    bool increment() override {
         AssertDebug(false, "TODO.");
         return false;
     }
 
-    int get_vector_as_int(size_t idx) const override {
-        assert(invariant());
+    WORD_TYPE get_vector_as_int(size_t idx) const override {
+        if(num_bits_per_vector == 1) {
+            return get_bit(idx, 0);
+        }
         int ret = 0;
-        for(size_t i = 0;i<get_num_bits_per_vector();i++)
+        for(size_t i = 0;i<num_bits_per_vector;i++)
         {
             ret |= get_bit(idx, i) << i;
         }
         return ret;
     }
 
-    void set_vector_from_int(size_t idx, int val) override {
-        assert(invariant());
-        assert(idx < get_num_vectors());
-        assert(val >= 0);
-        assert(get_num_bits_per_vector() < BitVector::word_size);
-
+    void set_vector_from_int(size_t idx, WORD_TYPE val) override {
         for(int i = 0; i < get_num_bits_per_vector(); i++) {
             set_bit(idx, i, (val & (1<<i)) != 0);
         }
-
-        int vector_as_int = get_vector_as_int(idx);
-        assert(val == vector_as_int);
-        assert(invariant());
     }
 
 //    void set_bit(size_t bit_id, int val) override {
@@ -608,46 +587,34 @@ public:
 //        set_bit(word_id, local_bit_id, val);
 //    }
 
-    void set_bit(size_t word_id, size_t local_bit_id, int val) override {
-        assert(invariant());
-        assert(word_id < get_num_vectors() && local_bit_id < get_num_bits_per_vector());
-        vector_of_vectors.set(word_id*get_num_bits_per_vector() + local_bit_id, val);
-        assert(invariant());
+    void set_bit(size_t idx, size_t local_bit_id, bool val) override {
+        vector_of_vectors.set((idx << bits_in_capacity_per_vector) | local_bit_id, val);
     }
 
-    bool get_bit(size_t idx, size_t bit_id) const override
-    {
-        assert(invariant());
-        assert(bit_id < get_num_bits_per_vector());
-        return vector_of_vectors.get(idx*get_num_bits_per_vector() + bit_id);
+    bool get_bit(size_t idx, size_t local_bit_id) const override {
+        return vector_of_vectors.get((idx << bits_in_capacity_per_vector) | local_bit_id);
     }
 
     void push_back() override {
-        assert(invariant());
         vector_of_vectors.expand(num_bits_per_vector);
         total_num_bits += num_bits_per_vector;
         num_vectors++;
-        assert(invariant());
     }
 
     auto begin() const {
-        assert(invariant());
         return vector_of_vectors.begin();
     }
     auto end() const {
-        assert(invariant());
         return vector_of_vectors.end();
     }
 
     void clear() override {
-        assert(invariant());
         vector_of_vectors.clear();
         delete this;
     }
 
     string to_bit_string() override
     {
-        assert(invariant());
         string ret;
         for(int i = 0;i<get_num_vectors();i++)
         {
@@ -663,20 +630,6 @@ public:
             reverse(bit_string.begin(), bit_string.end());
             ret += bit_string;
         }
-        return ret;
-    }
-
-    const vector<int> *as_vector_int_pointer() const override {
-        assert(invariant());
-        assert(get_num_bits_per_vector() <= BitVector::word_size);
-
-        vector<int>* ret = new vector<int>();
-
-        for(int i = 0; i<get_num_vectors();i++)
-        {
-            ret->push_back(get_vector_as_int(i));
-        }
-
         return ret;
     }
 };
@@ -698,11 +651,6 @@ protected:
 
 
 public:
-
-    const vector<int>* as_vector_int_pointer() const
-    {
-        return array()->as_vector_int_pointer();
-    }
 
     int arrSize() {
         return array()->get_num_vectors();
@@ -728,28 +676,20 @@ public:
             reached_end = false;
             __index = 0;
         }
-        assert(0 <= __index && __index < array()->get_num_vectors());
         return __index;
     }
 
     bool has_next() const
     {
-        assert(0 <= __index && __index < array()->get_num_vectors());
         return __index + 1 < array()->get_num_vectors();
     }
 private:
     mutable bool in_iter = false;
 public:
     VarStoreElementTrait* get_next() const override {
-        assert(__index != -1);
         if(__index == 0)
         {
-            assert(!in_iter);
             in_iter = true;
-        }
-        else
-        {
-            assert(in_iter);
         }
         __index++;
         if(__index >= array()->get_num_vectors())
@@ -862,18 +802,7 @@ public:
             array()->resize_num_bits_per_vector(lb_num_bits_necessary);
         }
         array()->set_vector_from_int(get_index(), v);
-        int len = 0;
-        bool ret = true;
-        while(v != 0){
-            len+=1;
-            v = v >> 1;
-            if(len==t && v != 0) {
-                ret = false;
-                break;
-            }
-        }
-        assert(ret == it_has_enough_bits);
-        return ret;
+        return it_has_enough_bits;
     }
 
     void setVal(int v) override {
@@ -953,7 +882,8 @@ public:
 
 class objP: public VarStoreElementIndexView, public VarStoreElementHeader {
 public:
-    typedef BitMetaVector_rep_BitVector BitMetaVector_rep_CHOOSE;
+//    typedef BitMetaVector_rep_BitVector BitMetaVector_rep_CHOOSE;
+    typedef BitMetaVector_rep_VectorInt BitMetaVector_rep_CHOOSE;
 
 private:
     bool is_array;
@@ -969,11 +899,6 @@ public:
     const BitMetaVector_rep_CHOOSE* as_chosen_rep_pointer() const
     {
         return array;
-    }
-
-    const vector<int>* as_vector_int_pointer() const
-    {
-        return array->as_vector_int_pointer();
     }
 
     int get_size() const override

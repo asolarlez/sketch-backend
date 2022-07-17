@@ -67,7 +67,9 @@ void NodeHardcoder::visit( SRC_node& node ){
 	    if(values.contains(node.get_name()))
 	    {
             if (!node.isArrType()) {
-                assert(values.getObjConst(node.get_name()).get_size() == node.get_nbits());
+                int obj_const_size = values.getObjConst(node.get_name()).get_size();
+                int node_get_nbits = node.get_nbits();
+                assert(obj_const_size == node_get_nbits);
             } else {
                 int obj_const_size = values.getObjConst(node.get_name()).get_size();
                 int node_nbits = node.get_nbits();
