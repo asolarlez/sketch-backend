@@ -325,7 +325,7 @@ void VarStore::newVar(const string &name, int nbits, const OutType *otype, bool_
         Assert(index.count(name) == 0, name << ": This variable already existed!!");
         insert_name_in_original_name_to_dag_name_to_name(name, original_name, source_dag_name);
         int begidx = objs.size();
-        objs.emplace_back(objP(name, nbits, otype, type, original_name, source_dag_name));
+        objs.emplace_back(name, nbits, otype, type, original_name, source_dag_name);
         index[name] = begidx;
         bitsize += nbits;
         if(inlining_tree != nullptr)
