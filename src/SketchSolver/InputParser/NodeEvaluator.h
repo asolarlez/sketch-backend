@@ -34,7 +34,6 @@ public:
 };
 
 
-
 const int UNSET = -22;
 class cpvec{
 	int bnd;
@@ -45,7 +44,10 @@ class cpvec{
 	int idx[3];
 	int flip;
 public:
-//	int* vv;
+    class LocalVectorTrait
+    {
+
+    };
     vector<int>* const mutable_vv = nullptr;
     const vector<int>* const vv = nullptr;
 	~cpvec(){}
