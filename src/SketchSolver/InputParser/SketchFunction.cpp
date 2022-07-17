@@ -886,8 +886,6 @@ string zeros(int n)
 using namespace filesystem;
 
 SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
-
-//    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
     auto start = chrono::steady_clock::now();
     for(int i = 0;i<repeat;i++)
     {
@@ -895,7 +893,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     }
 
     if(repeat != 0) {
-        timestamp(start, "repeat_"+std::to_string(repeat));
+        timestamp(start, "repeat_n"+std::to_string(repeat));
     }
 
     SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
@@ -946,11 +944,8 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //    }
 //    fout.close();
 
-
     auto after_prep = chrono::steady_clock::now();
-
     cilk_for(int i = 0;i<file->size();i++) {
-
         bool fails = node_evaluator.run(*file->at(i), false, false);
         ret->set(i, new SL::VarVal(!fails));
 
@@ -976,8 +971,8 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     if(repeat >= 1)
     {
-        print_performance_summary();
-
+        cout << "DONE WITH n" << size_str << endl;
+//        print_performance_summary();
 //        vector<bool> vec = ret->to_vector_bool();
 //        int sum = 0;
 //        for(int i = 0;i<vec.size();i++)
@@ -987,6 +982,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //        }
 //
 //        assert(false);
+
     }
 
     return ret;

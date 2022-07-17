@@ -31,6 +31,7 @@
 
 using namespace std;
 
+#include "BenchmarkScore.h"
 
 class SolverLanguage {
 public:
@@ -91,9 +92,11 @@ public:
                 {
                     assert(final_hole_values.empty());
                     string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map, &final_hole_values);
-                    cout << "pretty_print FMTL program:" << endl;
-                    cout << fmtl_program_str << endl;
-                    cout << endl;
+                    if(false) {
+                        cout << "pretty_print FMTL program:" << endl;
+                        cout << fmtl_program_str << endl;
+                        cout << endl;
+                    }
 
                     ofstream fmtl_program_file(fmtl_program_file_name);
 
@@ -162,6 +165,10 @@ public:
                 function_map.soft_clear_transformer();
             }
         }
+
+        ofstream bench_output(string(std::filesystem::current_path()) + "/benches/bench.out");
+        print_performance_summary(bench_output);
+        bench_output.close();
 
         return final_hole_values;
     }

@@ -882,8 +882,8 @@ public:
 
 class objP: public VarStoreElementIndexView, public VarStoreElementHeader {
 public:
-//    typedef BitMetaVector_rep_BitVector BitMetaVector_rep_CHOOSE;
-    typedef BitMetaVector_rep_VectorInt BitMetaVector_rep_CHOOSE;
+    typedef BitMetaVector_rep_BitVector BitMetaVector_rep_CHOOSE;
+//    typedef BitMetaVector_rep_VectorInt BitMetaVector_rep_CHOOSE;
 
 private:
     bool is_array;
