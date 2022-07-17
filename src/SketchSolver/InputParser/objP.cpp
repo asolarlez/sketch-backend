@@ -108,7 +108,7 @@ void VarStoreElementIndexView::append_vals(vector<int>& out) const {
     out.insert(out.end(), vals.begin(), vals.end());
 }
 
-SuccinctBitVectorVector *VarStoreElementIndexView::array() const {
+BitMetaVectorTrait *VarStoreElementIndexView::array() const {
     assert(parent != nullptr);
     return parent->get_array();
 }
@@ -160,17 +160,18 @@ int VarStoreElementIndexView::resize(int n) {
     return array()->get_total_num_bits();
 }
 
-VarStoreElementTrait *VarStoreElementIndexView::setBit_helper(size_t i, int val, bool is_head) {
+VarStoreElementTrait *VarStoreElementIndexView::setBit_helper(size_t local_bit_id, int val, bool is_head) {
     assert(val == 0 || val == 1);
     if(is_head) {
-        array()->setBit(i, val);
+        array()->setBit(index, local_bit_id, val);
     }
 
-    if(i<array()->get_num_bits_per_vector()){
+    if(local_bit_id<array()->get_num_bits_per_vector()){
         return this;
     }else{
+        AssertDebug(false, "REFACTOR THIS TO NOT ITERATE THOUGH THE ARRAY. YOU CAN JUMP TO IMMEDIATELY.")
         Assert(next != nullptr, "bad bad");
-        return next->setBit_helper(i-array()->get_num_bits_per_vector(), val, false);
+        return next->setBit_helper(local_bit_id-array()->get_num_bits_per_vector(), val, false);
     }
 }
 

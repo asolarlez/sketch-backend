@@ -216,11 +216,11 @@ public:
 	}
 
     bool contains(const objP& obj, vector<string>* path) const;
-	void setFromString(const string& in){
-		for(size_t i=0; i<in.size(); ++i){
-			setBit(i, in[i]=='1'? 1 : -1);
-		}
-	}
+//	void setFromString(const string& in){
+//		for(size_t i=0; i<in.size(); ++i){
+//			setBit(i, in[i]=='1'? 1 : -1);
+//		}
+//	}
 	vector<int> serialize() const{
 		vector<int> out;
 		for(const auto & obj : objs){
@@ -228,21 +228,21 @@ public:
 		}
 		return out;
 	}
-	void setBit(int i, int val){
-		bool found = false;
-		for(size_t t=0; t<objs.size(); ++t){
-			objP& tmp = objs[t];
-			int gsz = tmp.globalSize();
-			if(i < gsz){
-				tmp.setBit(i, val);
-				found = true;
-				break;
-			}else{
-				i = i-gsz;
-			}
-		}
-		Assert(found, "This is a bug");
-	}
+//	void setBit(int i, int val){
+//		bool found = false;
+//		for(size_t t=0; t<objs.size(); ++t){
+//			objP& tmp = objs[t];
+//			int gsz = tmp.globalSize();
+//			if(i < gsz){
+//				tmp.setBit(i, val);
+//				found = true;
+//				break;
+//			}else{
+//				i = i-gsz;
+//			}
+//		}
+//		Assert(found, "This is a bug");
+//	}
 	int operator[](const string& name) const {
         int id = getId(name);
         AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
