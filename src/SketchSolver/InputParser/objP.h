@@ -124,7 +124,7 @@ public:
         return 0;
     }
 
-    virtual VarStoreElementTrait* setBit(size_t i, int val) {
+    virtual VarStoreElementTrait* set_bit(size_t i, int val) {
         AssertDebug(false, "not implemented.");
         return nullptr;
     }
@@ -249,15 +249,15 @@ public:
         AssertDebug(false, "not implemented.");
     }
 
-//    virtual void setBit(size_t bit_id, int val) {
+//    virtual void set_bit(size_t bit_id, int val) {
 //        AssertDebug(false, "not implemented.");
 //    }
 
-    virtual void setBit(size_t word_id, size_t local_bit_id, int val) {
+    virtual void set_bit(size_t word_id, size_t local_bit_id, int val) {
         AssertDebug(false, "not implemented.");
     }
 
-    virtual bool get_bit(size_t idx, size_t bit_id) {
+    virtual bool get_bit(size_t idx, size_t bit_id) const {
         AssertDebug(false, "not implemented.");
     }
 
@@ -362,14 +362,14 @@ public:
         vector_of_vectors[idx] = val;
     }
 
-//    void setBit(size_t bit_id, int val) override {
+//    void set_bit(size_t bit_id, int val) override {
 //        assert(val ==  0 || val == 1);
 //        int word_id = bit_id/num_bits_per_vector;
 //        int local_bit_id = bit_id - word_id*num_bits_per_vector;
-//        setBit(word_id, local_bit_id, val);
+//        set_bit(word_id, local_bit_id, val);
 //    }
 
-    void setBit(size_t word_id, size_t local_bit_id, int val) override {
+    void set_bit(size_t word_id, size_t local_bit_id, int val) override {
         assert(val ==  0 || val == 1);
         if(val == 0) {
             vector_of_vectors[word_id] &= ~((int)1 << local_bit_id);
@@ -382,7 +382,7 @@ public:
         }
     }
 
-    bool get_bit(size_t idx, size_t bit_id) override
+    bool get_bit(size_t idx, size_t bit_id) const override
     {
         assert(idx < vector_of_vectors.size());
         assert(bit_id < num_bits_per_vector);
@@ -561,29 +561,41 @@ public:
     }
 
     int get_vector_as_int(size_t idx) const override {
-        AssertDebug(false, "TODO.");
+        int ret = 0;
+        for(size_t i = 0;i<get_num_bits_per_vector();i++)
+        {
+            ret |= get_bit(idx, i) << i;
+        }
+        return ret;
     }
 
     void set_vector_from_int(size_t idx, int val) override {
-        AssertDebug(false, "TODO.");
+        assert(val >= 0);
+        assert(get_num_bits_per_vector() < BitVector::word_size);
+
+        for(int i = 0; i < get_num_bits_per_vector(); i++) {
+            set_bit(idx, i, (val & (1<<i)) != 0);
+        }
+
+        int vector_as_int = get_vector_as_int(idx);
+        assert(val == vector_as_int);
     }
 
-//    void setBit(size_t bit_id, int val) override {
+//    void set_bit(size_t bit_id, int val) override {
 //        assert(val ==  0 || val == 1);
 //        size_t word_id = bit_id/num_bits_per_vector;
 //        size_t local_bit_id = bit_id - word_id*num_bits_per_vector;
-//        setBit(word_id, local_bit_id, val);
+//        set_bit(word_id, local_bit_id, val);
 //    }
 
-    void setBit(size_t word_id, size_t local_bit_id, int val) override {
+    void set_bit(size_t word_id, size_t local_bit_id, int val) override {
         vector_of_vectors.set(word_id*get_num_bits_per_vector() + local_bit_id, val);
     }
 
-    bool get_bit(size_t idx, size_t bit_id) override
+    bool get_bit(size_t idx, size_t bit_id) const override
     {
-        assert(idx < vector_of_vectors.size());
-        assert(bit_id < num_bits_per_vector);
-        return (vector_of_vectors[idx] & (1<<bit_id)) != 0;
+        assert(bit_id < get_num_bits_per_vector());
+        return vector_of_vectors.get(idx*get_num_bits_per_vector() + bit_id);
     }
 
     void push_back() override {
@@ -699,7 +711,7 @@ protected:
         parent = _parent;
     }
 
-    VarStoreElementTrait* setBit_helper(size_t i, int val, bool is_head = true);
+    VarStoreElementTrait* set_bit_helper(size_t i, int val, bool is_head = true);
 
 public:
 
@@ -717,8 +729,8 @@ public:
 
     int resize(int n) override;
 
-    VarStoreElementTrait* setBit(size_t i, int val) override {
-        return setBit_helper(i, val, true);
+    VarStoreElementTrait* set_bit(size_t i, int val) override {
+        return set_bit_helper(i, val, true);
     }
 
     int getInt() const override {
@@ -738,10 +750,10 @@ public:
         }
     }
 
-    ///Return false if SuccinctobjP did not have enough bits to be made equal to v.
-    bool setValSafe(int v) override {
+private:
+    bool does_it_have_enough_bits(int v)
+    {
         size_t t = array()->get_num_bits_per_vector();
-        array()->set_vector_from_int(index, v);
         int len = 0;
         while(v != 0){
             len+=1;
@@ -751,6 +763,26 @@ public:
             }
         }
         return true;
+    }
+public:
+
+    ///Return false if SuccinctobjP did not have enough bits to be made equal to v.
+    bool setValSafe(int v) override {
+        size_t t = array()->get_num_bits_per_vector();
+        bool it_has_enough_bits = does_it_have_enough_bits(v);
+        array()->set_vector_from_int(index, v);
+        int len = 0;
+        bool ret = true;
+        while(v != 0){
+            len+=1;
+            v = v >> 1;
+            if(len==t && v != 0){
+                ret = false;
+                break;
+            }
+        }
+        assert(ret == it_has_enough_bits);
+        return ret;
     }
 
     void setVal(int v) override {
@@ -783,11 +815,11 @@ public:
 
         if(n > 0 || (rand() % P) < q ){
             for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-                array()->setBit(index, i, (rand() & 0x3) > 0? -1 : 1);
+                array()->set_bit(index, i, (rand() & 0x3) > 0? -1 : 1);
             }
         }else{
             for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-                array()->setBit(index, i, 0);
+                array()->set_bit(index, i, 0);
             }
         }
         if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
@@ -795,13 +827,13 @@ public:
 
     void makeRandom() override{/* Bias towards zeros */
         for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-            array()->setBit(index, i, (rand() & 0x3) > 0? 0 : 1);
+            array()->set_bit(index, i, (rand() & 0x3) > 0? 0 : 1);
         }
         if(next!= nullptr){ next->makeRandom(); }
     }
     void zeroOut() override{/* Bias towards zeros */
         for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-            array()->setBit(index, i, 0);
+            array()->set_bit(index, i, 0);
         }
         if(next!= nullptr){ next->zeroOut(); }
     }
@@ -831,7 +863,7 @@ public:
 
 class objP: public VarStoreElementIndexView, public VarStoreElementHeader {
 
-    typedef BitMetaVector_rep_VectorInt BitMetaVector_rep_CHOOSE;
+    typedef BitMetaVector_rep_BitVector BitMetaVector_rep_CHOOSE;
     bool is_array;
     //if is_array == true; then array.size() == number of elements in the array and array holds the array.
     //if is_array == false; then array.size() == 1 and array[0] holds the value.
@@ -943,17 +975,17 @@ public:
         return array->get_total_num_bits();
     }
 
-//    VarStoreElementTrait* setBit(size_t i, int val) override {
+//    VarStoreElementTrait* set_bit(size_t i, int val) override {
 //        assert(val == 0 || val == 1);
 //        if(is_head) {
-//            array->setBit(i, val);
+//            array->set_bit(i, val);
 //        }
 //
 //        if(i<array->get_num_bits_per_vector()){
 //            return this;
 //        }else{
 //            Assert(next != nullptr, "bad bad");
-//            return next->setBit(i-array->get_num_bits_per_vector(), val);
+//            return next->set_bit(i-array->get_num_bits_per_vector(), val);
 //        }
 //    }
 
@@ -1030,11 +1062,11 @@ public:
 //
 //        if(n > 0 || (rand() % P) < q ){
 //            for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
-//                array->setBit(index, i, (rand() & 0x3) > 0? -1 : 1);
+//                array->set_bit(index, i, (rand() & 0x3) > 0? -1 : 1);
 //            }
 //        }else{
 //            for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
-//                array->setBit(index, i, 0);
+//                array->set_bit(index, i, 0);
 //            }
 //        }
 //        if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
@@ -1042,13 +1074,13 @@ public:
 //
 //    void makeRandom() override{/* Bias towards zeros */
 //        for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
-//            array->setBit(index, i, (rand() & 0x3) > 0? 0 : 1);
+//            array->set_bit(index, i, (rand() & 0x3) > 0? 0 : 1);
 //        }
 //        if(next!= nullptr){ next->makeRandom(); }
 //    }
 //    void zeroOut() override{/* Bias towards zeros */
 //        for(size_t i=0; i<array->get_num_bits_per_vector(); ++i){
-//            array->setBit(index, i, 0);
+//            array->set_bit(index, i, 0);
 //        }
 //        if(next!= nullptr){ next->zeroOut(); }
 //    }

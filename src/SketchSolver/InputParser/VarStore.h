@@ -218,7 +218,7 @@ public:
     bool contains(const objP& obj, vector<string>* path) const;
 //	void setFromString(const string& in){
 //		for(size_t i=0; i<in.size(); ++i){
-//			setBit(i, in[i]=='1'? 1 : -1);
+//			set_bit(i, in[i]=='1'? 1 : -1);
 //		}
 //	}
 	vector<int> serialize() const{
@@ -228,13 +228,13 @@ public:
 		}
 		return out;
 	}
-//	void setBit(int i, int val){
+//	void set_bit(int i, int val){
 //		bool found = false;
 //		for(size_t t=0; t<objs.size(); ++t){
 //			objP& tmp = objs[t];
 //			int gsz = tmp.globalSize();
 //			if(i < gsz){
-//				tmp.setBit(i, val);
+//				tmp.set_bit(i, val);
 //				found = true;
 //				break;
 //			}else{

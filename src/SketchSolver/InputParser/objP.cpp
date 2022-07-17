@@ -160,10 +160,10 @@ int VarStoreElementIndexView::resize(int n) {
     return array()->get_total_num_bits();
 }
 
-VarStoreElementTrait *VarStoreElementIndexView::setBit_helper(size_t local_bit_id, int val, bool is_head) {
+VarStoreElementTrait *VarStoreElementIndexView::set_bit_helper(size_t local_bit_id, int val, bool is_head) {
     assert(val == 0 || val == 1);
     if(is_head) {
-        array()->setBit(index, local_bit_id, val);
+        array()->set_bit(index, local_bit_id, val);
     }
 
     if(local_bit_id<array()->get_num_bits_per_vector()){
@@ -171,7 +171,7 @@ VarStoreElementTrait *VarStoreElementIndexView::setBit_helper(size_t local_bit_i
     }else{
         AssertDebug(false, "REFACTOR THIS TO NOT ITERATE THOUGH THE ARRAY. YOU CAN JUMP TO IMMEDIATELY.")
         Assert(next != nullptr, "bad bad");
-        return next->setBit_helper(local_bit_id-array()->get_num_bits_per_vector(), val, false);
+        return next->set_bit_helper(local_bit_id-array()->get_num_bits_per_vector(), val, false);
     }
 }
 
