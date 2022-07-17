@@ -47,7 +47,7 @@ public:
             bool_node::Type _type, string _name,
             const OutType* _otype, string _original_name,
             string _source_dag_name):
-        type(_type), name(std::move(_name)), otype(_otype), original_name(std::move(_original_name)), source_dag_name(std::move(_source_dag_name)) {}
+            type(_type), name(std::move(_name)), otype(_otype), original_name(std::move(_original_name)), source_dag_name(std::move(_source_dag_name)) {}
 
     VarStoreElementHeader(const VarStoreElementHeader& old) = default;
 
@@ -122,7 +122,7 @@ public:
         return 0;
     }
 
-    virtual VarStoreElementTrait* setBit(size_t i, int val) {
+    virtual VarStoreElementTrait* set_bit(size_t i, int val) {
         AssertDebug(false, "not implemented.");
         return nullptr;
     }
@@ -141,7 +141,6 @@ public:
         AssertDebug(false, "not implemented.");
     }
 
-    ///Return false if VarStoreElementTrait did not have enough bits to be made equal to v.
     virtual bool setValSafe(int v) {
         AssertDebug(false, "not implemented.");
         return false;
@@ -208,43 +207,122 @@ public:
     }
 };
 
-class SuccinctBitVectorVector
+class BitMetaVectorTrait {
+public:
+
+    virtual size_t get_num_vectors() const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual int get_num_bits_per_vector() const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void resize_num_bits_per_vector(int new_num_bits_per_vector)
+    {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual int get_total_num_bits() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual bool increment()
+    {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual int get_vector_as_int(size_t idx) const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void set_vector_from_int(size_t idx, int val) {
+        AssertDebug(false, "not implemented.");
+    }
+
+//    virtual void set_bit(size_t bit_id, int val) {
+//        AssertDebug(false, "not implemented.");
+//    }
+
+    virtual void set_bit(size_t word_id, size_t local_bit_id, int val) {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual bool get_bit(size_t idx, size_t bit_id) const {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void push_back() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual void clear() {
+        AssertDebug(false, "not implemented.");
+    }
+
+    virtual string to_bit_string()
+    {
+        AssertDebug(false, "ARE YOU SURE YOU WANT TO USE THIS VERSION?");
+        string ret;
+        for(int i = 0;i<get_num_vectors();i++)
+        {
+            if(i >= 1)
+            {
+                ret += "|";
+            }
+            string bit_string;
+            for(int j = 0;j<get_num_bits_per_vector(); j++)
+            {
+                bit_string += (char)((int)'0'+get_bit(i, j));
+            }
+            reverse(bit_string.begin(), bit_string.end());
+            ret += bit_string;
+        }
+        return ret;
+    }
+
+    virtual const vector<int> *as_vector_int_pointer() const {
+        AssertDebug(false, "not implemented.");
+    }
+};
+
+class BitMetaVector_rep_VectorInt: public BitMetaVectorTrait
 {
     static const int max_num_bits = 30;
     int num_bits_per_vector;
     int total_num_bits;
     vector<int> vector_of_vectors;
 public:
-    SuccinctBitVectorVector(int _num_vectors, int _num_bits_per_vector):
-        num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
+    BitMetaVector_rep_VectorInt(int _num_vectors, int _num_bits_per_vector):
+            num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
         assert(num_bits_per_vector <= max_num_bits);
         vector_of_vectors = vector<int>(_num_vectors, 0);
     }
-    explicit SuccinctBitVectorVector(const SuccinctBitVectorVector* to_copy):
+    explicit BitMetaVector_rep_VectorInt(const BitMetaVector_rep_VectorInt* to_copy):
             num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits) {
         vector_of_vectors = to_copy->vector_of_vectors;
     }
 
-    size_t get_num_vectors() {
+    size_t get_num_vectors() const override {
         return vector_of_vectors.size();
     }
 
-    int get_num_bits_per_vector() const {
+    int get_num_bits_per_vector() const override {
         return num_bits_per_vector;
     }
 
-    void resize_num_bits_per_vector(int new_num_bits_per_vector)
+    void resize_num_bits_per_vector(int new_num_bits_per_vector) override
     {
         assert(new_num_bits_per_vector >= num_bits_per_vector);
         assert(new_num_bits_per_vector <= max_num_bits);
         num_bits_per_vector = new_num_bits_per_vector;
     }
 
-    int get_total_num_bits() {
+    int get_total_num_bits() override {
         return total_num_bits;
     }
 
-    bool increment()
+    bool increment() override
     {
         const int max_num = (1<<num_bits_per_vector)-1;
         for(int i = 0;i<vector_of_vectors.size();i++)
@@ -258,24 +336,24 @@ public:
         return false;
     }
 
-    inline int get(size_t idx) const {
-//        assert(0 <= idx && idx < vector_of_vectors.size());
+    int get_vector_as_int(size_t idx) const override {
+        assert(0 <= idx && idx < vector_of_vectors.size());
         return vector_of_vectors[idx];
     }
 
-    void set(int idx, int val) {
+    void set_vector_from_int(size_t idx, int val) override {
         assert(0 <= idx && idx < vector_of_vectors.size());
         vector_of_vectors[idx] = val;
     }
 
-    void setBit(size_t bit_id, int val) {
-        assert(val ==  0 || val == 1);
-        int word_id = bit_id/num_bits_per_vector;
-        int local_bit_id = bit_id - word_id*num_bits_per_vector;
-        setBit(word_id, local_bit_id, val);
-    }
+//    void set_bit(size_t bit_id, int val) override {
+//        assert(val ==  0 || val == 1);
+//        int word_id = bit_id/num_bits_per_vector;
+//        int local_bit_id = bit_id - word_id*num_bits_per_vector;
+//        set_bit(word_id, local_bit_id, val);
+//    }
 
-    void setBit(size_t word_id, size_t local_bit_id, int val) {
+    void set_bit(size_t word_id, size_t local_bit_id, int val) override {
         assert(val ==  0 || val == 1);
         if(val == 0) {
             vector_of_vectors[word_id] &= ~((int)1 << local_bit_id);
@@ -288,14 +366,14 @@ public:
         }
     }
 
-    bool get_bit(size_t idx, size_t bit_id)
+    bool get_bit(size_t idx, size_t bit_id) const override
     {
         assert(idx < vector_of_vectors.size());
         assert(bit_id < num_bits_per_vector);
         return (vector_of_vectors[idx] & (1<<bit_id)) != 0;
     }
 
-    void push_back() {
+    void push_back() override {
         vector_of_vectors.push_back(0);
     }
 
@@ -306,12 +384,12 @@ public:
         return vector_of_vectors.end();
     }
 
-    void clear() {
+    void clear() override {
         vector_of_vectors.clear();
         delete this;
     }
 
-    string to_bit_string()
+    string to_bit_string() override
     {
         string ret;
         for(int i = 0;i<vector_of_vectors.size();i++)
@@ -331,8 +409,275 @@ public:
         return ret;
     }
 
-    const vector<int> *get_vector_of_vectors_pointer() {
+    const vector<int> *as_vector_int_pointer() const override {
         return &vector_of_vectors;
+    }
+};
+
+template<typename T>
+class VectorTrait
+{
+public:
+    virtual T get(size_t idx) const = 0;
+    virtual void set(size_t idx, T) = 0;
+    virtual size_t get_num_bits() const = 0;
+};
+
+class BitVector : public VectorTrait<bool>
+{
+    typedef uint32_t WORD_TYPE;
+    size_t num_bits = 0;
+    vector<WORD_TYPE> bits;
+public:
+    static const int word_size_bits = 5;
+    static const int num_bits_in_a_byte = 8;
+    static_assert(sizeof(WORD_TYPE)*num_bits_in_a_byte == 1<<word_size_bits, "WORD_TYPE and word_size_bits are inconsistent.");
+    static const int word_size = 1<<word_size_bits;
+    static const int low_order_bits_mask = (1<<word_size_bits)-1;
+    void clear()
+    {
+        bits.clear();
+    }
+    BitVector() = default;
+    explicit BitVector(size_t _num_bits, int init_val = 0): num_bits(_num_bits)
+    {
+        if(init_val == 0) {
+            bits = vector<WORD_TYPE>((num_bits + word_size - 1) >> word_size_bits, 0);
+        }
+        else
+        {
+            assert(init_val == 1);
+            WORD_TYPE all_ones = ~0;
+            assert(__builtin_popcount(all_ones) == word_size);
+            bits = vector<WORD_TYPE>((num_bits + word_size - 1) >> word_size_bits, ~0);
+        }
+    }
+
+    void expand(size_t expansion_size) {
+        while(bits.size()*word_size < num_bits+expansion_size) {
+            bits.push_back(0);
+        }
+        num_bits+=expansion_size;
+    }
+
+    bool operator [](const size_t idx) const
+    {
+        return get(idx);
+    }
+
+    bool get(size_t idx) const override {
+        assert(idx < num_bits);
+        bool ret = (bits[idx >> word_size_bits] & ((WORD_TYPE)1 << (idx & low_order_bits_mask))) != 0;
+        return ret;
+    }
+    void set(size_t idx,  bool val) override {
+        assert(idx < num_bits);
+        int at_word = idx >> word_size_bits;
+        if(val) {
+            bits[at_word] |= ((WORD_TYPE)1 << (idx & low_order_bits_mask));
+        }
+        else {
+            bits[at_word] &= ~((WORD_TYPE)1 << (idx & low_order_bits_mask));
+        }
+    }
+
+    size_t get_num_bits() const override {
+        return num_bits;
+    }
+
+    // Minimum required for range-for loop
+    struct Iterator {
+        size_t at_idx;
+        const BitVector* _this;
+        int operator * () const { return _this->get(at_idx); }
+        bool operator != (const Iterator& rhs) const {
+            return at_idx != rhs.at_idx;
+        }
+        void operator ++() {
+            at_idx++;
+        }
+    };
+
+    // auto return requires C++14
+    auto begin() const {
+        size_t at_idx = 0;
+        return Iterator{at_idx, this};
+    }
+    auto end() const {
+        return Iterator{num_bits, this};
+    }
+};
+
+class BitMetaVector_rep_BitVector: public BitMetaVectorTrait
+{
+    size_t num_bits_per_vector = 0;
+    size_t total_num_bits = 0;
+    size_t num_vectors = 0;
+    BitVector vector_of_vectors;
+    bool invariant(const bool check_invariant = true) const {
+        return !check_invariant ||
+               (
+                       num_vectors == vector_of_vectors.get_num_bits() / num_bits_per_vector &&
+                       total_num_bits == vector_of_vectors.get_num_bits()
+               );
+    }
+public:
+    BitMetaVector_rep_BitVector(int _num_vectors, int _num_bits_per_vector):
+            num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector), num_vectors(_num_vectors) {
+        vector_of_vectors = BitVector(total_num_bits, 0);
+        assert(invariant());
+    }
+    explicit BitMetaVector_rep_BitVector(const BitMetaVector_rep_BitVector* to_copy):
+            num_bits_per_vector(to_copy->num_bits_per_vector), total_num_bits(to_copy->total_num_bits), num_vectors(to_copy->num_vectors) {
+        vector_of_vectors = to_copy->vector_of_vectors;
+        assert(invariant());
+    }
+
+public:
+
+    size_t get_num_vectors() const override {
+        assert(invariant());
+        return num_vectors;
+    }
+
+    int get_num_bits_per_vector() const override {
+        assert(invariant());
+        return num_bits_per_vector;
+    }
+
+    void resize_num_bits_per_vector(int new_num_bits_per_vector) override {
+        assert(new_num_bits_per_vector > get_num_bits_per_vector());
+        BitVector new_vector_of_vectors(get_num_vectors()*new_num_bits_per_vector);
+        for(size_t i = 0;i<get_num_vectors();i++) {
+            for(size_t j = 0;j<get_num_bits_per_vector();j++) {
+                new_vector_of_vectors.set(i*new_num_bits_per_vector + j, get_bit(i, j));
+            }
+        }
+
+        num_bits_per_vector = new_num_bits_per_vector;
+
+        vector_of_vectors = new_vector_of_vectors;
+        num_bits_per_vector = new_num_bits_per_vector;
+
+        total_num_bits = num_vectors * num_bits_per_vector;
+        total_num_bits = get_num_vectors()*get_num_bits_per_vector();
+
+        assert(invariant());
+    }
+
+    int get_total_num_bits() override {
+        assert(invariant());
+        return total_num_bits;
+    }
+
+    bool increment() override
+    {
+        AssertDebug(false, "TODO.");
+        return false;
+    }
+
+    int get_vector_as_int(size_t idx) const override {
+        assert(invariant());
+        int ret = 0;
+        for(size_t i = 0;i<get_num_bits_per_vector();i++)
+        {
+            ret |= get_bit(idx, i) << i;
+        }
+        return ret;
+    }
+
+    void set_vector_from_int(size_t idx, int val) override {
+        assert(invariant());
+        assert(idx < get_num_vectors());
+        assert(val >= 0);
+        assert(get_num_bits_per_vector() < BitVector::word_size);
+
+        for(int i = 0; i < get_num_bits_per_vector(); i++) {
+            set_bit(idx, i, (val & (1<<i)) != 0);
+        }
+
+        int vector_as_int = get_vector_as_int(idx);
+        assert(val == vector_as_int);
+        assert(invariant());
+    }
+
+//    void set_bit(size_t bit_id, int val) override {
+//        assert(val ==  0 || val == 1);
+//        size_t word_id = bit_id/num_bits_per_vector;
+//        size_t local_bit_id = bit_id - word_id*num_bits_per_vector;
+//        set_bit(word_id, local_bit_id, val);
+//    }
+
+    void set_bit(size_t word_id, size_t local_bit_id, int val) override {
+        assert(invariant());
+        assert(word_id < get_num_vectors() && local_bit_id < get_num_bits_per_vector());
+        vector_of_vectors.set(word_id*get_num_bits_per_vector() + local_bit_id, val);
+        assert(invariant());
+    }
+
+    bool get_bit(size_t idx, size_t bit_id) const override
+    {
+        assert(invariant());
+        assert(bit_id < get_num_bits_per_vector());
+        return vector_of_vectors.get(idx*get_num_bits_per_vector() + bit_id);
+    }
+
+    void push_back() override {
+        assert(invariant());
+        vector_of_vectors.expand(num_bits_per_vector);
+        total_num_bits += num_bits_per_vector;
+        num_vectors++;
+        assert(invariant());
+    }
+
+    auto begin() const {
+        assert(invariant());
+        return vector_of_vectors.begin();
+    }
+    auto end() const {
+        assert(invariant());
+        return vector_of_vectors.end();
+    }
+
+    void clear() override {
+        assert(invariant());
+        vector_of_vectors.clear();
+        delete this;
+    }
+
+    string to_bit_string() override
+    {
+        assert(invariant());
+        string ret;
+        for(int i = 0;i<get_num_vectors();i++)
+        {
+            if(i >= 1)
+            {
+                ret += "|";
+            }
+            string bit_string;
+            for(int j = 0;j<get_num_bits_per_vector(); j++)
+            {
+                bit_string += (char)((int)'0'+get_bit(i, j));
+            }
+            reverse(bit_string.begin(), bit_string.end());
+            ret += bit_string;
+        }
+        return ret;
+    }
+
+    const vector<int> *as_vector_int_pointer() const override {
+        assert(invariant());
+        assert(get_num_bits_per_vector() <= BitVector::word_size);
+
+        vector<int>* ret = new vector<int>();
+
+        for(int i = 0; i<get_num_vectors();i++)
+        {
+            ret->push_back(get_vector_as_int(i));
+        }
+
+        return ret;
     }
 };
 
@@ -340,41 +685,81 @@ class objP;
 
 class VarStoreElementIndexView: public VarStoreElementTrait {
     objP* parent = nullptr;
-    SuccinctBitVectorVector* array() const;
+    BitMetaVectorTrait* array() const;
     bool is_array() const;
-    VarStoreElementIndexView* next = nullptr;
-    int index = -1;
+    mutable int __index = -1;
+    mutable bool reached_end = false;
 
-    explicit VarStoreElementIndexView(objP* _parent): parent(_parent) {
-        index = array()->get_num_vectors();
-        array()->push_back();
-    }
+
 protected:
-    VarStoreElementIndexView() = default;
-    void clear() {
-        parent = nullptr;
-        index = -1;
-        if(next != nullptr) {
-            delete next;
-            next = nullptr;
-        }
-    }
-public:
-    ~VarStoreElementIndexView() override {
-        VarStoreElementIndexView::clear();
+    explicit VarStoreElementIndexView(int _index, objP* _parent): __index(_index), parent(_parent) {
+        assert(__index != -1);
     }
 
-    const vector<int>* get_vector_of_vectors_pointer() const
+
+public:
+
+    const vector<int>* as_vector_int_pointer() const
     {
-        return array()->get_vector_of_vectors_pointer();
+        return array()->as_vector_int_pointer();
     }
+
+    int arrSize() {
+        return array()->get_num_vectors();
+    }
+
+    int element_size() const override  {
+        return array()->get_num_bits_per_vector();
+    }
+
+    int globalSize() const override {
+        return array()->get_total_num_bits();
+    }
+
+    int resize(int n) override  {
+        array()->resize_num_bits_per_vector(n);
+        return array()->get_total_num_bits();
+    }
+
 
     int get_index() const override {
-        return index;
+        if(__index == -1) {
+            assert(reached_end);
+            reached_end = false;
+            __index = 0;
+        }
+        assert(0 <= __index && __index < array()->get_num_vectors());
+        return __index;
     }
 
+    bool has_next() const
+    {
+        assert(0 <= __index && __index < array()->get_num_vectors());
+        return __index + 1 < array()->get_num_vectors();
+    }
+private:
+    mutable bool in_iter = false;
+public:
     VarStoreElementTrait* get_next() const override {
-        return next;
+        assert(__index != -1);
+        if(__index == 0)
+        {
+            assert(!in_iter);
+            in_iter = true;
+        }
+        else
+        {
+            assert(in_iter);
+        }
+        __index++;
+        if(__index >= array()->get_num_vectors())
+        {
+            __index = -1;
+            reached_end = true;
+            in_iter = false;
+            return nullptr;
+        }
+        return (VarStoreElementTrait*)this;
     }
 
     int get_size() const override
@@ -383,90 +768,48 @@ public:
     }
 
 protected:
-    void init_from_old(const VarStoreElementIndexView& old, objP* _parent) {
-        assert(parent == nullptr && index == -1);
-        index = old.index;
+    VarStoreElementIndexView(const VarStoreElementIndexView& old, objP* _parent) {
+        assert(parent == nullptr);
         parent = _parent;
-        if(old.next != nullptr){
-            next = new VarStoreElementIndexView(*old.next, _parent);
-        }
+        __index = old.get_index();
+        __index = 0;
+        assert(__index == 0);
     }
-    void init(objP* _parent) {
-        assert(parent == nullptr && index == -1);
-        index = 0;
-        parent = _parent;
-        assert(array()->get_num_vectors() == 1);
-    }
+
+    VarStoreElementTrait* set_bit_helper(size_t i, int val, bool is_head = true);
+
 public:
 
-    VarStoreElementIndexView(const VarStoreElementIndexView& old, objP* _parent) {
-        init_from_old(old, _parent);
-    }
 
-    void makeArr(int start, int end) override
-    {
-        assert(is_array());
-        Assert(start < end, "Empty arr");
-        assert(index == start);
-        index = start;
-        if(start+1 < end){
-            if(next == nullptr){
-                next = new VarStoreElementIndexView(parent);
-            }
-            next->makeArr(start+1, end);
-        }else{
-            if(next != nullptr){
-                delete next;
-                next = nullptr;
-            }
-        }
-    }
-
-    int arrSize() const override {
-        return array()->get_num_vectors();
-    }
-
-    int element_size() const override
-    {
-        return array()->get_num_bits_per_vector();
-    }
-
-    int globalSize() const override {
-        return element_size() * arrSize();
-    }
-
-    int resize(int n) override {
-        array()->resize_num_bits_per_vector(n);
-        return array()->get_total_num_bits();
-    }
+    void makeArr(int start, int exclusive_end) override;
 
     VarStoreElementTrait* setBit_helper(size_t i, int val, bool is_head = true)
     {
         assert(val == 0 || val == 1);
         if(is_head) {
-            array()->setBit(i, val);
+            array()->set_bit(get_index(), i, val);
         }
 
         if(i<array()->get_num_bits_per_vector()){
             return this;
         }else{
-            Assert(next != nullptr, "bad bad");
-            return next->setBit_helper(i-array()->get_num_bits_per_vector(), val, false);
+            Assert(get_next() != nullptr, "bad bad");
+            return ((VarStoreElementIndexView*)get_next())->setBit_helper(i-array()->get_num_bits_per_vector(), val, false);
         }
     }
 
-    VarStoreElementTrait* setBit(size_t i, int val) override {
-        return setBit_helper(i, val, true);
+    inline int getInt() const override {
+        return array()->get_vector_as_int(get_index());
+    }
+    VarStoreElementTrait* set_bit(size_t i, int val) override {
+        return set_bit_helper(i, val, true);
     }
 
-    inline int getInt() const override {
-        return array()->get(index);
-    }
 
     inline int getInt(int idx) const override
     {
         if(idx < array()->get_num_vectors()) {
-            return array()->get(idx);
+            return array()->get_vector_as_int(idx);
         }
         else {
             return -1;
@@ -475,19 +818,19 @@ public:
 
     void setArr(const vector<int> *arr) override {
         assert(is_array());
-        VarStoreElementIndexView* at = this;
+        VarStoreElementTrait* at = (VarStoreElementTrait*)this;
         for(int i = 0;i<arr->size();i++)
         {
             assert(at != nullptr);
             at->setVal(arr->at(i));
-            at = at->next;
+            at = at->get_next();
         }
     }
 
-    ///Return false if SuccinctobjP did not have enough bits to be made equal to v.
-    bool setValSafe(int v) override {
+private:
+    bool does_it_have_enough_bits(int v)
+    {
         size_t t = array()->get_num_bits_per_vector();
-        array()->set(index, v);
         int len = 0;
         while(v != 0){
             len+=1;
@@ -498,9 +841,43 @@ public:
         }
         return true;
     }
+    int get_num_bits(int v)
+    {
+        int len = 0;
+        while(v != 0){
+            len+=1;
+            v = v >> 1;
+        }
+        return len;
+    }
+public:
+
+    ///Return false if objP did not have enough bits to be made equal to v.
+    bool setValSafe(int v) override {
+        size_t t = array()->get_num_bits_per_vector();
+        bool it_has_enough_bits = does_it_have_enough_bits(v);
+        int lb_num_bits_necessary = array()->get_num_bits_per_vector();
+        if(!it_has_enough_bits) {
+            lb_num_bits_necessary = get_num_bits(v);
+            array()->resize_num_bits_per_vector(lb_num_bits_necessary);
+        }
+        array()->set_vector_from_int(get_index(), v);
+        int len = 0;
+        bool ret = true;
+        while(v != 0){
+            len+=1;
+            v = v >> 1;
+            if(len==t && v != 0) {
+                ret = false;
+                break;
+            }
+        }
+        assert(ret == it_has_enough_bits);
+        return ret;
+    }
 
     void setVal(int v) override {
-        array()->set(index, v);
+        array()->set_vector_from_int(get_index(), v);
         int len = 0;
         while(v != 0){
             len+=1;
@@ -513,7 +890,7 @@ public:
     }
     void printContent(ostream& out) const override{
         out << getInt();
-        if(next!= nullptr){ out<<"|"; next->printContent(out); }
+        if(get_next() != nullptr){ out<<"|"; get_next()->printContent(out); }
     }
 
     bool increment() override{
@@ -529,57 +906,80 @@ public:
 
         if(n > 0 || (rand() % P) < q ){
             for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-                array()->setBit(index, i, (rand() & 0x3) > 0? -1 : 1);
+                array()->set_bit(get_index(), i, (rand() & 0x3) > 0? -1 : 1);
             }
         }else{
             for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-                array()->setBit(index, i, 0);
+                array()->set_bit(get_index(), i, 0);
             }
         }
-        if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
+        if(get_next()!= nullptr){ get_next()->makeRandom(sparseDeg, n-1); }
     }
 
     void makeRandom() override{/* Bias towards zeros */
         for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-            array()->setBit(index, i, (rand() & 0x3) > 0? 0 : 1);
+            array()->set_bit(get_index(), i, (rand() & 0x3) > 0? 0 : 1);
         }
-        if(next!= nullptr){ next->makeRandom(); }
+        if(get_next()!= nullptr){ get_next()->makeRandom(); }
     }
     void zeroOut() override{/* Bias towards zeros */
         for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
-            array()->setBit(index, i, 0);
+            array()->set_bit(get_index(), i, 0);
         }
-        if(next!= nullptr){ next->zeroOut(); }
+        if(get_next()!= nullptr){ get_next()->zeroOut(); }
     }
 
     bool get_is_array() const override {
         return is_array();
     }
 
+    void populate_multi_mother_nodeForINode(
+            vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const override;
+
+    void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const override;
+
+    void relabel(const string new_name) const override;
+
     void append_vals(vector<int>& out) const override
     {
         vector<int> vals;
         for(int i = 0; i<array()->get_num_bits_per_vector(); i++)
         {
-            vals.push_back(array()->get_bit(index, i));
+            vals.push_back(array()->get_bit(get_index(), i));
         }
         out.insert(out.end(), vals.begin(), vals.end());
     }
-
-    void relabel(string new_name) const override;
-
-    void populate_multi_mother_nodeForINode(
-            vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits, const FloatManager& floats) const override;
-
-    void populate_multi_mother_nodeForFun(vector<bool_node*>& multi_mother, DagOptim* for_cnodes, int nbits) const override;
 };
 
 class objP: public VarStoreElementIndexView, public VarStoreElementHeader {
+public:
+    typedef BitMetaVector_rep_BitVector BitMetaVector_rep_CHOOSE;
+
+private:
     bool is_array;
     //if is_array == true; then array.size() == number of elements in the array and array holds the array.
     //if is_array == false; then array.size() == 1 and array[0] holds the value.
-    SuccinctBitVectorVector* array = nullptr;
+    BitMetaVector_rep_CHOOSE* array = nullptr;
 
+public:
+    BitMetaVectorTrait* get_array() const {
+        return (BitMetaVectorTrait*)array;
+    }
+
+    const BitMetaVector_rep_CHOOSE* as_chosen_rep_pointer() const
+    {
+        return array;
+    }
+
+    const vector<int>* as_vector_int_pointer() const
+    {
+        return array->as_vector_int_pointer();
+    }
+
+    int get_size() const override
+    {
+        return globalSize();
+    }
 private:
     void clear() {
         assert(array != nullptr);
@@ -589,34 +989,47 @@ public:
     ~objP()
     {
         objP::clear();
-        VarStoreElementIndexView::clear();
     }
     objP(string  _name, int _size, const OutType* _otype,
          bool_node::Type _type, string _original_name="", string _source_dag_name=""):
-            array(new SuccinctBitVectorVector(1, _size)),
-            VarStoreElementHeader(_type, std::move(_name), _otype, std::move(_original_name), std::move(_source_dag_name))
-    {
+            array(new BitMetaVector_rep_CHOOSE(1, _size)),
+            VarStoreElementHeader(_type, std::move(_name), _otype, std::move(_original_name), std::move(_source_dag_name)),
+            VarStoreElementIndexView(0, this) {
+
         assert(_otype != nullptr);
-        if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
+        if (_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
             is_array = true;
             assert(_otype->isArr);
-        }
-        else
-        {
+        } else {
             is_array = false;
             assert(!_otype->isArr);
         }
-        init(this);
     }
 
     objP(const objP& old):
-            array(new SuccinctBitVectorVector(old.array)), is_array(old.is_array),
-            VarStoreElementHeader(old){
-        init_from_old(old, this);
+            array(new BitMetaVector_rep_CHOOSE(old.array)), is_array(old.is_array),
+            VarStoreElementHeader(old), VarStoreElementIndexView(old,this){
     }
 
     objP operator=(const objP& old) {
         return objP(old);
+    }
+
+    int element_size() const override{
+        return array->get_num_bits_per_vector();
+    }
+
+    int resize(int n) override{
+        array->resize_num_bits_per_vector(n);
+        return array->get_total_num_bits();
+    }
+
+    void printBit(ostream& out) const override{
+        out << array->to_bit_string();
+    }
+
+    bool increment() override{
+        return array->increment();
     }
 
     bool get_is_array() const override {
@@ -625,15 +1038,6 @@ public:
 
     void relabel(string new_name) const override {
         name = std::move(new_name);
-    }
-
-    SuccinctBitVectorVector* get_array() const {
-        return array;
-    }
-
-    const vector<int>* get_vector_of_vectors_pointer() const
-    {
-        return array->get_vector_of_vectors_pointer();
     }
 };
 

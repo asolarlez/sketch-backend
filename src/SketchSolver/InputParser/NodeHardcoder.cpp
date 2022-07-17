@@ -69,7 +69,10 @@ void NodeHardcoder::visit( SRC_node& node ){
             if (!node.isArrType()) {
                 assert(values.getObjConst(node.get_name()).get_size() == node.get_nbits());
             } else {
-                assert(values.getObjConst(node.get_name()).get_size() == node.get_nbits() * node.getArrSz());
+                int obj_const_size = values.getObjConst(node.get_name()).get_size();
+                int node_nbits = node.get_nbits();
+                int node_arrsz = node.getArrSz();
+                assert(obj_const_size == node_nbits * node_arrsz);
             }
             rvalue = nodeForINode(&node);
 	    }

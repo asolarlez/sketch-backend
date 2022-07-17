@@ -889,7 +889,6 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
 //    cout << "START MEASURING TIME (evaluate_inputs)" << endl;
     auto start = chrono::steady_clock::now();
-
     for(int i = 0;i<repeat;i++)
     {
         evaluate_inputs(file, 0);
@@ -946,6 +945,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //        the_dag->mrprint(cout, true);
 //    }
 //    fout.close();
+
 
     auto after_prep = chrono::steady_clock::now();
 

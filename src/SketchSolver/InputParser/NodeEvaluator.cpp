@@ -119,7 +119,7 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 	}
 	vecvalues[node.id] = cpv;	
 	for(int t=0; t<sz; ++t){
-        (*cpv->mutable_vv)[t] = i(*node.arguments(t));
+        (*cpv->mutable_vv).set_int_at_index(t, i(*node.arguments(t)));
 	}
 	// TODO xzl: temporarily disable -333
 	

@@ -125,7 +125,7 @@ public:
 		return rv;
 	}
 
-	void insertObj(const string& name, int idx, const objP obj)
+	void insertObj(const string& name, int idx, const objP& obj)
     {
 	    AssertDebug(index.find(name) == index.end(), name + " should not be present in index.");
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
@@ -213,11 +213,11 @@ public:
 	}
 
     bool contains(const objP& obj, vector<string>* path) const;
-	void setFromString(const string& in){
-		for(size_t i=0; i<in.size(); ++i){
-			setBit(i, in[i]=='1'? 1 : -1);
-		}
-	}
+//	void setFromString(const string& in){
+//		for(size_t i=0; i<in.size(); ++i){
+//			set_bit(i, in[i]=='1'? 1 : -1);
+//		}
+//	}
 	vector<int> serialize() const{
 		vector<int> out;
 		for(const auto & obj : objs){
@@ -225,21 +225,21 @@ public:
 		}
 		return out;
 	}
-	void setBit(int i, int val){
-		bool found = false;
-		for(size_t t=0; t<objs.size(); ++t){
-			objP& tmp = objs[t];
-			int gsz = tmp.globalSize();
-			if(i < gsz){
-				tmp.setBit(i, val);
-				found = true;
-				break;
-			}else{
-				i = i-gsz;
-			}
-		}
-		Assert(found, "This is a bug");
-	}
+//	void set_bit(int i, int val){
+//		bool found = false;
+//		for(size_t t=0; t<objs.size(); ++t){
+//			objP& tmp = objs[t];
+//			int gsz = tmp.globalSize();
+//			if(i < gsz){
+//				tmp.set_bit(i, val);
+//				found = true;
+//				break;
+//			}else{
+//				i = i-gsz;
+//			}
+//		}
+//		Assert(found, "This is a bug");
+//	}
 	int operator[](const string& name) const {
         int id = getId(name);
         AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");

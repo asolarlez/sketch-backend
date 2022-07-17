@@ -218,7 +218,7 @@ public:
 				for(int i=0; i<cnt; ++i){
 					//int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 					int val = get_bit(ctrl_val, i);
-					it->setBit(i, (val==1) ? 1 : 0);			
+					it->set_bit(i, (val==1) ? 1 : 0);
 				}
 			}
 			else
@@ -233,7 +233,7 @@ public:
 				for(int i=0; i<cnt; ++i){
 					//int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 					int val = get_bit(float_idx, i);
-					it->setBit(i, (val==1) ? 1 : 0);			
+					it->set_bit(i, (val==1) ? 1 : 0);
 				}
 			}
 		}
