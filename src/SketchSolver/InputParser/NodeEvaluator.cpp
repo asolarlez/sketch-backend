@@ -504,7 +504,7 @@ void NodeEvaluator::printNodeValue(int i){
 	}
 }
 
-bool NodeEvaluator::run(const VarStore &_inputs, bool do_reset_src_to_input_id, bool assert_invariant){
+bool NodeEvaluator::run(const LightVarStore &_inputs, bool do_reset_src_to_input_id, bool assert_invariant){
     funargs.clear();
     inputs = &_inputs;
     set_inputs(&_inputs, assert_invariant);

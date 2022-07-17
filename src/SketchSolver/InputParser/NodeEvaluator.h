@@ -192,10 +192,10 @@ class NodeEvaluator :
 	public NodeVisitor
 {
 private:
-    const VarStore* inputs = nullptr;
+    const LightVarStore* inputs = nullptr;
     bool src_name_id_linking_done = false;
 protected:
-    void set_inputs(const VarStore* _inputs, bool assert_invariant = true) {
+    void set_inputs(const LightVarStore* _inputs, bool assert_invariant = true) {
         inputs = _inputs;
 
         if(!src_name_id_linking_done) {
@@ -300,7 +300,7 @@ public:
     virtual void visit( TUPLE_CREATE_node &node);
     virtual void visit( TUPLE_R_node &node);
 
-	bool run(const VarStore &inputs_p, bool reset_src_to_input_id = true, bool assert_invariant = true);
+	bool run(const LightVarStore &inputs_p, bool reset_src_to_input_id = true, bool assert_invariant = true);
     void reset_src_to_input_id()
     {
         for (auto it: bdag.getNodesByType(bool_node::SRC)) {

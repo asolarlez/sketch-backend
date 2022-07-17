@@ -946,7 +946,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     auto after_prep = chrono::steady_clock::now();
     cilk_for(int i = 0;i<file->size();i++) {
-        VarStore row(*file->at(i));
+        LightVarStore row(*(LightVarStore*)file->at(i));
         bool fails = node_evaluator.run(row, false, false);
         ret->set(i, new SL::VarVal(!fails));
 
