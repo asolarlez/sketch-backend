@@ -27,8 +27,19 @@ std::chrono::steady_clock::time_point timestamp(std::chrono::steady_clock::time_
 //    print_performance_summary(cout);
 //}
 
-void print_performance_summary(ofstream& fout) {
-    fout << "{\n\t--- PERFORMANCE SCORE --- " << endl;
+string spaces(int num_spaces)
+{
+    string ret = "";
+    for(int i = 0;i<num_spaces;i++) {
+        ret += " ";
+    }
+    return ret;
+}
+
+string performance_summary_to_string()
+{
+    string ret;
+    ret += "{\n\t--- PERFORMANCE SCORE --- ""\n";
 
     vector<pair<BenchmarkScore, string> > sorted_benchmarks;
 
@@ -43,8 +54,13 @@ void print_performance_summary(ofstream& fout) {
 //    sort(sorted_benchmarks.begin(), sorted_benchmarks.end());
 
     for (const auto &it: sorted_benchmarks) {
-        fout << "\t" << setw(max_label_width) << it.second << " ::\t" << it.first.to_string() << endl;
+        ret += "\t" + spaces(max_label_width - it.second.size()) + it.second + " ::\t" + it.first.to_string() + "\n";
     }
 
-    fout << "\t--- PERFORMANCE SCORE ---\n} " << endl;
+    ret += "\t--- PERFORMANCE SCORE ---\n} ""\n";
+    return ret;
+}
+
+void print_performance_summary(ofstream& fout) {
+    fout << performance_summary_to_string();
 }

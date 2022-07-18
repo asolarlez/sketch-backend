@@ -946,8 +946,9 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     auto after_prep = chrono::steady_clock::now();
     cilk_for(int i = 0;i<file->size();i++) {
-        LightVarStore row(*(LightVarStore*)file->at(i));
-        bool fails = node_evaluator.run(row, false, false);
+        LightVarStore* row_pointer = (LightVarStore*)file->at(i);
+//        LightVarStore row(*row_pointer);
+        bool fails = node_evaluator.run(*row_pointer, false, false);
         ret->set(i, new SL::VarVal(!fails));
 
 /// FOR EXECUTION (i.e. getting the output, rather whether or not it passes).
@@ -973,7 +974,8 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     if(repeat >= 1)
     {
         cout << "DONE WITH n" << size_str << endl;
-//        print_performance_summary();
+        cout << performance_summary_to_string() << endl;
+
 //        vector<bool> vec = ret->to_vector_bool();
 //        int sum = 0;
 //        for(int i = 0;i<vec.size();i++)

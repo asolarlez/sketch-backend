@@ -39,7 +39,7 @@ void LightVarStore::operator=(const LightVarStore &to_copy){
     {
         pair<int, string> it = index_as_vec[i];
         assert(it.first == i);
-        insertObj(it.second, true_idx, objP(to_copy.objs[it.first]));
+        insertObj(it.second, true_idx, to_copy.objs[it.first]);
         true_idx++;
     }
 }

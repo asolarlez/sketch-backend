@@ -47,6 +47,9 @@ extern map<string, BenchmarkScore> timestamp_counter;
 
 std::chrono::steady_clock::time_point timestamp(std::chrono::steady_clock::time_point  prev_timestamp, const string& name);
 
+string performance_summary_to_string();
+
 void print_performance_summary(ofstream& fout);
+
 
 #endif //EXAFUNCTIONGRAPHEXECUTOR_BENCHMARKSCORE_H
