@@ -976,15 +976,16 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
         cout << "DONE WITH n" << size_str << endl;
         cout << performance_summary_to_string() << endl;
 
-//        vector<bool> vec = ret->to_vector_bool();
-//        int sum = 0;
-//        for(int i = 0;i<vec.size();i++)
-//        {
-//            sum+=vec[i];
+        vector<bool> vec = ret->to_vector_bool();
+        int sum = 0;
+        for(int i = 0;i<vec.size();i++)
+        {
+            sum+=vec[i];
 //            cout << i << " " << vec[i] << " "<< sum << endl;
-//        }
-//
-//        assert(false);
+        }
+
+        cout << "score: " << sum <<" / " << vec.size() << endl;
+        assert(false);
 
     }
 
