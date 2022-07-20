@@ -809,7 +809,7 @@ int InterpreterEnvironment::doallpairs() {
 		}
 
         bool do_solver_program =
-//                false &&
+                false &&
                 params.solver_program_file_name != "";
 
         if(do_solver_program)
