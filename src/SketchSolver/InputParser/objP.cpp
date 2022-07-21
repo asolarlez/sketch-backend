@@ -88,19 +88,4 @@ void VarStoreElementIndexView::makeArr(int start, int exclusive_end){
     }
 }
 
-VarStoreElementTrait *VarStoreElementIndexView::set_bit_helper(size_t local_bit_id, int val, bool is_head) {
-    assert(val == 0 || val == 1);
-    if(is_head) {
-        array()->set_bit(get_index(), local_bit_id, val);
-    }
-
-    if(local_bit_id<array()->get_num_bits_per_vector()){
-        return this;
-    }else{
-        AssertDebug(false, "REFACTOR THIS TO NOT ITERATE THOUGH THE ARRAY. YOU CAN JUMP TO IMMEDIATELY.");
-        AssertDebug(has_next(), "MUST HAVE NEXT, OTHERWISE set_bit_id IS OUT OF BOUNDS!!!");
-        return ((VarStoreElementIndexView*)get_next())->set_bit_helper(local_bit_id-array()->get_num_bits_per_vector(), val, false);
-    }
-}
-
 #endif

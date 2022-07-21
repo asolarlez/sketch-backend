@@ -124,9 +124,8 @@ public:
         return 0;
     }
 
-    virtual VarStoreElementTrait* set_bit(size_t i, int val) {
+    virtual void set_bit(size_t i, int val) {
         AssertDebug(false, "not implemented.");
-        return nullptr;
     }
 
     virtual inline int getInt() const {
@@ -729,34 +728,20 @@ protected:
         assert(__index == 0);
     }
 
-    VarStoreElementTrait* set_bit_helper(size_t i, int val, bool is_head = true);
-
 public:
 
 
     void makeArr(int start, int exclusive_end) override;
 
-    VarStoreElementTrait* setBit_helper(size_t i, int val, bool is_head = true)
-    {
-        assert(val == 0 || val == 1);
-        if(is_head) {
-            array()->set_bit(get_index(), i, val);
-        }
-
-        if(i<array()->get_num_bits_per_vector()){
-            return this;
-        }else{
-            auto next = get_next();
-            Assert(next != nullptr, "bad bad");
-            return ((VarStoreElementIndexView*)next)->setBit_helper(i-array()->get_num_bits_per_vector(), val, false);
-        }
-    }
-
     inline int getInt() const override {
         return array()->get_vector_as_int(get_index());
     }
-    VarStoreElementTrait* set_bit(size_t i, int val) override {
-        return set_bit_helper(i, val, true);
+    void set_bit(size_t i, int val) override {
+        assert(val == 0 || val == 1);
+        int num_bits_per_vector = array()->get_num_bits_per_vector();
+        int word_id = i / num_bits_per_vector;
+        int local_bit_id = i - word_id * num_bits_per_vector;
+        array()->set_bit(word_id, local_bit_id, val);
     }
 
 
