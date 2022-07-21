@@ -40,7 +40,6 @@ bool CEGISFinder::find(BooleanDAG* problem,
     }
     else
     {
-        assert(false);
         //claim: solution is already optimal.
         return false;
     }
@@ -127,11 +126,9 @@ bool CEGISFinder::find(BooleanDAG* problem,
 
 	mngFind.reset();
 	return true;
-	//Return true.
 }
 
-void
-CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
+void CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
 {
     map<bool_node*,  int> node_values;
     if(PARAMS->verbosity > 2){  cout<<" intsize = "<< newdag->getIntSize()<<endl; }
