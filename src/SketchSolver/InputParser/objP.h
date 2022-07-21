@@ -734,8 +734,9 @@ public:
         if(i<array()->get_num_bits_per_vector()){
             return this;
         }else{
-            Assert(get_next() != nullptr, "bad bad");
-            return ((VarStoreElementIndexView*)get_next())->setBit_helper(i-array()->get_num_bits_per_vector(), val, false);
+            auto next = get_next();
+            Assert(next != nullptr, "bad bad");
+            return ((VarStoreElementIndexView*)next)->setBit_helper(i-array()->get_num_bits_per_vector(), val, false);
         }
     }
 
@@ -820,7 +821,8 @@ public:
     }
     void printContent(ostream& out) const override{
         out << getInt();
-        if(get_next() != nullptr){ out<<"|"; get_next()->printContent(out); }
+        auto next = get_next();
+        if(next != nullptr){ out<<"|"; next->printContent(out); }
     }
 
     bool increment() override{
@@ -843,20 +845,24 @@ public:
                 array()->set_bit(get_index(), i, 0);
             }
         }
-        if(get_next()!= nullptr){ get_next()->makeRandom(sparseDeg, n-1); }
+        auto next = get_next();
+        if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
     }
 
     void makeRandom() override{/* Bias towards zeros */
         for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
             array()->set_bit(get_index(), i, (rand() & 0x3) > 0? 0 : 1);
         }
-        if(get_next()!= nullptr){ get_next()->makeRandom(); }
+        auto next = get_next();
+        if(next!= nullptr){next->makeRandom(); }
     }
     void zeroOut() override{/* Bias towards zeros */
         for(size_t i=0; i<array()->get_num_bits_per_vector(); ++i){
             array()->set_bit(get_index(), i, 0);
         }
-        if(get_next()!= nullptr){ get_next()->zeroOut(); }
+
+        auto next = get_next();
+        if(next!= nullptr){ next->zeroOut(); }
     }
 
     bool get_is_array() const override {

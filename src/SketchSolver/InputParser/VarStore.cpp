@@ -315,6 +315,7 @@ void VarStore::newVar(const string &name, int nbits, const OutType *otype, bool_
         auto obj = getObjConst(name);
         assert(obj.get_name() == name);
         assert(obj.get_size() == nbits && obj.element_size() == nbits);
+        assert(obj.get_type() == type);
         assert(obj.otype == otype);
         assert(obj.get_original_name() == original_name);
 //        assert(obj.get_source_dag_name() == source_dag_name); !!!TODO: bring this assert back.

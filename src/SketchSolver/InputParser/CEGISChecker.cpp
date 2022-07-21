@@ -596,8 +596,8 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
     { // angelic var magic xD
         if (PARAMS->angelic_model) {
 //            AssertDebug(false, "ASK ARMANDO WHAT ANGELIC HOLES ARE, THEY ARE PROBABLY CTRLS.");
-            input.newVar("__rs_node", 1, nullptr, bool_node::CTRL, "check()", "check()");
-            input.setVarVal("__rs_node", 0, nullptr, bool_node::CTRL);
+            input.newVar("__rs_node", 1, OutType::BOOL, bool_node::SRC, "__rs_node", "CEGISChecker::check(...)");
+            input.setVarVal("__rs_node", 0, OutType::BOOL, bool_node::SRC);
         }
     }
     //Return counter-example concretized dag

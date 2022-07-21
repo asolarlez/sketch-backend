@@ -12,7 +12,7 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
         if(arrSz >= 0){
             inputStore.newArr(inname, bitsize, arrSz, otype, bool_node::SRC);
         }else{
-            inputStore.newVar(inname, bitsize, otype, bool_node::SRC, "declareInput()", "declareInput()");
+            inputStore.newVar(inname, bitsize, otype, bool_node::SRC, inname, "declareInput()");
         }
         Dout( cout<<" INPUT "<<inname<<" sz = "<<bitsize<<endl );
     }else{
