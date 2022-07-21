@@ -672,6 +672,15 @@ public:
         return array()->get_total_num_bits();
     }
 
+    int _get_pure_index() const
+    {
+        return __index;
+    }
+
+    void _reset_pure_index() const
+    {
+        __index = 0;
+    }
 
     int get_index() const override {
         if(__index == -1) {
@@ -684,6 +693,7 @@ public:
 
     bool has_next() const
     {
+        assert(__index != -1);
         return __index + 1 < array()->get_num_vectors();
     }
 private:

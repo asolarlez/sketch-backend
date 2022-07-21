@@ -82,6 +82,10 @@ void VarStoreElementIndexView::makeArr(int start, int exclusive_end){
         assert(has_next());
         get_next()->makeArr(start+1, exclusive_end);
     }
+    else
+    {
+        assert(get_next() == nullptr);
+    }
 }
 
 VarStoreElementTrait *VarStoreElementIndexView::set_bit_helper(size_t local_bit_id, int val, bool is_head) {

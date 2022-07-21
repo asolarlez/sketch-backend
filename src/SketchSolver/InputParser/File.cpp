@@ -275,7 +275,6 @@ void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file
                 assert(harness->get_dag()->getIntSize() == at_int_size+1);
             }
         }
-
         res = parseFile(generic_file, floats, inputs, var_store);
     }
     assert(res == File::DONE);
@@ -304,8 +303,6 @@ File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, co
             assert(false);
             throw e;
         }
-
-
 
         if (ok == more_bits) {
             new_row->clear();

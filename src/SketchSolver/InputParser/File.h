@@ -178,6 +178,14 @@ public:
                     prevArrit = arrit;
                     arrit = arrit->get_next();
                 }
+                if(outOfRange)
+                {
+                    for(int j = 0; j < inputs->size(); j++)
+                    {
+                        auto& obj = inputs->_getObj(j);
+                        obj._reset_pure_index();
+                    }
+                }
             }
             hasCaptured = true;
         };
@@ -271,6 +279,7 @@ public:
 //            }
         }
         regval();
+
         if(outOfRange){
             return more_bits;
         }
