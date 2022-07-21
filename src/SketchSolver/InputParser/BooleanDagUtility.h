@@ -295,10 +295,6 @@ public:
         }
         else {
             assert(inlining_tree == nullptr);
-//            if(get_dag_name() == "sketch_main__Wrapper__id360__id376")
-//            {
-//                cout << "HERE" << endl;
-//            }
             inlining_tree = new LightInliningTree(this, _var_store);
             inlining_tree->get_solution();
         }

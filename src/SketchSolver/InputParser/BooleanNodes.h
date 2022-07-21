@@ -1394,18 +1394,24 @@ public:
     void save_dag_name_and_update_ctrl_name(const string& _dag_name, const string& _new_ctrl_name) {
         assert(!has_new_name);
         has_new_name = true;
-        if(original_name.empty()) {
-            original_name = name;
-        }
-        source_dag_name = _dag_name;
+        set_dag_name(_dag_name);
         name = _new_ctrl_name;
     }
 
     void set_dag_name(const string& _dag_name) {
-        assert(source_dag_name.empty());
-        source_dag_name = _dag_name;
-        assert(original_name.empty());
-        original_name = name;
+//        if (!source_dag_name.empty()) {
+//            assert(source_dag_name == _dag_name);
+//        }
+//        else {
+            source_dag_name = _dag_name;
+//        }
+        if(!original_name.empty()) {
+            assert(name.size() >= original_name.size());
+            assert(name.substr(0, original_name.size()) == original_name);
+        }
+        else {
+            original_name = name;
+        }
     }
 
 	inline static CTRL_node* create(bool toMinimize = false){

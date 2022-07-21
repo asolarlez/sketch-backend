@@ -667,7 +667,7 @@ public:
     BooleanDagLightUtility(BooleanDAG* _root_dag):
             root_dag(_root_dag), dag_name(_root_dag->get_name()), dag_id(_root_dag->get_dag_id()) {
         assert(root_dag != nullptr);
-        assert(_root_dag->getNodesByType(bool_node::UFUN).empty());
+//        assert(_root_dag->getNodesByType(bool_node::UFUN).empty()); TODO: uncomment this: disambiguate funs from ufuns.
     }
 
     BooleanDagLightUtility(BooleanDAG* _root_dag, ProgramEnvironment* __env, bool _has_been_concretized):
@@ -701,7 +701,10 @@ public:
 
     BooleanDagLightUtility* _clone(bool use_same_name = false) {
 
-        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(), "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE; BUT THERE IS NO DEEP CLONE IN THIS CLASS. HERE CLONE DOES UNIT_CLONE, WHICH IS NOT WHAT YOU WANT (DUE TO RECURSIVE SKETCHES).");
+//        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(),
+//                    "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE; "
+//                    "BUT THERE IS NO DEEP CLONE IN THIS CLASS. HERE CLONE DOES UNIT_CLONE, WHICH IS NOT WHAT YOU WANT (DUE TO RECURSIVE SKETCHES).");
+//                    TODO: uncomment this: disambiguate funs from ufuns.
 
         BooleanDAG* new_dag = nullptr;
         if(use_same_name) {
@@ -740,7 +743,11 @@ public:
 //    }
 
     BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type) {
-        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(), "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE; BUT THERE IS NO DEEP CLONE IN THIS CLASS. HERE CLONE DOES UNIT_CLONE, WHICH IS NOT WHAT YOU WANT (DUE TO RECURSIVE SKETCHES).");
+//        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(),
+//        "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE;
+//        BUT THERE IS NO DEEP CLONE IN THIS CLASS.
+//        HERE CLONE DOES UNIT_CLONE, WHICH IS NOT WHAT YOU WANT (DUE TO RECURSIVE SKETCHES).");
+//        TODO: uncomment this: disambiguate funs from ufuns.
         BooleanDagLightUtility* ret = _clone();
         vector<string>* inlined_functions = nullptr;
         ret->concretize_this_dag(var_store, var_type, inlined_functions);
@@ -754,6 +761,11 @@ public:
         concretize_this_dag(var_store, var_type, inlined_functions);
     }
 
+    void inline_this_dag() {
+        vector<string>* inlined_functions = nullptr;
+        concretize_this_dag(nullptr, bool_node::CTRL, inlined_functions);
+    }
+
     void concretize_this_dag(const VarStore* const _var_store, bool_node::Type var_type, vector<string>*& inlined_functions)
     {
         const VarStore* var_store = nullptr;
@@ -764,6 +776,8 @@ public:
             var_store = _var_store;
         }
 
+        assert(get_dag()->check_ctrl_node_source_dag_naming_invariant());
+
         if (new_way) {
             assert(var_store != nullptr);
             get_env()->doInline(*root_dag, *var_store, var_type, inlined_functions);
@@ -772,6 +786,8 @@ public:
             hardCodeINodeNoClone(root_dag, *var_store, var_type, get_env()->get_floats());
             inlined_functions = nullptr;
         }
+
+//        assert(get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
         if(_var_store == nullptr)
         {

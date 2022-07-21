@@ -153,6 +153,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 		++iter;
 		CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);	
 		eval.init(tmpin);
+        assert(eval.get_src_name_id_linking_done());
 		for(int i=0; i<40; ++i){
 			if(params.sparseArray > 0){
 				tmpin.makeRandom(params.sparseArray);
@@ -170,6 +171,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 					if(PARAMS->verbosity > 5 ){ 
 						cout<<" UNSAT ASSUMPTION "<<((eval.message != NULL)? *eval.message : "")<< endl; 
 					}
+                    eval.reset_src_to_input_id();
 					popProblem();
 					return false;
 				}
@@ -191,21 +193,26 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 						}
 					}
 				}
+                eval.reset_src_to_input_id();
 				popProblem();
 				return true;
 			}
 		}
+        assert(eval.get_src_name_id_linking_done());
 		if(expensive.size()>0){
 			for(int i=0; i<expensive.size(); ++i){
 				Assert(!hasCtrls, "This can not happen");
 				{
-					eval.run(expensive[i]);
+					eval.run(expensive[i], false);
 				}
 			}
 		}
+        assert(eval.get_src_name_id_linking_done());
 		
 		int lowerbound = 0;
 		while(true){
+
+            assert(eval.get_src_name_id_linking_done());
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS ITER "<<iter<<endl; }
 			int h;
 			
@@ -223,11 +230,13 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 			//cout << "TESTING h=" << h << " hold=" << hold << endl;
 			if (h == -1){//If this happens, nothing is gained from iterating further.
 				iter = params.simiters;
+                assert(eval.get_src_name_id_linking_done());
 				break;
 			}
 			if(hold == h){
 				//Assert(false, "CEGISSolver::simulate: This should not happen");
 				//cout<<"INFINITE LOOP!"<<endl;
+                assert(eval.get_src_name_id_linking_done());
 				break;
 			}
 			
@@ -256,8 +265,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 				tbd->lprint(cout);
 			}
 			if(PARAMS->verbosity > 8){ cout<<"SLICE SIZE = "<< tbd->size() <<endl; }
-            AssertDebug(false, "SketchFunction here doesn't accept an env, this is not tested. It might work, but it might not work either. env is needed for inlining because it stores the function_map");
-			pushProblem(new BooleanDagLightUtility(tbd));
+            pushProblem(new BooleanDagLightUtility(tbd));
 			
 			lbool rv = baseCheck(controls, tmpin);
 			
@@ -278,6 +286,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 			}
 			delete an;
 			dag->relabel();
+            assert(eval.get_src_name_id_linking_done());
 			if(rv != l_False){
 				//We didn't prove it unsatisfiable; so either it's sat or it timed out.
 				if(rv==l_True){
@@ -289,20 +298,27 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 							tmpin._getObj(bn->get_name()).makeRandom();
 						}
 					}
-					bool done = eval.run(tmpin);								
+                    assert(eval.get_src_name_id_linking_done());
+					bool done = eval.run(tmpin, false);
+                    assert(eval.get_src_name_id_linking_done());
 					if(done){
 						if(timesim){ tc.stop().print("found a cex by solver checking"); }
+                        eval.reset_src_to_input_id();
 						popProblem();
 						return true;
 					}else{
 						expensive.push_back(tmpin);
-					}					
-				}else{
+					}
+                    assert(eval.get_src_name_id_linking_done());
+				}
+                else{
 					//In this case, it timed out, 
-					cout<<"IGNORANCE!!!!"<<endl;					
+					cout<<"IGNORANCE!!!!"<<endl;
+                    assert(eval.get_src_name_id_linking_done());
 					break;
 				}
-			}else{
+			}
+            else{
 				{
 					bool_node* btoR = (*dag)[h];
 					int nval = eval.getValue(btoR);
@@ -332,15 +348,20 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 					
 					if(dag->getNodesByType(bool_node::ASSERT).empty()){
 						if(timesim){ tc.stop().print("no cex"); }
+                        eval.reset_src_to_input_id();
 						popProblem();
 						return false;
 					}
 				}
 				hold = -1;
+                assert(eval.get_src_name_id_linking_done());
 				break;
 			}
+            assert(eval.get_src_name_id_linking_done());
 		}
+        assert(eval.get_src_name_id_linking_done());
 		//cout << "simiters: " << iter << endl;
+        eval.reset_src_to_input_id();
 	}while(hasInput && iter < params.simiters && dag->size() > params.simstopsize);
 	//cout << "after simiters " << iter << endl;
 

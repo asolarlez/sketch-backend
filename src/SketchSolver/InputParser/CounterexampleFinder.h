@@ -157,10 +157,7 @@ public:
 					}
 					if(eq->father()->type==bool_node::SRC){
 						int fv = this->getValue(eq->mother());
-                        AssertDebug(false, "THIS CHANGE IS NOT TESTED!!!");
-                        VarStore* _inputs = new VarStore(*inputs);
-						bool inrange = _inputs->_getObj(eq->father()->get_name()).setValSafe(fv);
-                        inputs = _inputs;
+						bool inrange = inputs->_getObj(eq->father()->get_name()).setValSafe(fv);
 						if(!inrange){
 							message = &(an->getMsg());
 							return UNSAT;
@@ -172,14 +169,11 @@ public:
 				}
 				int jmp = bdsz;
 				for(;it != -1; it = inf->next(it)){
-                    AssertDebug(false, "THIS CHANGE IS NOT TESTED!!!");
-                    VarStore* _inputs = new VarStore(*inputs);
 					if(sparseArray > 0.000001){
-                        _inputs->_getObj(it).makeRandom(sparseArray);
+                        inputs->_getObj(it).makeRandom(sparseArray);
 					}else{
-                        _inputs->_getObj(it).makeRandom();
+                        inputs->_getObj(it).makeRandom();
 					}
-                    inputs = _inputs;
 					int jid = jumpids[it];
 					if(jid < jmp){ jmp = jid; }
 				}

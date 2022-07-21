@@ -301,8 +301,13 @@ public:
     virtual void visit( TUPLE_R_node &node);
 
 	bool run(const LightVarStore &inputs_p, bool reset_src_to_input_id = true, bool assert_invariant = true);
+    bool get_src_name_id_linking_done()
+    {
+        return src_name_id_linking_done;
+    }
     void reset_src_to_input_id()
     {
+        assert(src_name_id_linking_done);
         for (auto it: bdag.getNodesByType(bool_node::SRC)) {
             SRC_node &node = *(SRC_node *) it;
             assert(node.current_node_evaluator == this);

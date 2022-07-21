@@ -127,11 +127,8 @@ public:
                         dfi.turnOnRandomization();
                     }
                 }
-
                 try {
-
                     dfi.process(dag);
-
                 }
                 catch (BadConcretization) {
                     assert(dfi.get_failedAssert() != nullptr);
@@ -183,6 +180,13 @@ public:
         if(new_dag_to_delete != nullptr) {
             new_dag_to_delete->clear();
         }
+
+//        for(auto it : dag.getNodesByType(bool_node::CTRL)) {
+//            ((CTRL_node*)it)->set_dag_name(dag.get_name());
+//        }
+//
+//        dag.check_ctrl_node_source_dag_naming_invariant();
+
         return ;
     }
 

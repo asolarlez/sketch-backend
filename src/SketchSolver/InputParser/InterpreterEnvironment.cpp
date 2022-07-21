@@ -832,24 +832,42 @@ int InterpreterEnvironment::doallpairs() {
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness((int)i);
 			try {
+                BooleanDagLightUtility::new_way = false;
                 ProgramEnvironment *program_env =
 			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
                 BooleanDAG* bd = nullptr;
-                bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
+                bool use_prepareMiter = true;
+                if(use_prepareMiter) {
+                    bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
+                }
 
-                SketchFunction* local_harness = nullptr;
+                BooleanDagLightUtility* local_harness = nullptr;
                 if(BooleanDagLightUtility::new_way) {
                     bool inline_ahead_of_time = true;
                     if(inline_ahead_of_time) {
-                        local_harness = new SketchFunction(bd, program_env);
+                        if(use_prepareMiter) {
+                            local_harness = new SketchFunction(bd, program_env);
+                        }
+                        else
+                        {
+                            local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                            local_harness->inline_this_dag();
+                        }
                     }
                     else {
                         local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
                     }
                 }
                 else {
-                    local_harness = new SketchFunction(bd, program_env);
+                    if(use_prepareMiter) {
+                        local_harness = new SketchFunction(bd, program_env);
+                    }
+                    else
+                    {
+                        local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                        local_harness = local_harness->produce_inlined_dag(true);
+                    }
                 }
 
                 result = assertHarness(local_harness, cout, spskpairs[i].file);
@@ -1004,7 +1022,7 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
 }
 
 
-SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ostream &out, const string &file) {
+SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *harness, ostream &out, const string &file) {
 
     Assert(status == READY, "You can't do this if you are UNSAT");
     ++assertionStep;

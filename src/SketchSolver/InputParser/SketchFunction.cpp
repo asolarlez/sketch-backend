@@ -539,64 +539,9 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(
 
     (*dp)[this] = ret;
 
+//    assert(ret->get_dag()->check_ctrl_node_source_dag_naming_invariant());
+
     return ret;
-
-
-    bool flat_implementation = false;
-    if(flat_implementation)
-    //--------
-    //flattening, but it doesn't work because you need to reassign the dependencies;
-    //which you can only do recursively
-    {
-
-        set<string> *inlined_functions = get_inlined_functions();
-
-        ProgramEnvironment *_new_environment = get_env()->shallow_copy_w_new_blank_function_map();
-        FunctionMap &fresh_function_map = _new_environment->function_map;
-
-        SketchFunction *ret = nullptr;
-
-        for (const auto &ufun_name: *inlined_functions) {
-            assert(fresh_function_map.find(ufun_name) == fresh_function_map.end());
-            assert(get_env()->function_map.find(ufun_name) != get_env()->function_map.end());
-
-            assert(ufun_name == get_env()->function_map[ufun_name]->get_dag_name());
-            get_env()->function_map[ufun_name]->unit_exact_clone_in_fresh_env(
-                    get_env()->function_map[ufun_name]->dependencies, _new_environment);
-
-            assert(fresh_function_map.find(ufun_name) != fresh_function_map.end());
-            assert(fresh_function_map[ufun_name]->get_dag_name() == ufun_name);
-
-            if (ufun_name == get_dag_name()) {
-                assert(ret == nullptr);
-                assert(this == get_env()->function_map[ufun_name]);
-                ret = fresh_function_map[ufun_name];
-            }
-        }
-
-        if (ret == nullptr) {
-            //exact copy root.
-            string _ufun_name = this->get_dag_name();
-            assert(fresh_function_map.find(_ufun_name) == fresh_function_map.end());
-
-            this->unit_exact_clone_in_fresh_env(dependencies, _new_environment);
-
-            assert(fresh_function_map.find(_ufun_name) != fresh_function_map.end());
-            assert(fresh_function_map[_ufun_name]->get_dag_name() == _ufun_name);
-            ret = fresh_function_map[_ufun_name];
-        }
-
-        assert(ret != nullptr);
-
-        for (const auto &it: fresh_function_map) {
-            for (auto node: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-                UFUN_node *ufun_node = (UFUN_node *) node;
-                assert(fresh_function_map.find(ufun_node->get_ufun_name()) != fresh_function_map.end());
-            }
-        }
-
-        return ret;
-    }
 }
 
 SketchFunction* SketchFunction::deep_clone(bool only_tail)
@@ -794,9 +739,7 @@ void SketchFunction::set_dependencies(const FunctionMap* fmap) {
             replaced_labels[ufun_name] = ufun_name;
             assert(original_labels.find(ufun_name) == original_labels.end());
             original_labels[ufun_name] = ufun_name;
-
         }
-
         else
         {
             assert(replaced_labels.find(ufun_name) != replaced_labels.end());

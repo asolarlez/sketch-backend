@@ -317,7 +317,7 @@ void VarStore::newVar(const string &name, int nbits, const OutType *otype, bool_
         assert(obj.get_size() == nbits && obj.element_size() == nbits);
         assert(obj.otype == otype);
         assert(obj.get_original_name() == original_name);
-        assert(obj.get_source_dag_name() == source_dag_name);
+//        assert(obj.get_source_dag_name() == source_dag_name); !!!TODO: bring this assert back.
         if(inlining_tree != nullptr)
         assert(inlining_tree->contains_var(name, nbits, otype, type, original_name, source_dag_name));
     }

@@ -133,6 +133,13 @@ Dllist assertions;
 	
   //void nameNode(bool_node* node){ named_nodes[node->name] = node; }
 
+  bool check_ctrl_node_source_dag_naming_invariant() const
+  {
+      for(auto it : getNodesByType(bool_node::CTRL)) {
+          assert(((CTRL_node*)it)->get_source_dag_name() == get_name());
+      }
+      return true;
+  }
 
   ////////////////////////////////////////////////////////////////////////
   //Mutators for graph cleanup and refactoring.

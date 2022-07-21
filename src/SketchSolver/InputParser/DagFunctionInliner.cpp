@@ -135,6 +135,9 @@ void DagOneStepInlineAndConcretize::visit(CTRL_node &node) {
         assert(rvalue->type == bool_node::CONST ||
         (rvalue->type == bool_node::CTRL &&
         (get_type() == bool_node::SRC || !get_values().contains(rvalue->get_name()))));
+//        if(rvalue->type == bool_node::CTRL) {
+//            ((CTRL_node*)rvalue)->set_dag_name(dag->get_name());
+//        }
     }
     else if(rvalue->type == bool_node::CONST){
         assert(node.name == "#PC");

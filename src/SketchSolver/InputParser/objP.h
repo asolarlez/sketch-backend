@@ -210,6 +210,8 @@ public:
 class BitMetaVectorTrait {
 protected:
     typedef int WORD_TYPE;
+    static const int max_num_bits = 31;
+    static_assert(sizeof(WORD_TYPE)*8 == max_num_bits+1);
 public:
     virtual size_t get_num_vectors() const {
         AssertDebug(false, "not implemented.");
@@ -285,7 +287,6 @@ public:
 
 class BitMetaVector_rep_VectorInt: public BitMetaVectorTrait
 {
-    static const int max_num_bits = 8;
     int num_bits_per_vector;
     int total_num_bits;
     vector<WORD_TYPE> vector_of_vectors;
@@ -310,7 +311,7 @@ public:
 
     void resize_num_bits_per_vector(int new_num_bits_per_vector) override
     {
-        assert(new_num_bits_per_vector >= num_bits_per_vector);
+//        assert(new_num_bits_per_vector >= num_bits_per_vector);
         assert(new_num_bits_per_vector <= max_num_bits);
         num_bits_per_vector = new_num_bits_per_vector;
         total_num_bits = num_bits_per_vector * get_num_vectors();

@@ -712,11 +712,12 @@ public:
 class DagOneStepInlineAndConcretize : public DagFunctionInliner, public NodeHardcoder
 {
     set<string> inlined_functions;
+    const BooleanDAG* const dag = nullptr;
 public:
     DagOneStepInlineAndConcretize(
             const VarStore &_ctrl_store,
             const bool_node::Type tp,
-            BooleanDAG& p_dag,
+            BooleanDAG& _dag,
             const map<string, BooleanDAG*>& p_functionMap,
             map<string, map<string, string> > p_replaceMap,
             FloatManager& fm,
@@ -727,11 +728,11 @@ public:
             bool p_onlySpRandomize= false,
             int p_spRandBias = 1):
             DagFunctionInliner(
-                    p_dag, p_functionMap, std::move(p_replaceMap),
+                    _dag, p_functionMap, std::move(p_replaceMap),
                     fm, p_hcoder, p_pureFunctions, p_randomize,
                     ict, p_onlySpRandomize, p_spRandBias),
-            NodeHardcoder(PARAMS->showInputs, p_dag, _ctrl_store, tp, fm),
-            DagOptim(p_dag, fm)
+            NodeHardcoder(PARAMS->showInputs, _dag, _ctrl_store, tp, fm),
+            DagOptim(_dag, fm), dag(&_dag)
             {}
 
     void visit(CTRL_node& node) override;

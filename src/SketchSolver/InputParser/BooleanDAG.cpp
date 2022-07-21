@@ -1484,6 +1484,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
             string ctrl_name = ctrl->get_name();
             if (ctrl->get_Pcond()) {
                 assert(ctrl_name == "#PC");
+                ctrl->set_dag_name(bdag->get_name());
             } else {
                 assert(ctrl_name != "#PC");
                 if (ctrl_name.size() >= 3) {
@@ -1556,6 +1557,8 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
             bdag->named_nodes[it->first] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
         }
     }
+
+    assert(bdag->check_ctrl_node_source_dag_naming_invariant());
 
     return bdag;
 }

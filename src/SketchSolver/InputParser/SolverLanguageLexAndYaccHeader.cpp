@@ -565,7 +565,12 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 
             SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
             harness->increment_shared_ptr();
+
+            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
+
             harness->inline_this_dag();
+
+//            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
             const bool concretize_after_solving = true;
             if(!concretize_after_solving) {
@@ -589,6 +594,9 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 
             using namespace SolverLanguagePrimitives;
             auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
+
+//            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
+
             auto* problem = new ProblemAE(harness, file);
 
             HoleVarStore* sol = (solver)->solve(problem);

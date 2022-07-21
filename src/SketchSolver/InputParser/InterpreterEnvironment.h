@@ -371,7 +371,7 @@ public:
 	dag will be useless, and possibly deallocated.
 	*/
     SATSolverResult assertDAG(BooleanDAG *dag, ostream &out, const string &file);
-    SATSolverResult assertHarness(SketchFunction *harness, ostream &out, const string &file);
+    SATSolverResult assertHarness(BooleanDagLightUtility *harness, ostream &out, const string &file);
 	// SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
