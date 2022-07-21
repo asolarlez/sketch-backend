@@ -10,7 +10,7 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
     //Inputs can be redeclared to change their sizes, but not controls.
     if( !inputStore.contains(inname)){
         if(arrSz >= 0){
-            inputStore.newArr(inname, bitsize, arrSz, otype, bool_node::SRC);
+            inputStore.newArr(inname, bitsize, arrSz, otype, bool_node::SRC, inname, "declareInput()");
         }else{
             inputStore.newVar(inname, bitsize, otype, bool_node::SRC, inname, "declareInput()");
         }
@@ -28,7 +28,7 @@ void declareCtrl(VarStore & inputStore, const string& inname, int bitsize, int a
     //Inputs can be redeclared to change their sizes, but not controls.
     if( !inputStore.contains(inname)){
         if(arrSz >= 0){
-            inputStore.newArr(inname, bitsize, arrSz, otype, bool_node::CTRL);
+            inputStore.newArr(inname, bitsize, arrSz, otype, bool_node::CTRL, original_name, source_dag_name);
         }else{
             inputStore.newVar(inname, bitsize, otype, bool_node::CTRL, original_name, source_dag_name);
         }

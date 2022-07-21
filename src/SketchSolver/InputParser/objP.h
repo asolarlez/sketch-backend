@@ -47,7 +47,9 @@ public:
             bool_node::Type _type, string _name,
             const OutType* _otype, string _original_name,
             string _source_dag_name):
-            type(_type), name(std::move(_name)), otype(_otype), original_name(std::move(_original_name)), source_dag_name(std::move(_source_dag_name)) {}
+            type(_type), name(std::move(_name)), otype(_otype), original_name(std::move(_original_name)), source_dag_name(std::move(_source_dag_name)) {
+        assert(!original_name.empty() && !source_dag_name.empty());
+    }
 
     VarStoreElementHeader(const VarStoreElementHeader& old) = default;
 

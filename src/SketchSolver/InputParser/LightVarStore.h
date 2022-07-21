@@ -105,11 +105,11 @@ public:
         index[name] = idx;
     }
 
-    void newArr(const string& name, int nbits, int arrsz, OutType* otype, bool_node::Type type){
+    void newArr(const string& name, int nbits, int arrsz, OutType* otype, bool_node::Type type, const string& original_name, const string& source_dag_name){
         Assert(index.count(name)==0, name<<": This array already existed!!");
         int begidx = objs.size();
         index[name] = begidx;
-        objs.emplace_back(name, nbits, otype, type);
+        objs.emplace_back(name, nbits, otype, type, original_name, source_dag_name);
         objs[begidx].makeArr(0, arrsz);
         bitsize += nbits*arrsz;
         assert(objs[begidx].get_is_array());

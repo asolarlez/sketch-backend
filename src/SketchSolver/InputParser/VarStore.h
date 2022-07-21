@@ -13,6 +13,7 @@ private:
     LightInliningTree* inlining_tree = nullptr;
 
     void insert_name_in_original_name_to_dag_name_to_name(const string& name, string original_name, string source_dag_name) {
+        assert(!original_name.empty() && !source_dag_name.empty());
         if(original_name == "declareInput()" || original_name == "declareCtrl()" || original_name == "to_var_store()") {
             original_name += "___"+name;
         }
