@@ -660,6 +660,18 @@ public:
 
     bool get_has_been_concretized() const ;
 
+    bool has_been_inlined() const
+    {
+        for(auto _it : get_dag()->getNodesByType(bool_node::UFUN)) {
+            auto it = (UFUN_node*)_it;
+            if(get_env()->function_map.find(it->get_name()) != get_env()->function_map.end())
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     const int get_dag_id() const {
         return dag_id;
     }

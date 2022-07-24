@@ -1,0 +1,55 @@
+The following unit tests are now failing.
+Mainly due to the fact that ufuns are used to refer to unimplemented, unanumous, and actual functions
+
+      20      65     409 miniTestb385.sk was failing
+     185     428    3057 miniTestb414.sk
+      17      53     313 miniTestb433.sk
+      25      78     459 miniTestb435.sk was failing
+      25      81     470 miniTestb436.sk was failing
+      14      41     269 miniTestb465.sk
+      22      53     367 miniTestb484.sk
+      81     226    1729 miniTestb489.sk
+      22      49     416 miniTestb523.sk
+      32      98     578 miniTestb558.sk
+      34     166     894 miniTestb564_angelic.sk
+      94     283    1770 miniTestb565_angelic.sk
+     588    6967   35372 miniTestb841.sk was failing
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk was failing
+      37      65     603 miniTestb861.sk was failing
+      29      59     441 miniTestb862.sk was failing
+      13      42     262 miniTestb889.sk
+      18      50     345 miniTestb901.sk
+     863     863   17335 cur
+    2200    9804   66298 total
+
+Same goes for the following.
+They have extensions ._sk due to the fact that they take longer to run,
+so we split the execution is two batches.
+
+      30      85     460 miniTestBigInts2._sk
+     212     745    4630 miniTestb377._sk
+    2894    9528  146863 miniTestb678._sk was failing
+     204     527    4831 miniTestb895._sk
+     887     887   17836 cur
+    4227   11772  174620 total
+
+------
+
+The following unit tests were failing last stable commit;
+annotated with whether or not they are resolved or still failing.
+
++    32    123    729 miniTestb358.sk resolved
++   212    745   4630 miniTestb377.sk resolved
++    20     65    409 miniTestb385.sk still failing
++    25     78    459 miniTestb435.sk still failing
++    25     81    470 miniTestb436.sk still failing
++   140    499   2695 miniTestb567_angelic.sk resolved
++  2894   9528 146863 miniTestb678.sk still failing
++   588   6967  35372 miniTestb841.sk still failing
++    64    105    971 miniTestb860.sk still failing
++    37     65    603 miniTestb861.sk still failing
++    29     59    441 miniTestb862.sk still failing
++    75    314   1743 miniTestb869.sk resolved
++    35    104    687 miniTestb880.sk resolved
++    30     85    460 miniTestBigInts2.sk still failing

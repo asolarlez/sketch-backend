@@ -230,7 +230,10 @@ void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file
 {
     generator = std::mt19937(seed);
     BooleanDAG* problem = harness->get_dag()->clone(harness->get_dag_name());
-    harness->get_env()->doInline(*problem);
+    if(!harness->has_been_inlined()) {
+        assert(false); //Should be the case for anything that runs the original sketch path. since we are inlining before start of synthesis.
+        harness->get_env()->doInline(*problem);
+    }
     VarStore var_store;
     if(var_type == bool_node::SRC) {
         redeclareInputsAndAngelics(var_store, problem);
