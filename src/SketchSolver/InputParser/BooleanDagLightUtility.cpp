@@ -56,6 +56,7 @@ set<string> *BooleanDagLightUtility::get_inlined_functions(set<string> *ret) con
     return ret;
 }
 
+
 #include <VarStore.h>
 
 

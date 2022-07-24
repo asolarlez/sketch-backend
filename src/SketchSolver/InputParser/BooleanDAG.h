@@ -51,6 +51,11 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
 
 //extern timerclass TTMMPP;
 
+class FloatManager;
+class File;
+
+string zeros(int n);
+
 class BooleanDAG  
 {
 private:
@@ -190,6 +195,8 @@ Dllist assertions;
 	  int bid = bn->id;
 	return bid < this->size() && bid >= 0 && bn == nodes[bid];
   }
+
+  vector<bool> evaluate_inputs(const File* file, FloatManager& floats);
 
 
   const vector<bool_node*>& getNodesByType(bool_node::Type t) const;

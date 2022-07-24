@@ -1614,3 +1614,37 @@ map<string, string> BooleanDAG::get_hole_assignment_map() {
     }
     return hole_assignment_map;
 }
+
+
+#include "NodeEvaluator.h"
+#include "File.h"
+#include "BenchmarkScore.h"
+
+string zeros(int n)
+{
+    string ret = "";
+    for(int i = 0;i<n;i++) ret+= "0";
+    return ret;
+}
+
+vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats)
+{
+    NodeEvaluator node_evaluator(*this, floats);
+
+    vector<bool> ret(file->size());
+
+    string size_str = std::to_string(size());
+    size_str = zeros(4-size_str.size()) + size_str;
+
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        LightVarStore* row_pointer = (LightVarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, false);
+        ret[i] = !fails;
+    }
+    timestamp(after_prep, "exec_n"+size_str);
+
+    node_evaluator.reset_src_to_input_id();
+
+    return ret;
+}

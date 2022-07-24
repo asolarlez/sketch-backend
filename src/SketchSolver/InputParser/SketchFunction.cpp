@@ -818,15 +818,119 @@ int SketchFunction::count_passing_inputs(const File *file, bool do_assert) {
 #define cilk_sync
 #define cilk_for for
 
-string zeros(int n)
-{
-    string ret = "";
-    for(int i = 0;i<n;i++) ret+= "0";
-    return ret;
-}
 
 #include <filesystem>
 using namespace filesystem;
+//
+//SL::PolyVec* SketchFunction::old_evaluate_inputs(const File *file, unsigned int repeat) {
+//    auto start = chrono::steady_clock::now();
+//    for(int i = 0;i<repeat;i++)
+//    {
+//        evaluate_inputs(file, 0);
+//    }
+//
+//    if(repeat != 0) {
+//        timestamp(start, "repeat_n"+std::to_string(repeat));
+//    }
+//
+//    SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
+//    skfunc->increment_shared_ptr();
+//    skfunc->inline_this_dag(false);
+//
+//    BooleanDAG *the_dag = nullptr;
+//    {
+//        if(skfunc->get_dag()->get_failed_assert() != nullptr) {
+//            SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
+//            for(int i = 0;i<file->size(); i++) {
+//                ret->set(i, new SL::VarVal(0));
+//            }
+//            return ret;
+//        }
+//
+//        assert(skfunc->get_has_been_concretized());
+//        assert(skfunc->get_dag()->get_failed_assert() == nullptr);
+//        assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
+//        assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
+//
+//        the_dag = skfunc->get_dag();
+//
+//        const bool assert_num_remaining_holes_is_0 = true;
+//        if (assert_num_remaining_holes_is_0) {
+//            size_t remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
+//            AssertDebug(remaining_holes == 0,
+//                        "This dag should not havey any holes remaining, but it has " +
+//                        std::to_string(remaining_holes) + " remaining_holes.");
+//        }
+//    }
+//
+//    vector<bool> result = BooleanDagLightUtility::evaluate_inputs(the_dag, file);
+//
+//    assert(the_dag != nullptr);
+//    NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
+//
+//    SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
+//
+//    string size_str = std::to_string(the_dag->size());
+//    size_str = zeros(4-size_str.size()) + size_str;
+//
+//    timestamp(start, "compile_n"+size_str);
+//
+////    create_directory("BooleanDags");
+////    ofstream fout( "BooleanDags/""n"+size_str+"-BooleanDag-boolean_synthesis_2_2__recursive.in");
+////    if(repeat != 0) {
+////        cout << "the_dag" << endl;
+////        the_dag->mrprint(cout, true);
+////    }
+////    fout.close();
+//
+//    auto after_prep = chrono::steady_clock::now();
+//    cilk_for(int i = 0;i<file->size();i++) {
+//        LightVarStore* row_pointer = (LightVarStore*)file->at(i);
+////        LightVarStore row(*row_pointer);
+//        bool fails = node_evaluator.run(*row_pointer, false, false);
+//        ret->set(i, new SL::VarVal(!fails));
+//
+///// FOR EXECUTION (i.e. getting the output, rather whether or not it passes).
+////        if(passes) {
+////            SL::VarVal *output = SketchFunctionEvaluator::eval(concretized_clone, file->at(i));
+////            ret->push_back(output);
+////        }
+////        else {
+////            ret->push_back(nullptr);
+////        }
+//    }
+//    timestamp(after_prep, "exec_n"+size_str);
+//
+//    node_evaluator.reset_src_to_input_id();
+//    skfunc->clear();
+//
+//    timestamp(start, "total[compile + exec]_n"+size_str);
+//
+////    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
+////    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
+////    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
+//
+//    if(repeat >= 1)
+//    {
+//        cout << "DONE WITH n" << size_str << endl;
+//        cout << performance_summary_to_string() << endl;
+//
+//        vector<bool> vec = ret->to_vector_bool();
+//        int sum = 0;
+//        for(int i = 0;i<vec.size();i++)
+//        {
+//            sum+=vec[i];
+////            cout << i << " " << vec[i] << " "<< sum << endl;
+//        }
+//
+//        cout << "score: " << sum <<" / " << vec.size() << endl;
+//        assert(false);
+//
+//    }
+//
+//    return ret;
+//}
+
 
 SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
     auto start = chrono::steady_clock::now();
@@ -869,50 +973,25 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
         }
     }
 
-    assert(the_dag != nullptr);
-    NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
-
-    SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
 
     string size_str = std::to_string(the_dag->size());
     size_str = zeros(4-size_str.size()) + size_str;
-
     timestamp(start, "compile_n"+size_str);
 
-//    create_directory("BooleanDags");
-//    ofstream fout( "BooleanDags/""n"+size_str+"-BooleanDag-boolean_synthesis_2_2__recursive.in");
-//    if(repeat != 0) {
-//        cout << "the_dag" << endl;
-//        the_dag->mrprint(cout, true);
-//    }
-//    fout.close();
+    assert(the_dag != nullptr);
+    vector<bool> result = the_dag->evaluate_inputs(file, get_env()->get_floats());
 
-    auto after_prep = chrono::steady_clock::now();
-    cilk_for(int i = 0;i<file->size();i++) {
-        LightVarStore* row_pointer = (LightVarStore*)file->at(i);
-//        LightVarStore row(*row_pointer);
-        bool fails = node_evaluator.run(*row_pointer, false, false);
-        ret->set(i, new SL::VarVal(!fails));
-
-/// FOR EXECUTION (i.e. getting the output, rather whether or not it passes).
-//        if(passes) {
-//            SL::VarVal *output = SketchFunctionEvaluator::eval(concretized_clone, file->at(i));
-//            ret->push_back(output);
-//        }
-//        else {
-//            ret->push_back(nullptr);
-//        }
-    }
-    timestamp(after_prep, "exec_n"+size_str);
-
-    node_evaluator.reset_src_to_input_id();
     skfunc->clear();
 
     timestamp(start, "total[compile + exec]_n"+size_str);
 
-//    cout << "__cilkrts_get_nworkers " << __cilkrts_get_nworkers() << endl;
-//    cout << "__cilkrts_get_worker_number " << __cilkrts_get_worker_number() << endl;
-//    cout << "__cilkrts_get_total_workers " << __cilkrts_get_total_workers() << endl;
+    SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
+
+    for(int i = 0;i<result.size();i++)
+    {
+        bool passes = result[i];
+        ret->set(i, new SL::VarVal(passes));
+    }
 
     if(repeat >= 1)
     {

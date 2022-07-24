@@ -643,7 +643,6 @@ public:
     }
 };
 
-
 class BooleanDagLightUtility
 {
     BooleanDAG* const root_dag = nullptr;
@@ -657,6 +656,7 @@ class BooleanDagLightUtility
 public:
     static bool new_way;
 
+    vector<bool> evaluate_inputs();
 
     bool get_has_been_concretized() const ;
 
