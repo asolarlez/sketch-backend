@@ -1,26 +1,26 @@
-generator bit predicate(int n, bit[n] bits, int d) {
-    assert(d >= 1);
+pragma options "--bnd-inline-amnt 2";
+pragma options "--bnd-inbits 2";
+
+generator bit predicate(int n, bit[n] bits) {
     int choose = ??;
-    assert(choose <= 3);
     if(choose == 0) {
         return bits[??];
     } else if(choose == 1) {
-        return predicate(n, bits, d-1) ||
-               predicate(n, bits, d-1);
+        return predicate(n, bits) ||
+               predicate(n, bits);
     } else if (choose == 2){
-        return predicate(n, bits, d-1) &&
-               predicate(n, bits, d-1);
+        return predicate(n, bits) &&
+               predicate(n, bits);
     } else {
-        return !predicate(n, bits, d-1);
+        return !predicate(n, bits);
     }
 }
 
-bit program(int n, bit[n] bits, int d){
-    return predicate(n, bits, d);
+bit program(int n, bit[n] bits){
+    return predicate(n, bits);
 }
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+@FromFile("inputs.txt")
 harness void main(int n, bit[n] bits, bit out) {
-    int max_d = 3;
-    assert(program(n, bits, max_d) == out);
+    assert(program(n, bits) == out);
 }

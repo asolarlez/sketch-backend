@@ -1,6 +1,7 @@
 pragma options "--bnd-unroll-amnt 197";
 pragma options "--fe-output-code";
 pragma options "--bnd-arr-size 197";
+pragma options "--bnd-inline-amnt 1";
 
 void print_not() {}
 void print_unit(int id){}

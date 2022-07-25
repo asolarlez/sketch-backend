@@ -1,0 +1,17 @@
+@FromFile("inputs.txt")
+void main (int n, bit[n] bits, bit out)
+{
+  bit _out_s1 = 0;
+  program(n, bits, _out_s1);
+  assert (_out_s1 == out);
+}
+
+void program (int n, bit[n] bits, ref bit _out) {
+  bit _pac_sc_s4 = bits[0];
+  if(!(bits[0])) {
+    _pac_sc_s4 = bits[1];
+  }
+  _out = _pac_sc_s4;
+  return;
+}
+

@@ -870,6 +870,8 @@ int InterpreterEnvironment::doallpairs() {
                     }
                 }
 
+//                local_harness->get_dag()->lprint(cout);
+
                 result = assertHarness(local_harness, cout, spskpairs[i].file);
                 printControls("");
 			}
