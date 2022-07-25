@@ -35,11 +35,15 @@ public:
     }
 
     string to_string() const {
-        return "avg: " + std::to_string(get_avg()) + "; [min: " + std::to_string(min_us) + "; max: " + std::to_string(max_us) + "]; fst: " + std::to_string(first_us) + "; cnt: " + std::to_string(count) + ";";
+        return
+                "[min: " + std::to_string(min_us) +
+                "; max: " + std::to_string(max_us) + "]; " +
+                "avg: " + std::to_string(get_avg()) +
+                "; cnt: " + std::to_string(count) + ";";
     }
 
     bool operator < (const BenchmarkScore& other) const {
-        return get_avg() < other.get_avg();
+        return min_us < other.min_us;
     }
 };
 

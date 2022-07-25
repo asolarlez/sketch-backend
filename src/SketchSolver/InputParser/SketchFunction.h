@@ -220,7 +220,7 @@ public:
 
     int count_passing_inputs(const File *file, bool do_assert = true) override;
 
-    SL::PolyVec* evaluate_inputs(const File *file, unsigned int repeat = 0);
+    SL::PolyVec* evaluate_inputs(const File *file, unsigned int repeat = 999);
 
 };
 

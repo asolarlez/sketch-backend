@@ -939,10 +939,6 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
         evaluate_inputs(file, 0);
     }
 
-    if(repeat != 0) {
-        timestamp(start, "repeat_n"+std::to_string(repeat));
-    }
-
     SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
     skfunc->increment_shared_ptr();
     skfunc->inline_this_dag(false);
@@ -983,7 +979,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     skfunc->clear();
 
-    timestamp(start, "total[compile + exec]_n"+size_str);
+    timestamp(start, "compile+exec_n"+size_str);
 
     SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
 
@@ -993,10 +989,7 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
         ret->set(i, new SL::VarVal(passes));
     }
 
-    if(repeat >= 1)
-    {
-        cout << "DONE WITH n" << size_str << endl;
-        cout << performance_summary_to_string() << endl;
+    if(repeat != 0) {
 
         vector<bool> vec = ret->to_vector_bool();
         int sum = 0;
@@ -1006,9 +999,15 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 //            cout << i << " " << vec[i] << " "<< sum << endl;
         }
 
-        cout << "score: " << sum <<" / " << vec.size() << endl;
-        assert(false);
+        cout << "DONE WITH n" << size_str << endl;
 
+        cout << "score: " << sum <<" / " << vec.size() << endl;
+
+        timestamp(start, "repeat_n"+std::to_string(repeat+1));
+
+        cout << performance_summary_to_string() << endl;
+
+        assert(false);
     }
 
     return ret;

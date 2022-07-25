@@ -51,7 +51,7 @@ string performance_summary_to_string()
         max_label_width = max(max_label_width, (int) it.first.size());
     }
 
-//    sort(sorted_benchmarks.begin(), sorted_benchmarks.end());
+    sort(sorted_benchmarks.begin(), sorted_benchmarks.end());
 
     for (const auto &it: sorted_benchmarks) {
         ret += "\t" + spaces(max_label_width - it.second.size()) + it.second + " ::\t" + it.first.to_string() + "\n";
