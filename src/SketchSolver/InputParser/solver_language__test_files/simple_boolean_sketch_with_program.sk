@@ -1,0 +1,26 @@
+generator bit predicate(int n, bit[n] bits, int d) {
+    assert(d >= 1);
+    int choose = ??;
+    assert(choose <= 3);
+    if(choose == 0) {
+        return bits[??];
+    } else if(choose == 1) {
+        return predicate(n, bits, d-1) ||
+               predicate(n, bits, d-1);
+    } else if (choose == 2){
+        return predicate(n, bits, d-1) &&
+               predicate(n, bits, d-1);
+    } else {
+        return !predicate(n, bits, d-1);
+    }
+}
+
+bit program(int n, bit[n] bits, int d){
+    return predicate(n, bits, d);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+harness void main(int n, bit[n] bits, bit out) {
+    int max_d = 3;
+    assert(program(n, bits, max_d) == out);
+}
