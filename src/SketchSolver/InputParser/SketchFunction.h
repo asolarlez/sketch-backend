@@ -222,6 +222,7 @@ public:
 
     SL::PolyVec* evaluate_inputs(const File *file, unsigned int repeat = 0);
 
+    void set_dag_id_from_the_user(int dag_id_from_user_id);
 };
 
 #include "NodeEvaluator.h"

@@ -2077,7 +2077,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 void print_rule(string description, string str)
 {
-//    cout << "RULE " << description <<" TOKEN " << str << endl;
+    cout << "RULE " << description <<" TOKEN " << str << endl;
 }
 
 void yyerror(yyscan_t scanner, SolverProgramState* state, string s)

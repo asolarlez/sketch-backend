@@ -45,6 +45,7 @@ SL::VarVal * SolverProgramState::eval(){
     init_f->clear();
 
     SL::VarVal* var_val_ret = get_return_var_val();
+
     assert(var_val_ret != nullptr);
 
     assert(frames.size() == 1);

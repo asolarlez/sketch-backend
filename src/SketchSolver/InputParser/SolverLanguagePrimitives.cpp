@@ -5,6 +5,7 @@
 #include "SolverLanguagePrimitives.h"
 #include "GenericFile.h"
 #include "File.h"
+#include "BenchmarkScore.h"
 
 //#define CHECK_SOLVE
 
@@ -33,7 +34,9 @@ HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePr
         bool ret_result_determined = false;
         int solveCode = 0;
         try {
+            auto start_solver = std::chrono::steady_clock::now();
             solveCode = solver->solve();
+            timestamp(start_solver, "cegis__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+std::to_string(problem->get_dag()->size()));
 
             if (solveCode || !hasGoodEnoughSolution) {
                 holes_to_sk_val = recordSolution();

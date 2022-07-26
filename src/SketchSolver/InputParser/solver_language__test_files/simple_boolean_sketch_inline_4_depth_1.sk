@@ -1,5 +1,6 @@
-pragma options "--bnd-inline-amnt 2";
+pragma options "--bnd-inline-amnt 4";
 pragma options "--bnd-inbits 2";
+pragma options "--bnd-arr-size 3";
 
 generator bit predicate(int n, bit[n] bits) {
     int choose = ??;
@@ -20,7 +21,7 @@ bit program(int n, bit[n] bits){
     return predicate(n, bits);
 }
 
-@FromFile("inputs.txt")
-harness void main(int n, bit[n] bits, bit out) {
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+harness void main_sk(int n, bit[n] bits, bit out) {
     assert(program(n, bits) == out);
 }

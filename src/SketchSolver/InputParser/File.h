@@ -23,7 +23,7 @@ class GenericFile;
 
 //#define CHECK_FILE_INVARIANT
 
-class File: public vector<const VarStore*>
+class File: public vector<VarStore*>
 {
     #ifdef CHECK_FILE_INVARIANT
         vector<int> counterexample_ids_over_time;
@@ -45,7 +45,7 @@ class File: public vector<const VarStore*>
             it->clear();
             it = nullptr;
         }
-        vector<const VarStore*>::clear();
+        vector<VarStore*>::clear();
     }
 public:
 
@@ -352,6 +352,22 @@ public:
     void relabel(BooleanDagLightUtility *harness);
 
     File();
+
+    string to_string()
+    {
+        string ret;
+        for(int i = 0;i<size();i++)
+        {
+            ret += at(i)->to_string();
+            if(i != size()-1)
+            {
+                ret += "\n";
+            }
+        }
+        return ret;
+    }
+
+
 };
 
 class SketchFunction;

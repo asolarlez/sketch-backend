@@ -25,7 +25,8 @@ const string VERSION_INFO = "vlarrays";
 
 class CommandLineArgs{
 	public:
-    string solver_program_file_name = "/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/solver_language_program__multi_harness_stun.txt";
+//    string solver_program_file_name;
+    string solver_program_file_path;
     int input_idx;
     int seedsize;
     int seed;
@@ -207,6 +208,11 @@ class CommandLineArgs{
         costOption = 1;
 		dumpPeriodically = -1;
 	  for(int ii=0; ii<argc; ++ii){
+          if (string(argv[ii]) == "--hypersketch") {
+              solver_program_file_path = argv[ii+1];
+              input_idx = ii+2;
+              continue;
+          }
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
             input_idx = ii+1;

@@ -1013,6 +1013,10 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     return ret;
 }
 
+void SketchFunction::set_dag_id_from_the_user(int dag_id_from_user_id) {
+    get_dag()->set_dag_id_from_the_user(dag_id_from_user_id);
+}
+
 
 SL::VarVal *SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const string& _line)
 {

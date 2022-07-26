@@ -23,6 +23,22 @@ protected:
     int bitsize = 0;
 
 public:
+
+    string to_string()
+    {
+        string ret = "VarStore[";
+        for(int i = 0;i<objs.size();i++)
+        {
+            if(i > 0)
+            {
+                ret += ", ";
+            }
+            ret += objs[i].to_string();
+        }
+        ret += "]";
+        return ret;
+    }
+
     void rename(const objP& obj, const string &new_name, const string& new_source_dag);
 
     map<string, SynthInSolver*> synths;
@@ -146,6 +162,11 @@ public:
         }
     }
     int getBitsize() const{
+        int ground_truth_bitsize = 0;
+        for(int i = 0;i<objs.size();i++) {
+            ground_truth_bitsize+=objs[i].get_size();
+        }
+        AssertDebug(bitsize == ground_truth_bitsize, "MISSMATCH BETWEEN VARSTORE CHECKSUM AND sum(CHECKSUMS). HERE CHECKSUM is bitsize.");
         return bitsize;
     }
     int getIntsize() const {

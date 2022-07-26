@@ -292,6 +292,22 @@ class BitMetaVector_rep_VectorInt: public BitMetaVectorTrait
     int total_num_bits;
     vector<WORD_TYPE> vector_of_vectors;
 public:
+
+    string to_string()
+    {
+        string ret = "{";
+        for(int i = 0;i<vector_of_vectors.size();i++)
+        {
+            if(i > 0)
+            {
+                ret += ", ";
+            }
+            ret += std::to_string(vector_of_vectors[i]);
+        }
+        ret += "}";
+        return ret;
+    }
+
     BitMetaVector_rep_VectorInt(int _num_vectors, int _num_bits_per_vector):
             num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
         assert(num_bits_per_vector <= max_num_bits);
@@ -312,10 +328,11 @@ public:
 
     void resize_num_bits_per_vector(int new_num_bits_per_vector) override
     {
-//        assert(new_num_bits_per_vector >= num_bits_per_vector);
         assert(new_num_bits_per_vector <= max_num_bits);
-        num_bits_per_vector = new_num_bits_per_vector;
-        total_num_bits = num_bits_per_vector * get_num_vectors();
+        if(new_num_bits_per_vector > num_bits_per_vector) {
+            num_bits_per_vector = new_num_bits_per_vector;
+            total_num_bits = num_bits_per_vector * get_num_vectors();
+        }
     }
 
     int get_total_num_bits() override {
@@ -805,7 +822,10 @@ public:
     }
 
     void setVal(int v) override {
+        bool is_same = (v == array()->get_vector_as_int(0));
         array()->set_vector_from_int(get_index(), v);
+        bool is_same_after = (v == array()->get_vector_as_int(0));
+        assert(is_same_after);
         int len = 0;
         while(v != 0){
             len+=1;
@@ -967,6 +987,11 @@ public:
 
     void relabel(string new_name) const override {
         name = std::move(new_name);
+    }
+
+    string to_string()
+    {
+        return array->to_string();
     }
 };
 

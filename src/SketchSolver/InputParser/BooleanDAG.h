@@ -79,8 +79,7 @@ public:
         return dag_id;
     }
 private:
-
-
+    int dag_id_from_the_user = -1;
 
   int n_inputs;
   int n_outputs;
@@ -310,6 +309,10 @@ public:
     vector<string> get_ufun_names() const;
 
     map<string, string> get_hole_assignment_map();
+
+    void set_dag_id_from_the_user(int dag_id_from_the_user);
+
+    int get_dag_id_from_the_user();
 };
 
 

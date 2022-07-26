@@ -1,0 +1,31 @@
+
+
+Solver main()
+{
+    file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt", main_sk__Wrapper);
+    files = [file_0];
+    for(int i = 1;i<256;i++) {
+        file_i = file_0.clone();
+        for(int j = 0;j<8;j++) {
+            file_i.set(j, 2, i.get_bit(j));
+        }
+        files.append(file_i);
+    }
+
+    for(int i = 0;i<files.size();i++) {
+        solution = SATSolver(main_sk__Wrapper, files[i]);
+        ret = main_sk__Wrapper.produce_executable(solution);
+        //print(files[i]);
+        //print("score:", ret.evaluate_inputs(files[i]));
+        int sum = 0;
+        result = ret.evaluate_inputs(files[i]);
+        for(int i = 0;i<result.size();i++)
+        {
+            if(result[i]){
+                sum = sum + 1;
+            }
+        }
+        print(sum == result.size());
+    }
+
+}

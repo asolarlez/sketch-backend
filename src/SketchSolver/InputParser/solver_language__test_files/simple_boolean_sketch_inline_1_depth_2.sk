@@ -1,0 +1,38 @@
+pragma options "--bnd-inline-amnt 1";
+pragma options "--bnd-inbits 2";
+
+generator bit predicate(int n, bit[n] bits) {
+    int choose = ??;
+    if(choose == 0) {
+        return bits[??];
+    } else if(choose == 1) {
+        return predicate(n, bits) ||
+               predicate(n, bits);
+    } else if (choose == 2){
+        return predicate(n, bits) &&
+               predicate(n, bits);
+    } else {
+        return !predicate(n, bits);
+    }
+}
+
+bit program(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+bit two_step_program(int n, bit[n] bits){
+    if(predicate(n, bits))
+    {
+        return 1;
+    }
+    else
+    {
+        return program(n, bits);
+    }
+}
+
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+harness void main_sk(int n, bit[n] bits, bit out) {
+    assert(two_step_program(n, bits) == out);
+}

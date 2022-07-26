@@ -8,6 +8,7 @@
 #include "NodeSlicer.h"
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
+#include "BenchmarkScore.h"
 
 void CEGISSolver::addProblem(BooleanDagLightUtility *harness, File *file){
     checker->addProblem(harness, file);
@@ -171,6 +172,8 @@ bool CEGISSolver::solveCore(){
     }
 #endif
 
+    int finder_step_id = 0;
+
 	while(doMore){
 		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
@@ -237,7 +240,19 @@ bool CEGISSolver::solveCore(){
 			if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart();
 			try{
+                auto start_finder = std::chrono::steady_clock::now();
+                int dag_size = counterexample_concretized_dag->size();
+                int nctrlbs = ctrlStore.getBitsize();
                 doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged);
+                assert(dag_size == counterexample_concretized_dag->size());
+                assert(nctrlbs = ctrlStore.getBitsize());
+                timestamp(start_finder,
+                          "solve__f_"+std::to_string(counterexample_concretized_dag->get_dag_id_from_the_user())+
+                          "__step_"+std::to_string(finder_step_id)+
+                          "__n"+std::to_string(dag_size)+
+                          "__nctrlbs"+std::to_string(nctrlbs));
+                finder_step_id++;
+//                cout << performance_summary_to_string() << endl;
 
                 if(counterexample_concretized_dag != nullptr) {
                     counterexample_concretized_dag->clear();

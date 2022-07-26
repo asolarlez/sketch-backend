@@ -36,7 +36,7 @@ string spaces(int num_spaces)
     return ret;
 }
 
-string performance_summary_to_string()
+string performance_summary_to_string(bool sort_by_min)
 {
     string ret;
     ret += "{\n\t--- PERFORMANCE SCORE --- ""\n";
@@ -51,10 +51,12 @@ string performance_summary_to_string()
         max_label_width = max(max_label_width, (int) it.first.size());
     }
 
-    sort(sorted_benchmarks.begin(), sorted_benchmarks.end());
+    if(sort_by_min) {
+        sort(sorted_benchmarks.begin(), sorted_benchmarks.end());
+    }
 
     for (const auto &it: sorted_benchmarks) {
-        ret += "\t" + spaces(max_label_width - it.second.size()) + it.second + " ::\t" + it.first.to_string() + "\n";
+        ret += "\t" + it.second + spaces(max_label_width - it.second.size()) + " ::\t" + it.first.to_string() + "\n";
     }
 
     ret += "\t--- PERFORMANCE SCORE ---\n} ""\n";

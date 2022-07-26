@@ -1413,6 +1413,11 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 	BooleanDAG* bdag = new BooleanDAG(name, isModel, explict_name, true);
 	relabel();
 
+    if(dag_id_from_the_user != -1)
+    {
+        bdag->set_dag_id_from_the_user(dag_id_from_the_user);
+    }
+
 
     for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
         it != nodesByType.end(); ++it){
@@ -1647,4 +1652,13 @@ vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats)
     node_evaluator.reset_src_to_input_id();
 
     return ret;
+}
+
+void BooleanDAG::set_dag_id_from_the_user(int _dag_id_from_the_user) {
+    assert(dag_id_from_the_user == -1);
+    dag_id_from_the_user = _dag_id_from_the_user;
+}
+
+int BooleanDAG::get_dag_id_from_the_user() {
+    return dag_id_from_the_user;
 }

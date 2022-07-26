@@ -36,8 +36,8 @@ using namespace std;
 class SolverLanguage {
 public:
     SolverLanguage() = default;
-    map<string, string> eval(string solver_program_file_name, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
-         bool hasGoodEnoughSolution)
+    map<string, string> eval(string solver_program_file_path, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
+                             bool hasGoodEnoughSolution)
     {
 
         SolverProgramState state_abs =
@@ -54,16 +54,15 @@ public:
 
             int init_function_map_transformer_size = function_map.transformer_size();
 
-            cout << "READING, LEXING, AND PARSING SOLVER PROGRAM FROM FILE: " << solver_program_file_name << endl;
+            cout << "READING, LEXING, AND PARSING SOLVER PROGRAM FROM FILE: " << solver_program_file_path << endl;
 
-            parse_solver_langauge_program(state, solver_program_file_name);
+            parse_solver_langauge_program(state, solver_program_file_path);
 
             cout << "DONE PARSING SOLVER PROGRAM" << endl;
 
             SL::VarVal *var_val_ret = state->eval();
 
             {
-
                 assert(var_val_ret->is_sketch_function());
 
                 SketchFunction *_concretized_function = var_val_ret->get_skfunc(false);
@@ -169,6 +168,16 @@ public:
         ofstream bench_output(string(std::filesystem::current_path()) + "/benches/bench.out");
         print_performance_summary(bench_output);
         bench_output.close();
+
+        ofstream fout_by_name("console_PERFORMANCE_SCORE_by_name.bench");
+        fout_by_name << performance_summary_to_string() << endl;
+        fout_by_name.flush();
+        fout_by_name.close();
+
+        ofstream fout_by_min("console_PERFORMANCE_SCORE_by_min.bench");
+        fout_by_min << performance_summary_to_string(true) << endl;
+        fout_by_min.flush();
+        fout_by_min.close();
 
         return final_hole_values;
     }

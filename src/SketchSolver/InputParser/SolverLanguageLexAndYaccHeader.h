@@ -309,7 +309,7 @@ namespace SL
                     return "Solution";
                     break;
                 case input_val_type:
-                    return "InputAssignment";
+                    return "Input";
                     break;
                 case bool_val_type:
                     return "bool";
@@ -434,6 +434,21 @@ namespace SL
             }
         }
 
+        int get_int_const(bool do_count = true) const {
+            assert(!do_count);
+            if(var_val_type == int_val_type) {
+                return i;
+            }
+            else if(var_val_type == bool_val_type)
+            {
+                return b;
+            }
+            else
+            {
+                assert(false);
+            }
+        }
+
         Method *get_method(bool do_count = true, bool do_assert = true) {
             assert(is_method());
             assert(do_assert);
@@ -495,6 +510,11 @@ namespace SL
             assert(do_assert);
             return get<InputVarStore *>(input_holder, do_count, do_assert);
         }
+        InputVarStore *get_input_holder_const(bool do_count = true) const {
+            assert(var_val_type == input_val_type);
+            assert(!do_count);
+            return input_holder;
+        }
         SketchFunction *get_skfunc(bool do_count = true, bool do_assert = true) {
             assert(is_sketch_function());
             assert(do_assert);
@@ -553,57 +573,7 @@ namespace SL
             return poly_pair;
         }
 
-        string to_string(bool do_count = true, bool do_assert = true)
-        {
-            switch (var_val_type) {
-
-                case string_val_type:
-                    return "\"" + get_string(do_count, do_assert) + "\"";
-                    break;
-                case int_val_type:
-                    return std::to_string(get_int(do_count, do_assert));
-                    break;
-                case file_val_type:
-                    assert(false);
-                    break;
-                case method_val_type:
-                    assert(false);
-                    break;
-                case skfunc_val_type:
-                    assert(false);
-                    break;
-                case solution_val_type:
-                    assert(false);
-                    break;
-                case input_val_type:
-                    assert(false);
-                    break;
-                case bool_val_type:
-                    return std::to_string(get_bool(do_count, do_assert));
-                    break;
-                case void_val_type:
-                    assert(false);
-                    break;
-                case no_type:
-                    assert(false);
-                    break;
-                case float_val_type:
-                    return std::to_string(get_float(do_count, do_assert));
-                    break;
-                case poly_pair_type:
-                    assert(false);
-                    break;
-                case poly_vec_type:
-                    assert(false);
-                    break;
-                case poly_map_type:
-                    assert(false);
-                    break;
-                default:
-                    AssertDebug(false, "MISSING CASE");
-            }
-            AssertDebug(false, "MISSING CASE");
-        }
+        string to_string(bool do_count = true, bool do_assert = true);
 
         bool decrement_shared_ptr()
         {
@@ -1111,6 +1081,21 @@ void run(StateType* state);
         vector<bool> to_vector_bool();
 
         void reverse();
+
+        string to_string()
+        {
+            string ret = "[";
+            for(int i = 0;i<size();i++)
+            {
+                if(i > 0)
+                {
+                    ret+=", ";
+                }
+                ret += at(i)->to_string();
+            }
+            ret += "]";
+            return ret;
+        }
     };
 }
 
@@ -1626,7 +1611,7 @@ namespace SL {
         _relabel,
         _reset,
         _produce_deep_concretize,
-//        TODO: produce_unit_concretize
+        //TODO: produce_unit_concretize
         _inplace_deep_concretize,
         _inplace_unit_concretize,
         _produce_executable,
@@ -1639,12 +1624,16 @@ namespace SL {
         //_produce_deep_replace,
         _produce_unit_replace,
         _get_solution,
-
         //FMTL primitives:
         _declare,
-//        _vector
+        //_vector
         _vectorized_count_passing_inputs,
-        _evaluate_inputs
+        _evaluate_inputs,
+
+        _set,
+        _get_bit,
+
+
     };
 
     static bool method_str_to_method_id_map_is_defined = false;
@@ -1739,6 +1728,9 @@ namespace SL {
 
         template<typename StateType>
         VarVal *eval(SketchFunction *&skfunc, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType>
+        VarVal *eval(int the_int, StateType *state, const VarVal *const the_var_val);
     };
 
     class Assignment

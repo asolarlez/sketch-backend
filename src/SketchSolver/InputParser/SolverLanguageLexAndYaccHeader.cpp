@@ -365,6 +365,23 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
         AssertDebug(false, "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
     }
     switch (method_id) {
+        case _set: {
+            assert(params.size() == 3);
+            int row_idx = params[0]->eval(state)->get_int(true, false);
+            int col_idx = params[1]->eval(state)->get_int(true, false);
+            int val = params[2]->eval(state)->get_int(true, false);
+            if constexpr(is_same<FileType, File>::value) {
+                File* _file = static_cast<File *>(file);
+                _file->at(row_idx)->_getObj(col_idx).setVal(val);
+                assert(_file->at(row_idx)->operator[](col_idx) == val);
+            }
+            else
+            {
+                assert(false);
+            }
+            return new VarVal();
+            break;
+        }
         case _produce_subset_file:
         {
             assert(params.size() == 1);
@@ -381,7 +398,7 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
         case _get:
         {
             assert(params.size() == 1);
-            int row_id = params[0]->eval(state)->get_int();
+            int row_id = params[0]->eval(state)->get_int(true, false);
             if(is_same<FileType, File>::value) {
                 return new SL::VarVal(new InputVarStore(*((File*)file)->at(row_id)));
             }
@@ -451,6 +468,11 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
             ((File*)file)->relabel(skfunc_var_val->get_skfunc());
             skfunc_var_val->decrement_shared_ptr();
             return new VarVal();
+        }
+        case _clone:
+        {
+            return new VarVal(new FileType(file));
+            break;
         }
         default:
             assert(false);
@@ -543,7 +565,10 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             return ret;
 #else
             assert(params.size() == 2);
-            string file_name = params[0]->eval(state)->get_string();
+            VarVal* file_name_var_val = params[0]->eval(state);
+            file_name_var_val->increment_shared_ptr();
+            string file_name = file_name_var_val->get_string();
+            file_name_var_val->decrement_shared_ptr();
             SketchFunction *harness = params[1]->eval(state)->get_skfunc();
             SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
             return ret;
@@ -709,6 +734,24 @@ SL::VarVal *SL::FunctionCall::eval(
 }
 
 template<typename StateType>
+SL::VarVal *SL::FunctionCall::eval(
+        int the_int, StateType *state, const SL::VarVal* const the_var_val) {
+    assert(the_int == the_var_val->get_int_const(false));
+    switch (method_id) {
+        case _get_bit: {
+            assert(params.size() == 1);
+            int bit_idx = params[0]->eval(state)->get_int();
+            assert(bit_idx <= 31);
+            return new VarVal((bool)((the_int & (1<<bit_idx)) != 0));
+            break;
+        }
+        default:
+            assert(false);
+    }
+    assert(false);
+}
+
+template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(SL::PolyPair*& poly_pair, StateType* state, const SL::VarVal* const the_var_val)
 {
     assert(poly_pair == the_var_val->get_poly_pair_const(false));
@@ -733,7 +776,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -938,7 +981,9 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("not", _not, "namespace");
 
     add_to_method_str_to_method_id_map("join", _join, "Solution");
-    add_to_method_str_to_method_id_map("clone", _clone,  "Solution");
+    add_to_method_str_to_method_id_map("clone", _clone,  "Solution", "File");
+    add_to_method_str_to_method_id_map("set", _set,  "File");
+    add_to_method_str_to_method_id_map("get_bit", _get_bit,  "int");
 
     add_to_method_str_to_method_id_map("first", _first, "pair");
     add_to_method_str_to_method_id_map("second", _second, "pair");
@@ -1142,13 +1187,22 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         }
         case _produce_executable:
         {
-            if(params.size() == 1) {
+            if(params.size() >= 1) {
                 using namespace SolverLanguagePrimitives;
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
                 HoleVarStore *var_store = var_val_sol->get_hole_var_store();
                 SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
                 var_val_sol->decrement_shared_ptr();
+                if(params.size() == 2)
+                {
+                    int dag_id_from_the_user = params[1]->eval(state)->get_int();
+                    concretized_function->set_dag_id_from_the_user(dag_id_from_the_user);
+                }
+                else
+                {
+                    assert(params.size() == 1);
+                }
                 return new SL::VarVal(concretized_function);
             }
             else if(params.empty()) {
@@ -1230,7 +1284,13 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         }
         case _deep_clone:
         {
+            assert(params.size() <= 1);
             SketchFunction* ret = skfunc->deep_clone();
+            if(params.size() == 1)
+            {
+                int dag_id_from_user_id = params[0]->eval(state)->get_int();
+                ret->set_dag_id_from_the_user(dag_id_from_user_id);
+            }
             return new VarVal(ret);
         }
         case _unit_clone:
@@ -1897,7 +1957,7 @@ SL::VarVal *SL::VarVal::eval(StateType *state, SL::FunctionCall *func_call) {
             //do nothing
             break;
         case int_val_type:
-            AssertDebug(false, "int has no methods (yet).");
+            return eval<StateType, int>(i, state, func_call);
             //do nothing
             break;
         case generic_file_val_type:
@@ -1914,10 +1974,11 @@ SL::VarVal *SL::VarVal::eval(StateType *state, SL::FunctionCall *func_call) {
             return eval<StateType, SketchFunction*>(skfunc, state, func_call);
             break;
         case solution_val_type:
-            return eval<StateType, HoleVarStore*>(solution, state, func_call);
+            return eval<StateType, HoleVarStore *>(solution, state, func_call);
             break;
         case input_val_type:
-            AssertDebug(false, "input has no methods (yet).");
+            AssertDebug(false, "string has no methods (yet).");
+//            return eval<StateType, InputVarStore *>(input_holder, state, func_call);
             //nothing to do yet
             break;
         case bool_val_type:
@@ -1951,7 +2012,13 @@ template<typename StateType, typename T>
 SL::VarVal *SL::VarVal::eval(T& val, StateType *state, SL::FunctionCall *function_call)
 {
     assert_type_invariant<T>();
-    assert(val != nullptr);
+    if constexpr(is_pointer<T>::value) {
+        assert(val != nullptr);
+    }
+    else
+    {
+        static_assert(is_same<int, T>::value);
+    }
     increment_shared_ptr();
     SL::VarVal* ret = function_call->eval(val, state, this);
     decrement_shared_ptr();
@@ -2051,6 +2118,60 @@ bool SL::VarVal::operator<(const SL::VarVal &other) const
             assert(false);
     }
     assert(false);
+}
+
+string SL::VarVal::to_string(bool do_count, bool do_assert)
+{
+    switch (var_val_type) {
+
+        case string_val_type:
+            return "\"" + get_string(do_count, do_assert) + "\"";
+            break;
+        case int_val_type:
+            return std::to_string(get_int(do_count, do_assert));
+            break;
+        case file_val_type:
+            return file->to_string();
+            assert(false);
+            break;
+        case method_val_type:
+            assert(false);
+            break;
+        case skfunc_val_type:
+            assert(false);
+            break;
+        case solution_val_type:
+            assert(false);
+            break;
+        case input_val_type:
+            return input_holder->to_string();
+            break;
+        case bool_val_type:
+            return std::to_string(get_bool(do_count, do_assert));
+            break;
+        case void_val_type:
+            assert(false);
+            break;
+        case no_type:
+            assert(false);
+            break;
+        case float_val_type:
+            return std::to_string(get_float(do_count, do_assert));
+            break;
+        case poly_pair_type:
+            assert(false);
+            break;
+        case poly_vec_type:
+            return poly_vec->to_string();
+            assert(false);
+            break;
+        case poly_map_type:
+            assert(false);
+            break;
+        default:
+            AssertDebug(false, "MISSING CASE");
+    }
+    AssertDebug(false, "MISSING CASE");
 }
 
 SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)

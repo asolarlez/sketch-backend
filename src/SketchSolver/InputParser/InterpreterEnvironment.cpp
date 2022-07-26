@@ -809,11 +809,12 @@ int InterpreterEnvironment::doallpairs() {
 		}
 
         bool do_solver_program =
-                false &&
-                params.solver_program_file_name != "";
+//                false &&
+                params.solver_program_file_path != "";
 
         if(do_solver_program)
         {
+            cout << "RUNNING SOLVE PROGRAM AT: " << params.solver_program_file_path << endl;
             BooleanDagLightUtility::new_way = true; // indicates using InlinedAndConcretizer for concretization, rather than inlining ahead of time.
             assert(howmany == 1);
             //TODO: Incorporate: hardcoder.setCurHarness((int)i);
@@ -1005,7 +1006,7 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
 //    string solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
 
     assert(currentControls.empty());
-    currentControls = solver_language.eval(params.solver_program_file_name, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+    currentControls = solver_language.eval(params.solver_program_file_path, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
 
     for(const auto& it: program_env.function_map) {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.

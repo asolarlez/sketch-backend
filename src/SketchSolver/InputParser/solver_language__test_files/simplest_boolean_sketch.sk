@@ -1,0 +1,6 @@
+pragma options "--bnd-arr-size 2";
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+harness void main_sk(int n, bit[n] bits, bit out) {
+    assert(bits[??] == out);
+}
