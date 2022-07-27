@@ -8,38 +8,36 @@
 #include <string>
 #include "BooleanDagLightUtility.h"
 #include "CEGISSolver.h"
+#include "CEGISFinderBatchEnumeration.h"
 
 class GenericFile;
 class File;
 
-namespace SolverLanguagePrimitives
-{
+namespace SolverLanguagePrimitives {
 
-    class ProblemAE
-    {
-        GenericFile* generic_file = nullptr;
-        File* file = nullptr;
+    class ProblemAE {
+        GenericFile *generic_file = nullptr;
+        File *file = nullptr;
         string file_name;
         BooleanDagLightUtility *skfunc = nullptr;
     public:
-        explicit ProblemAE(BooleanDagLightUtility* _function, GenericFile* _generic_file = nullptr):
-                skfunc(_function), generic_file(_generic_file){}
+        explicit ProblemAE(BooleanDagLightUtility *_function, GenericFile *_generic_file = nullptr) :
+                skfunc(_function), generic_file(_generic_file) {}
 
-        explicit ProblemAE(BooleanDagLightUtility* _function, File* _file = nullptr):
-                skfunc(_function), file(_file){}
+        explicit ProblemAE(BooleanDagLightUtility *_function, File *_file = nullptr) :
+                skfunc(_function), file(_file) {}
 
-        GenericFile* get_generic_file() {
+        GenericFile *get_generic_file() {
             assert(generic_file != nullptr);
             return generic_file;
         }
 
-        File* get_file() {
+        File *get_file() {
             assert(file != nullptr);
             return file;
         }
 
-        auto get_harness()
-        {
+        auto get_harness() {
             return skfunc;
         }
 
@@ -48,8 +46,7 @@ namespace SolverLanguagePrimitives
             return skfunc->get_dag();
         }
 
-        virtual string to_string()
-        {
+        virtual string to_string() {
             cout << "TODO: ProblemAE::to_string" << endl;
             assert(false);
         }
@@ -59,32 +56,28 @@ namespace SolverLanguagePrimitives
         }
     };
 
-    class Solver_AE
-    {
+    class Solver_AE {
     public:
-        Solver_AE()= default;
+        Solver_AE() = default;
 
-        virtual HoleVarStore * solve(ProblemAE* problem)
-        { assert(false); }
-        virtual string to_string()
-        { assert(false); }
+        virtual HoleVarStore *solve(ProblemAE *problem) { assert(false); }
+
+        virtual string to_string() { assert(false); }
     };
 
-    class WrapperAssertDAG: public Solver_AE
-    {
-        CommandLineArgs& params;
-        FloatManager& floats;
-        HoleHardcoder& hardcoder;
-        SolverHelper* finder;
+    class WrapperAssertDAG : public Solver_AE {
+        CommandLineArgs &params;
+        FloatManager &floats;
+        HoleHardcoder &hardcoder;
+        SolverHelper *finder;
         bool hasGoodEnoughSolution;
 
-        ::CEGISSolver* solver;
+        ::CEGISSolver *solver;
 
-        ::SATSolver* _pfind;
+        ::SATSolver *_pfind;
     public:
 
-        void clear()
-        {
+        void clear() {
             solver->clear();
             delete solver;
             delete _pfind;
@@ -92,14 +85,13 @@ namespace SolverLanguagePrimitives
             delete this;
         }
 
-        ::CEGISSolver* get_solver()
-        {
+        ::CEGISSolver *get_solver() {
             return solver;
         }
 
-        WrapperAssertDAG(FloatManager& _floats, HoleHardcoder& _hardcoder, CommandLineArgs& _params, bool _hasGoodEnoughSolution):
-                params(_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution)
-        {
+        WrapperAssertDAG(FloatManager &_floats, HoleHardcoder &_hardcoder, CommandLineArgs &_params,
+                         bool _hasGoodEnoughSolution) :
+                params(_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution) {
             _pfind = ::SATSolver::solverCreate(params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
             if (params.outputSat) {
                 _pfind->outputSAT();
@@ -108,18 +100,54 @@ namespace SolverLanguagePrimitives
             finder->setMemo(params.setMemo && params.synthtype == ::SATSolver::MINI);
 
 
-            CEGISFinderSpec* cegisfind;
+            CEGISFinderSpec *cegisfind;
             cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
             solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats, _hardcoder);
         }
 
-        HoleVarStore* recordSolution() {
+        HoleVarStore *recordSolution() {
             return new HoleVarStore(solver->ctrlStore);
         }
 
-        HoleVarStore * solve(ProblemAE* problem) override;
+        HoleVarStore *solve(ProblemAE *problem) override;
     };
-};
 
+    class WrapperBatchEvaluatorSolver : public Solver_AE {
+        CommandLineArgs &params;
+        FloatManager &floats;
+        HoleHardcoder &hardcoder;
+        bool hasGoodEnoughSolution;
+
+        ::CEGISSolver *solver;
+
+    public:
+
+        void clear() {
+            solver->clear();
+            delete solver;
+            delete this;
+        }
+
+        ::CEGISSolver *get_solver() {
+            return solver;
+        }
+
+
+        WrapperBatchEvaluatorSolver(FloatManager &_floats, HoleHardcoder &_hardcoder, CommandLineArgs &_params,
+        bool _hasGoodEnoughSolution) :
+        params (_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution) {
+            CEGISFinderSpec *cegisfind;
+            cegisfind = new CEGISFinderBatchEnumeration(floats, params);
+            solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats, _hardcoder);
+        }
+
+        HoleVarStore *recordSolution() {
+            return new HoleVarStore(solver->ctrlStore);
+        }
+
+        HoleVarStore *solve(ProblemAE *problem) override;
+    };
+
+};
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGEPRIMITIVES_H

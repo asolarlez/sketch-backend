@@ -1,23 +1,22 @@
 pragma options "--bnd-inline-amnt 2";
-pragma options "--bnd-inbits 1";
 pragma options "--bnd-arr-size 3";
 
 bit binary_concept(bit x0, bit x1) {
     if(!x0 && !x1) {
-        return ??;
+        return ??(1);
     } else if (!x0 && x1) {
-        return ??;
+        return ??(1);
     } else if(x0 && !x1) {
-        return ??;
+        return ??(1);
     } else {
-        return ??;
+        return ??(1);
     }
 }
 
 generator bit predicate(int n, bit[n] bits) {
-    bit choose = ??;
+    bit choose = ??(1);
     if(choose == 0) {
-        return bits[??];
+        return bits[??(2)];
     } else {
         return binary_concept(predicate(n, bits), predicate(n, bits));
     }

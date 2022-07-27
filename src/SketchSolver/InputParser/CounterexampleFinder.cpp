@@ -17,7 +17,7 @@ CounterexampleFinder::fromFile(const File *file, FloatManager &floats, vector<bo
         if (PARAMS->verbosity > 12) {
             inputs->printContent(cout);
         }
-        bool rv = this->run(*inputs);
+        bool rv = this->run(*inputs, false, true);
         if (rv) {
 #ifdef CHECK_FILE_INVARIANT
             assert(file->get_used(i) == 0);

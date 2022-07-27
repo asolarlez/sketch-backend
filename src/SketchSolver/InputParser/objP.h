@@ -69,6 +69,12 @@ public:
         return source_dag_name;
     }
 
+    void override_source_dag_name(const string& _source_dag_name) {
+        if(type == bool_node::CTRL)
+            AssertDebug(!_source_dag_name.empty(), "check why this fails and act accordingly.")
+        source_dag_name = _source_dag_name;
+    }
+
     void rename(const string &new_name, const string &subdag_name) {
         name = new_name;
         source_dag_name = subdag_name;
@@ -210,9 +216,9 @@ public:
 
 class BitMetaVectorTrait {
 protected:
-    typedef int WORD_TYPE;
-    static const int max_num_bits = 31;
-    static_assert(sizeof(WORD_TYPE)*8 == max_num_bits+1);
+    typedef uint16_t WORD_TYPE;
+    static const int max_num_bits = 16;
+    static_assert(sizeof(WORD_TYPE)*8 == max_num_bits);
 public:
     virtual size_t get_num_vectors() const {
         AssertDebug(false, "not implemented.");
@@ -293,6 +299,17 @@ class BitMetaVector_rep_VectorInt: public BitMetaVectorTrait
     vector<WORD_TYPE> vector_of_vectors;
 public:
 
+    const vector<WORD_TYPE>& get_vector_of_ints() const
+    {
+        return vector_of_vectors;
+    }
+
+    void copy_bits(const BitMetaVector_rep_VectorInt *other) {
+        assert(num_bits_per_vector == other->num_bits_per_vector);
+        assert(total_num_bits == other->total_num_bits);
+        vector_of_vectors = other->vector_of_vectors;
+    }
+
     string to_string()
     {
         string ret = "{";
@@ -303,6 +320,12 @@ public:
                 ret += ", ";
             }
             ret += std::to_string(vector_of_vectors[i]);
+//            string bitvector;
+//            for(int j = 0;j<num_bits_per_vector;j++)
+//            {
+//                bitvector += (char)((int)'0'+((vector_of_vectors[i] & (1<<j)) != 0));
+//            }
+//            ret += bitvector;
         }
         ret += "}";
         return ret;
@@ -671,7 +694,7 @@ protected:
 
 public:
 
-    int arrSize() {
+    int arrSize() const override {
         return array()->get_num_vectors();
     }
 
@@ -991,7 +1014,20 @@ public:
 
     string to_string()
     {
-        return array->to_string();
+        if(is_array) {
+            return array->to_string();
+        } else
+        {
+            return std::to_string(array->get_vector_as_int(0));
+        }
+    }
+
+     const BitMetaVector_rep_CHOOSE* get_array_as_supertype() {
+        return array;
+    }
+
+    BitMetaVector_rep_CHOOSE* get_array_as_supertype_nonconst() {
+        return array;
     }
 };
 

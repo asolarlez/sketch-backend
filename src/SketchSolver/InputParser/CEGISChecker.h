@@ -37,8 +37,11 @@ class CEGISChecker
 	void growInputs(VarStore & inputStore, BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
 
 
-	void pushProblem(BooleanDagLightUtility* p){
+	void pushProblem(BooleanDagLightUtility* p, bool assert_concretized = false){
         p->increment_shared_ptr();
+        if(assert_concretized) {
+            assert(p->get_dag()->getNodesByType(bool_node::CTRL).size() == 0);
+        }
 		problemStack.push(p);
 	}
 	int problemLevel(){
@@ -62,7 +65,7 @@ class CEGISChecker
 	int curProblem; 
 
 	FloatManager& floats;
-	CEGISparams params;
+	CEGISParams params;
 
 	vector<BooleanDagLightUtility*> problems;
 

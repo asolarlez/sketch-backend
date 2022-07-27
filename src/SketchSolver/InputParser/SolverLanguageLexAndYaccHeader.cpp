@@ -553,6 +553,7 @@ void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness)
     sol->set_inlining_tree(harness_inlining_tree);
 }
 
+
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
 {
@@ -655,6 +656,86 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             return new SL::VarVal(sol);
             break;
         }
+        case _batch_evaluation_solver:
+        {
+            assert(params.size() == 2);
+
+            VarVal* param_var_val = params[0]->eval(state);
+            param_var_val->increment_shared_ptr();
+            SketchFunction* skfunc = param_var_val->get_skfunc();
+
+            vector<string> prev_holes = skfunc->get_deep_holes();
+
+//            BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
+//            harness->increment_shared_ptr();
+
+            SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
+            harness->increment_shared_ptr();
+
+            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
+
+            harness->inline_this_dag();
+
+//            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
+
+            const bool concretize_after_solving = true;
+            if(!concretize_after_solving) {
+                param_var_val->decrement_shared_ptr();
+            }
+
+            vector<string> after_holes = harness->get_deep_holes();
+            sort(prev_holes.begin(), prev_holes.end());
+            sort(after_holes.begin(), after_holes.end());
+            assert(prev_holes.size() == after_holes.size());
+
+            FILE_TYPE* file = nullptr;
+
+#ifdef USE_GENERIC_FILE
+            file = params[1]->eval(state)->get_generic_file();
+#else
+            file = params[1]->eval(state)->get_file();
+            assert(file->like_unused());
+#endif
+            assert(file != nullptr);
+
+            using namespace SolverLanguagePrimitives;
+            auto* solver = new WrapperBatchEvaluatorSolver(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
+
+//            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
+
+            auto* problem = new ProblemAE(harness, file);
+
+            HoleVarStore* sol = (solver)->solve(problem);
+
+            set_inlining_tree(sol, harness);
+
+//            assert(sol->get_inlining_tree() == nullptr);
+//
+//            VarStore* append_sol = harness->get_inlining_tree()->get_solution();
+//            LightInliningTree* harness_inlining_tree = new LightInliningTree(harness->get_inlining_tree());
+//            harness_inlining_tree->set_var_store(sol);
+//            sol->disjoint_join_with(*append_sol);
+//            sol->set_inlining_tree(harness_inlining_tree);
+
+            if(concretize_after_solving) {
+                //make sure produce_concretize-s
+                SketchFunction *to_test = skfunc->produce_concretization(sol, bool_node::CTRL, true, true, true);
+                to_test->increment_shared_ptr();
+                to_test->clear();
+                param_var_val->decrement_shared_ptr();
+            }
+
+#ifndef USE_GENERIC_FILE
+            file->reset();
+            assert(file->like_unused());
+#endif
+            harness->clear();
+            solver->clear();
+            delete problem;
+
+            return new SL::VarVal(sol);
+            break;
+        }
         case _print:
         {
             assert(!params.empty());
@@ -703,6 +784,13 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             assert(params.size() == 1);
             bool val = params[0]->eval(state)->get_bool(true, false);
             return new VarVal((bool)!val);
+        }
+        case _timestamp:
+        {
+            assert(params.size() == 0);
+            cout << "timestamp" << endl;
+//            state->print_hypersketch_timestamp();
+            return new VarVal();
         }
         default:
             assert(false);
@@ -974,8 +1062,10 @@ void SL::init_method_str_to_method_id_map()
     assert(method_str_to_method_id_map_is_defined == false);
     add_to_method_str_to_method_id_map("File", _file, "namespace");
     add_to_method_str_to_method_id_map("SATSolver", _sat_solver, "namespace");
+    add_to_method_str_to_method_id_map("BatchEnumerationSolver", _batch_evaluation_solver, "namespace");
 //    add_to_method_str_to_method_id_map("Solution", _Solution, "namespace");
     add_to_method_str_to_method_id_map("print", _print, "namespace");
+    add_to_method_str_to_method_id_map("timestamp", _timestamp, "namespace");
     add_to_method_str_to_method_id_map("float", _to_float, "namespace");
     add_to_method_str_to_method_id_map("assert", _assert, "namespace");
     add_to_method_str_to_method_id_map("not", _not, "namespace");

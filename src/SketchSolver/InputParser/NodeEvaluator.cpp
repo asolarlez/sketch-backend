@@ -164,10 +164,15 @@ void NodeEvaluator::visit( SRC_node& node ){
 		if(vecvalues[node.id] != NULL){
 			delete vecvalues[node.id];
 		}
+
+        assert(node.local_id_in_inputs);
+        assert(node.current_node_evaluator == this);
 		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObjConst(node.local_id_in_inputs)));
 		// for SRC arrays, anything beyond bounds are 0 by default
 		setbn(node, 0);
 	}else{
+        assert(node.local_id_in_inputs >= 0);
+        assert(node.current_node_evaluator == this);
         setbn(node, (*inputs)[node.local_id_in_inputs]);
     }
 }
@@ -192,7 +197,14 @@ void NodeEvaluator::visit( NOT_node& node ){
 void NodeEvaluator::visit( CTRL_node& node ){
 	// TODO xzl: will we encounter angelic array here?
 	//cout << "NodeEvaluator CTRL " << node.lprint() << " " << node.get_Angelic() << " " << node.getArrSz() << " " << node.get_nbits() << endl;
-	setbn(node, (*inputs)[node.get_name()]);
+
+    if(node_type == bool_node::CTRL) {
+        assert(node.local_id_in_inputs != -1);
+        assert(node.current_node_evaluator == this);
+        setbn(node, (*inputs)[node.local_id_in_inputs]);
+    } else {
+        setbn(node, (*inputs)[node.get_name()]);
+    }
 }
 
 
@@ -504,7 +516,7 @@ void NodeEvaluator::printNodeValue(int i){
 	}
 }
 
-bool NodeEvaluator::run(const LightVarStore &_inputs, bool do_reset_src_to_input_id, bool assert_invariant){
+bool NodeEvaluator::run(const VarStore &_inputs, bool do_reset_src_to_input_id, bool assert_invariant){
     funargs.clear();
     inputs = &_inputs;
     set_inputs(&_inputs, assert_invariant);

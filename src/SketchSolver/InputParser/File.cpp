@@ -332,6 +332,12 @@ File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, co
     return DONE;
 }
 
+int File::num_inputs_per_row() const {
+    assert(!empty());
+    int ret = at(0)->size();
+    return ret;
+}
+
 
 File::File() = default;
 

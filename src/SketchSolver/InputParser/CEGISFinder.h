@@ -67,12 +67,11 @@ public:
 
 };
 
-
 class CEGISFinder: public CEGISFinderSpec  {
 	vector<Tvalue> find_node_ids;
 	vector<Tvalue> find_history;
 	bool stoppedEarly;
-	CEGISparams params;
+	CEGISParams params;
 	SolverHelper& dirFind;
 	SATSolver& mngFind;
 

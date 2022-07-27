@@ -51,7 +51,7 @@ class CEGISSolver
 protected:
 
 	FloatManager& floats;
-	CEGISparams params;
+	CEGISParams params;
 
 	vector<BooleanDagLightUtility*> problems;
     vector<File*> files;

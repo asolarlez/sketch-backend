@@ -117,11 +117,13 @@ Dllist assertions;
   INTER_node* create_inputs(int n, OutType* type, const string& gen_name=string("INPUT"), int arrSz=-1, int tupDepth = -1);
   INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false, bool angelic = false, bool spConcretize = false, int max = -1, bool isFloat = false, bool isSpeical = false);
 
-  void growInputIntSizes();
+    void growInputIntSizes();
 
-  void disownNodes(){
-	  ownsNodes=false;
-  }
+    vector<CTRL_node*> get_CTRL_nodes() const;
+
+    void disownNodes(){
+        ownsNodes=false;
+    }
 
   int getIntSize(){
 	return intSize;
@@ -183,7 +185,7 @@ Dllist assertions;
   
   bool_node* get_node(const string& name);  
   bool_node* unchecked_get_node(const string& name);
-  iterator begin(){ return nodes.begin(); }
+  iterator begin() { return nodes.begin(); }
   iterator end(){ return nodes.end(); }
 
   reverse_iterator rbegin(){ return nodes.rbegin(); }
@@ -195,7 +197,8 @@ Dllist assertions;
 	return bid < this->size() && bid >= 0 && bn == nodes[bid];
   }
 
-  vector<bool> evaluate_inputs(const File* file, FloatManager& floats);
+  vector<bool> evaluate_inputs(const File* file, FloatManager& floats, int repeats = 1);
+    int get_passing_input_id(const File* file, FloatManager& floats);
 
 
   const vector<bool_node*>& getNodesByType(bool_node::Type t) const;

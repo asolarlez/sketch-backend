@@ -26,7 +26,7 @@ public:
 
     string to_string()
     {
-        string ret = "VarStore[";
+        string ret = "{";
         for(int i = 0;i<objs.size();i++)
         {
             if(i > 0)
@@ -35,7 +35,7 @@ public:
             }
             ret += objs[i].to_string();
         }
-        ret += "]";
+        ret += "}";
         return ret;
     }
 
@@ -260,9 +260,11 @@ public:
         return ret_it->second;
     }
     objP& _getObj(int id){
+        assert(id >= 0 && id < objs.size());
         return objs[id];
     }
     const objP& getObjConst(int id) const{
+        assert(id >= 0 && id < objs.size());
         return objs[id];
     }
     friend LightVarStore old_join(const LightVarStore& v1 , const LightVarStore& v2);
@@ -279,6 +281,21 @@ public:
         for(int i = 0;i<objs.size();i++)
         {
             objs[i].relabel(inputs[i]->get_name());
+            index[objs[i].get_name()] = i;
+        }
+    }
+
+    void relabel(const vector<CTRL_node*>& inputs) {
+
+        Assert(synths.empty(), "TODO: implement copy logic for synths.");
+        Assert(synthouts.empty(), "TODO: implement copy logic for synthouths.");
+
+        assert(inputs.size() == objs.size());
+        index.clear();
+        for(int i = 0;i<objs.size();i++)
+        {
+            objs[i].relabel(inputs[i]->get_name());
+            objs[i].override_source_dag_name(inputs[i]->get_source_dag_name());
             index[objs[i].get_name()] = i;
         }
     }

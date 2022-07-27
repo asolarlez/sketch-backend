@@ -29,6 +29,14 @@ include_directories(
 
 add_executable(sketch main.cpp
 
+        src/SketchSolver/InputParser/FileForVectorizedInterpreter.h
+        src/SketchSolver/InputParser/DagLikeProgramInterpreter.cpp
+        src/SketchSolver/InputParser/HyperParams.h
+        src/SketchSolver/InputParser/test_cases.cpp
+        src/SketchSolver/InputParser/test_cases.h
+        src/SketchSolver/InputParser/types.cpp
+        src/SketchSolver/InputParser/types.h
+
         src/SketchSolver/BasicError.h
         src/SketchSolver/SolverInterfaces/SATSolver.h
         src/SketchSolver/SolverInterfaces/SATSolver.cpp
@@ -139,7 +147,8 @@ add_executable(sketch main.cpp
         src/SketchSolver/InputParser/FloatSupport.h 			
         src/SketchSolver/InputParser/IntToFloatRewriteDag.h 
         src/SketchSolver/InputParser/CEGISChecker.h 
-        src/SketchSolver/InputParser/CEGISFinder.h 
+        src/SketchSolver/InputParser/CEGISFinder.h
+        src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.h
         src/SketchSolver/InputParser/CounterexampleFinder.h 
         src/SketchSolver/InputParser/solver_language_yacc.h 
         src/SketchSolver/InputParser/SolverLanguageLexAndYaccHeader.h 
@@ -147,7 +156,7 @@ add_executable(sketch main.cpp
         src/SketchSolver/InputParser/SketchFunction.h 
         src/SketchSolver/InputParser/ProgramEnvironment.h 
         src/SketchSolver/InputParser/File.h 
-        src/SketchSolver/InputParser/GenericFile.h 
+        src/SketchSolver/InputParser/GenericFile.h
         src/SketchSolver/InputParser/BooleanDagLightUtility.h 
         src/SketchSolver/InputParser/BooleanDagUtility.h 
         src/SketchSolver/InputParser/FunctionMapTransformerLanguage.h 
@@ -213,7 +222,8 @@ add_executable(sketch main.cpp
         src/SketchSolver/InputParser/NodeHardcoder.cpp  
         src/SketchSolver/InputParser/Tvalue.cpp 
         src/SketchSolver/InputParser/CEGISChecker.cpp 
-        src/SketchSolver/InputParser/CEGISFinder.cpp 
+        src/SketchSolver/InputParser/CEGISFinder.cpp
+        src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.cpp
         src/SketchSolver/InputParser/CounterexampleFinder.cpp 
         src/SketchSolver/InputParser/solver_language_yacc.cpp 
         src/SketchSolver/InputParser/SketchFunction.cpp 
@@ -233,4 +243,4 @@ add_executable(sketch main.cpp
         src/SketchSolver/InputParser/function_map_transformer_language_yacc.cpp 
         src/SketchSolver/InputParser/SolverLanguage.cpp 
         src/SketchSolver/InputParser/SolverLanguagePrimitives.cpp
-        src/SketchSolver/InputParser/objP.cpp src/SketchSolver/InputParser/objP.h src/SketchSolver/InputParser/BenchmarkScore.cpp src/SketchSolver/InputParser/BenchmarkScore.h src/SketchSolver/InputParser/LightVarStore.cpp src/SketchSolver/InputParser/LightVarStore.h)
+        src/SketchSolver/InputParser/objP.cpp src/SketchSolver/InputParser/objP.h src/SketchSolver/InputParser/BenchmarkScore.cpp src/SketchSolver/InputParser/BenchmarkScore.h src/SketchSolver/InputParser/LightVarStore.cpp src/SketchSolver/InputParser/LightVarStore.h src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.cpp src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.h src/SketchSolver/InputParser/vectorized_interpreter_main.cpp src/SketchSolver/InputParser/vectorized_interpreter_main.h src/SketchSolver/InputParser/FileForVectorizedInterpreter.cpp src/SketchSolver/InputParser/DagLikeProgramInterpreter.h)

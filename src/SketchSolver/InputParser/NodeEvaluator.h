@@ -192,27 +192,77 @@ class NodeEvaluator :
 	public NodeVisitor
 {
 private:
-    const LightVarStore* inputs = nullptr;
+    const VarStore* inputs = nullptr;
     bool src_name_id_linking_done = false;
+    bool_node::Type node_type = bool_node::NO_TYPE;
 protected:
-    void set_inputs(const LightVarStore* _inputs, bool assert_invariant = true) {
+    void set_inputs(const VarStore* _inputs, bool assert_invariant = true) {
         inputs = _inputs;
 
-        if(!src_name_id_linking_done) {
-            for (auto it: bdag.getNodesByType(bool_node::SRC)) {
-                SRC_node &node = *(SRC_node *) it;
-                assert(node.current_node_evaluator == nullptr);
-                node.current_node_evaluator = this;
-                node.local_id_in_inputs = inputs->getId(node.get_name());
-            }
-            src_name_id_linking_done = true;
-        }
-        else if(assert_invariant)
+        if(_inputs->size() == 0)
         {
-            for (auto it: bdag.getNodesByType(bool_node::SRC)) {
-                SRC_node &node = *(SRC_node *) it;
-                assert(node.current_node_evaluator == this);
-                assert(inputs->getObjConst(node.local_id_in_inputs).get_name() == node.get_name());
+            return;
+        }
+
+        assert(_inputs->size() != 0);
+        if(node_type == bool_node::NO_TYPE) {
+            node_type = _inputs->getObjConst(0).get_type();
+            for (int i = 1; i < _inputs->size(); i++) {
+                assert(_inputs->getObjConst(i).get_type() == node_type);
+            }
+        } else{
+            assert(src_name_id_linking_done);
+        }
+
+        if(node_type == bool_node::SRC) {
+            if (!src_name_id_linking_done) {
+                for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+                    SRC_node &node = *(SRC_node *) it;
+                    assert(node.current_node_evaluator == nullptr);
+                    node.current_node_evaluator = this;
+                    node.local_id_in_inputs = inputs->getId(node.get_name());
+                }
+                src_name_id_linking_done = true;
+            } else if (assert_invariant) {
+                for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+                    SRC_node &node = *(SRC_node *) it;
+                    assert(node.current_node_evaluator == this);
+                    assert(inputs->getObjConst(node.local_id_in_inputs).get_name() == node.get_name());
+                }
+            }
+        }
+        else
+        {
+            assert(node_type == bool_node::CTRL);
+            if (!src_name_id_linking_done) {
+                for (auto it: bdag.getNodesByType(bool_node::CTRL)) {
+                    CTRL_node &node = *(CTRL_node *) it;
+                    assert(node.current_node_evaluator == nullptr);
+                    node.current_node_evaluator = this;
+                    if(inputs->contains(node.get_name())) {
+                        node.local_id_in_inputs = inputs->getId(node.get_name());
+                    } else {
+                        node.local_id_in_inputs = inputs->get_id_from_original_name(node.get_original_name());
+                    }
+                }
+                src_name_id_linking_done = true;
+            } else if (assert_invariant) {
+                int ctrl_node_id = 0;
+                auto nodes_by_type = bdag.getNodesByType(bool_node::CTRL);
+                for (auto it: nodes_by_type) {
+                    CTRL_node &node = *(CTRL_node *) it;
+                    assert(node.current_node_evaluator == this);
+                    assert(node.local_id_in_inputs >= 0);
+                    auto local_obj = inputs->getObjConst(node.local_id_in_inputs);
+//                    assert(local_obj.get_original_name() == node.get_original_name());
+                    assert(local_obj.get_is_array() == node.isArr());
+                    assert(local_obj.element_size() == node.get_nbits());
+                    assert(local_obj.arrSize() == node.getArrSz()
+                            || (node.getArrSz() == -1 &&
+                                    !local_obj.get_is_array() &&
+                                    local_obj.arrSize() == 1));
+                    ctrl_node_id++;
+                }
             }
         }
     }
@@ -300,21 +350,39 @@ public:
     virtual void visit( TUPLE_CREATE_node &node);
     virtual void visit( TUPLE_R_node &node);
 
-	bool run(const LightVarStore &inputs_p, bool reset_src_to_input_id = true, bool assert_invariant = true);
+	bool run(const VarStore &inputs_p, bool reset_src_to_input_id = true, bool assert_invariant = true);
     bool get_src_name_id_linking_done()
     {
         return src_name_id_linking_done;
     }
     void reset_src_to_input_id()
     {
-        assert(src_name_id_linking_done);
-        for (auto it: bdag.getNodesByType(bool_node::SRC)) {
-            SRC_node &node = *(SRC_node *) it;
-            assert(node.current_node_evaluator == this);
-            node.current_node_evaluator = nullptr;
-            node.local_id_in_inputs = -1;
+        if(node_type == bool_node::SRC) {
+            assert(src_name_id_linking_done);
+            for (auto it: bdag.getNodesByType(bool_node::SRC)) {
+                SRC_node &node = *(SRC_node *) it;
+                assert(node.current_node_evaluator == this);
+                node.current_node_evaluator = nullptr;
+                node.local_id_in_inputs = -1;
+            }
+            src_name_id_linking_done = false;
+            node_type = bool_node::NO_TYPE;
         }
-        src_name_id_linking_done = false;
+        else if(node_type == bool_node::CTRL) {
+            assert(src_name_id_linking_done);
+            for (auto it: bdag.getNodesByType(bool_node::CTRL)) {
+                CTRL_node &node = *(CTRL_node *) it;
+                assert(node.current_node_evaluator == this);
+                node.current_node_evaluator = nullptr;
+                node.local_id_in_inputs = -1;
+            }
+            src_name_id_linking_done = false;
+            node_type = bool_node::NO_TYPE;
+        }
+        else
+        {
+            assert(false);
+        }
     }
 	void display(ostream& out);
 	// get unchanged node, but only starting from start

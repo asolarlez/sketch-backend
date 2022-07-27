@@ -127,7 +127,7 @@ private:
     int depth;
   
 	inline bool_node* mother() const{
-		Assert(numparents >= 1, ";lkhyoyui");
+		AssertDebug(numparents >= 1, ";lkhyoyui");
 		return parents[0];
 	}
 	inline bool_node* father() const{
@@ -1325,6 +1325,12 @@ public:
 	}
 	virtual bool_node* clone(bool copyChildren = true){
         return new SRC_node(*this, copyChildren);};
+
+    virtual string mrprint()const{
+        stringstream str;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<< nbits << " | " << local_id_in_inputs;
+        return str.str();
+    }
 };
 
 /* Output Node */
@@ -1366,6 +1372,10 @@ class CTRL_node: public INTER_node{
 	int arrSz;
 	bool spConcretize;
 public:
+
+    NodeEvaluator* current_node_evaluator = nullptr;
+    int local_id_in_inputs = -1;
+
 	bool isFloat;
 	bool isTuple;
 	string tupleName;
@@ -1531,7 +1541,7 @@ public:
 	}
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits << " | " << local_id_in_inputs << endl;
         if (hasRange) {
             str << " " << low << " " << high;
         }

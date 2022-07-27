@@ -276,7 +276,8 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
             print("sketch_main_lvl1.num_holes()", sketch_main_lvl1.num_holes());
 
             File file = File(file_name, sketch_main_lvl1);
-            local_sketch_main_lvl1_programs = best_effort_programs(sketch_main_lvl1, file, num_trials, num_rows_per_sample);
+            local_num_trials = num_trials * (select_best-i) * (select_best-j);
+            local_sketch_main_lvl1_programs = best_effort_programs(sketch_main_lvl1, file, local_num_trials, num_rows_per_sample);
 
             tmp = [];
 
@@ -299,7 +300,16 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
     seed_main_lvl1.sort();
     seed_main_lvl1.reverse();
 
-    assert(seed_main_lvl1.size() == ((select_best*select_best)*num_trials), "FAILED: seed_main_lvl1.size() == (select_best*select_best)");
+    expected_size_of_seed_main_lvl1 = 0;
+    for(int i = 0;i<select_best;i++)
+    {
+        for(int j = 0;j<select_best;j++)
+        {
+            expected_size_of_seed_main_lvl1 = expected_size_of_seed_main_lvl1 + num_trials*(select_best-i)*(select_best-j);
+        }
+    }
+
+    assert(seed_main_lvl1.size() == expected_size_of_seed_main_lvl1, "FAILED: seed_main_lvl1.size() != expected_size_of_seed_main_lvl1");
 
     return seed_main_lvl1;
 }
@@ -309,47 +319,67 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
 
-    num_trials = 3;
-    num_rows_per_sample = 3;
-    select_best = 1;
-    assert(num_trials >= select_best);
+    big_num_trials = 100;
+    num_rows_per_sample = 6;
+    select_best = 4;
+    assert(big_num_trials >= select_best);
+    small_num_trials = 2;
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
     sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", sketch_main_lvl0_sub);
 
     File file = File(file_name, sketch_main_lvl0);
-    left_lvl0_programs = best_effort_programs(sketch_main_lvl0, file, num_trials, num_rows_per_sample);
+    left_lvl0_programs = best_effort_programs(sketch_main_lvl0, file, big_num_trials, num_rows_per_sample);
     print("DONE left_lvl0_programs");
-    right_lvl0_programs = best_effort_programs(sketch_main_lvl0, file, num_trials, num_rows_per_sample);
+    right_lvl0_programs = best_effort_programs(sketch_main_lvl0, file, big_num_trials, num_rows_per_sample);
     print("DONE right_lvl0_programs");
 
     assert(left_lvl0_programs.size() >= select_best);
     assert(right_lvl0_programs.size() >= select_best);
 
-    seed_main_lvl1 = synthesize_composite_programs_from_parts(left_lvl0_programs, right_lvl0_programs, select_best, file_name, num_trials, num_rows_per_sample);
+    seed_main_lvl1 = synthesize_composite_programs_from_parts(left_lvl0_programs, right_lvl0_programs, select_best, file_name, small_num_trials, num_rows_per_sample);
 
     all_programs = [];
     concatenate(all_programs, seed_main_lvl1);
-
 
     improved_main_lvl1 = [];
 
     int prev_best = 0-1;
     int new_best = seed_main_lvl1.get(0).first().first();
 
-    assert(num_trials >= select_best, "fails:", num_trials, "!>=", select_best);
+    assert(big_num_trials >= select_best, "fails:", big_num_trials, "!>=", select_best);
+
+    {
+        all_programs.sort();
+        all_programs.reverse();
+
+        assert(seed_main_lvl1.size() >= 1);
+        assert(all_programs.size() >= 1);
+        assert(all_programs.size() >= seed_main_lvl1.size());
+        assert(all_programs.get(0).first().first() == seed_main_lvl1.get(0).first().first());
+
+    	for(int i = 0; i<all_programs.size(); i++)
+    	{
+    	    element = all_programs.get(i);
+    	    score = element.first().first();
+    	    n = file.size();
+    	    print("count ", score, "/", n, "= (", ((float(100) * float(score)) / float(n)), "%)");
+    	}
+    	print("Done sorted all_programs scores");
+    	print("best_from_all_programs = ", all_programs.get(0).first().first());
+    }
 
     int iter_id = 0;
 
-
     if(false)
     {
-        num_trials = 4;
+        big_num_trials = 4;
         num_rows_per_sample = 6;
         select_best = 2;
-        assert(num_trials >= select_best);
+        assert(big_num_trials >= select_best);
     }
-    while(new_best > prev_best)
+    //while(true)
+    while((new_best > prev_best))
     {
         num_rows_per_sample++;
         print("NEW_ITERATION", iter_id);
@@ -368,7 +398,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
             select_best = seed_main_lvl1.size();
         }
 
-        outer_loop_select_best = select_best;
+        outer_loop_select_best = select_best*select_best;
 
         if(outer_loop_select_best > seed_main_lvl1.size())
         {
@@ -409,7 +439,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
 
                     //resynthesize lvl0 left and right predicates.
 
-                    local_num_trials = num_trials*select_best;
+                    local_num_trials = small_num_trails*(select_best - i);
 
                     left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
                     left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
@@ -462,10 +492,11 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
 
                     //commented out in ordeer to test the existence of solutions in the very previous statement.
                     if(true){
+                        local_num_trials = small_num_trials;
                         new_synthesized_lvl1 =
                             synthesize_composite_programs_from_parts(
                                 left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
-                                select_best, file_name, num_trials, num_rows_per_sample);
+                                select_best, file_name, local_num_trials, num_rows_per_sample);
 
                         print("DONE (i = ", i, ") new_synthesized_lvl1");
 
@@ -515,15 +546,15 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
     }
 
 
-    assert(new_best == prev_best);
+    assert(new_best == prev_best, "new_best != prev_best.");
 
     all_programs.sort();
     all_programs.reverse();
 
-    assert(seed_main_lvl1.size() >= 1);
-    assert(all_programs.size() >= 1);
-    assert(all_programs.size() >= seed_main_lvl1.size());
-    assert(all_programs.get(0).first().first() == seed_main_lvl1.get(0).first().first());
+    assert(seed_main_lvl1.size() >= 1, "#1");
+    assert(all_programs.size() >= 1, "#2");
+    assert(all_programs.size() >= seed_main_lvl1.size(), "#3");
+    assert(all_programs.get(0).first().first() == seed_main_lvl1.get(0).first().first(), "#4");
 
 	for(int i = 0; i<all_programs.size(); i++)
 	{

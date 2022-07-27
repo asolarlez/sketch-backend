@@ -427,3 +427,20 @@ const VarStore *VarStore::produce_restrict(const vector<string>& subdomain) cons
     }
     return ret;
 }
+
+void VarStore::copy_only_bits(const VarStore *other) {
+    assert(objs.size() == other->objs.size());
+    for(int i = 0;i<objs.size();i++)
+    {
+        assert(objs[i].get_is_array() == other->objs[i].get_is_array());
+        assert(objs[i].element_size() == other->objs[i].element_size());
+        assert(objs[i].arrSize() == other->objs[i].arrSize());
+        assert(objs[i].otype == other->objs[i].otype);
+        assert(objs[i].get_type() == other->objs[i].get_type());
+    }
+
+    for(int i = 0;i<objs.size();i++)
+    {
+        objs[i].get_array_as_supertype_nonconst()->copy_bits(objs[i].get_array_as_supertype());
+    }
+}

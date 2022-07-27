@@ -1598,7 +1598,7 @@ namespace SL {
     enum MethodId {
         _unknown_method,
         _file, _produce_subset_file,
-        _sat_solver, _size, _get,
+        _sat_solver, _batch_evaluation_solver, _size, _get,
         _passes, _clear,
 //        _Solution,
         _join,
@@ -1633,6 +1633,7 @@ namespace SL {
         _set,
         _get_bit,
 
+        _timestamp
 
     };
 

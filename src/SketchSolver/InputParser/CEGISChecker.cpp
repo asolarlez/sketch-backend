@@ -411,13 +411,13 @@ class CheckControl{
 	typedef enum {GROW, POP} whatnext;
 	cstate state;
 	whatnext wn;
-	CEGISparams& params;
+	CEGISParams& params;
 	int toVerify;	
 public:
 	typedef enum {POP_LEVEL, GROW_IN, SOLVE, DONE, NEXT_PROBLEM} decision;
-	CheckControl(CEGISparams& p_params, int p_toVerify):params(p_params),state(CSOLVE), wn(GROW), toVerify(p_toVerify){}
+	CheckControl(CEGISParams& p_params, int p_toVerify): params(p_params), state(CSOLVE), wn(GROW), toVerify(p_toVerify){}
 	decision actionDecide(int level, BooleanDAG* dag, bool from_file){
-		if(params.simplifycex==CEGISparams::SIMSIM  && level != 1){
+		if(params.simplifycex == CEGISParams::SIMSIM && level != 1){
 			return POP_LEVEL;
 		}
 		if(state == CSOLVE){
@@ -473,7 +473,8 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	//cout<<"check: Before hard code"<<endl;
 	//getProblemDag()->lprint(std::cout);
 
-	pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
+    controls.relabel(getHarness()->get_dag()->getNodesByType(bool_node::CTRL));
+	pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL), true);
 
     #ifdef CHECK_FILE_INVARIANT
     {
@@ -540,7 +541,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					eval.init(input);
 					auto inputs = dag->getNodesByType(bool_node::SRC);
 					CounterexampleFinder::Result res = eval.fromFile(files[curProblem], floats,  inputs);
-
+                    eval.reset_src_to_input_id();
                     assert(dag != oriProblem);
 
 					{

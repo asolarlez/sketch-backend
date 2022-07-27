@@ -10,7 +10,7 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
-
+#include "DagLikeProgramInterpreter.h"
 
 using namespace std;
 
@@ -776,6 +776,15 @@ const vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t) const{
     {
         return dummy_vec;
     }
+}
+
+vector<CTRL_node*> BooleanDAG::get_CTRL_nodes() const {
+    vector<CTRL_node*> ret;
+    for(auto _it : getNodesByType(bool_node::CTRL))
+    {
+        ret.push_back((CTRL_node*)_it);
+    }
+    return ret;
 }
 
 vector<bool_node*>& BooleanDAG::getNodesByType_NonConst(bool_node::Type t){
@@ -1632,27 +1641,331 @@ string zeros(int n)
     return ret;
 }
 
-vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats)
+#include "FileForVectorizedInterpreter.h"
+#include "vectorized_interpreter_main.h"
+
+vector<bool> evaluate_inputs_baseline(BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
 {
-    NodeEvaluator node_evaluator(*this, floats);
+    for(int i = 0;i<repeats;i++) {
+        evaluate_inputs_baseline(dag, file, floats, 0);
+    }
+
+    NodeEvaluator node_evaluator(dag, floats);
 
     vector<bool> ret(file->size());
 
-    string size_str = std::to_string(size());
+    string size_str = std::to_string(dag.size());
     size_str = zeros(4-size_str.size()) + size_str;
-
+    int ground_truth_score = 0;
     auto after_prep = chrono::steady_clock::now();
     for(int i = 0;i<file->size();i++) {
-        LightVarStore* row_pointer = (LightVarStore*)file->at(i);
-        bool fails = node_evaluator.run(*row_pointer, false, false);
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
         ret[i] = !fails;
+        ground_truth_score += ret[i];
     }
-    timestamp(after_prep, "exec_n"+size_str);
+    timestamp(after_prep, "exec[baseline]_n"+size_str);
 
     node_evaluator.reset_src_to_input_id();
 
     return ret;
 }
+
+vector<bool> evaluate_inputs_vectorized_interpreter_assert_correctness(BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
+{
+
+//    for(int i = 0;i<repeats;i++) {
+//        evaluate_inputs_vectorized_interpreter_assert_correctness(dag, file, floats, 0);
+//    }
+//
+//    NodeEvaluator node_evaluator(dag, floats);
+//
+//    vector<bool> ret(file->size());
+//
+//    string size_str = std::to_string(dag.size());
+//    size_str = zeros(4-size_str.size()) + size_str;
+//    int ground_truth_score = 0;
+//    auto after_prep = chrono::steady_clock::now();
+//    for(int i = 0;i<file->size();i++) {
+//        VarStore* row_pointer = (VarStore*)file->at(i);
+//        bool fails = node_evaluator.run(*row_pointer, false, true);
+//        ret[i] = !fails;
+//        ground_truth_score += ret[i];
+//    }
+//    timestamp(after_prep, "exec_n"+size_str);
+//
+//    vector<VectorizedInterpreter::BaseType> batch_output;
+//
+//    if(repeats != 0) {
+//
+//        vector<VectorizedInterpreter::BaseType> batch_output;
+//
+//        stringstream dagstream;
+//
+//        dag.mrprint(dagstream, true);
+//
+//        cout << "ground_truth_score: " << ground_truth_score << endl;
+//        cout << performance_summary_to_string(true) << endl;
+//
+//
+//        auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
+//
+//        vector<VectorizedInterpreter::BaseType> vectorized_result =
+//                VectorizedInterpreter::main(dagstream.str(), file->get_file_from_vectorized_interpreter());
+//
+//        cout << performance_summary_to_string(true) << endl;
+//
+//        assert(false);
+//
+//    }
+//
+//    node_evaluator.reset_src_to_input_id();
+//
+//    return ret;
+
+    for(int i = 0;i<repeats;i++) {
+        evaluate_inputs_vectorized_interpreter_assert_correctness(dag, file, floats, 0);
+    }
+
+    NodeEvaluator node_evaluator(dag, floats);
+
+    vector<bool> ret(file->size());
+
+    string size_str = std::to_string(dag.size());
+    size_str = zeros(4-size_str.size()) + size_str;
+    int ground_truth_score = 0;
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+        ret[i] = !fails;
+        ground_truth_score += ret[i];
+    }
+    timestamp(after_prep, "exec[baseline]_n"+size_str);
+    timestamp(after_prep, "exec[baseline]");
+
+    //vectorized_interpreter part
+
+    stringstream dagstream;
+
+    dag.mrprint(dagstream, true);
+
+    cout << "GROUND_TRUTH_CHECKSUM: " << ground_truth_score << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+    auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
+
+    string dag_string = dagstream.str();
+
+//    cout << "dagstream: " << dag_string << endl;
+
+    vector<VectorizedInterpreter::BaseType> batch_output =
+            VectorizedInterpreter::main(dag_string, *file->get_file_from_vectorized_interpreter());
+
+    int predicted_checksum = 0;
+    for(int i = 0;i<batch_output.size();i++)
+    {
+        assert(VectorizedInterpreter::is_bit(batch_output[i]));
+        predicted_checksum += batch_output[i];
+    }
+
+    cout << "PREDICTED_CHECKSUM = " << predicted_checksum << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+    assert(ground_truth_score == predicted_checksum);
+
+    if(repeats != 0) {
+        assert(false);
+    }
+
+    node_evaluator.reset_src_to_input_id();
+
+    for(int i = 0;i<batch_output.size();i++) {
+        assert(ret[i] == batch_output[i]);
+    }
+
+    return ret;
+}
+
+vector<bool> evaluate_inputs_vectorized_interpreter(BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
+{
+    for(int i = 0;i<repeats;i++) {
+        evaluate_inputs_vectorized_interpreter(dag, file, floats, 0);
+    }
+
+    NodeEvaluator node_evaluator(dag, floats);
+
+    vector<bool> ret(file->size());
+
+    string size_str = std::to_string(dag.size());
+    size_str = zeros(4-size_str.size()) + size_str;
+    int ground_truth_score = 0;
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+        ret[i] = !fails;
+        ground_truth_score += ret[i];
+        break;
+    }
+    timestamp(after_prep, "prep_for_vecinterp"+size_str);
+
+    //vectorized_interpreter part
+
+    stringstream dagstream;
+
+    dag.mrprint(dagstream, true);
+
+//    cout << "GROUND_TRUTH_CHECKSUM: " << ground_truth_score << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+    auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
+
+    string dag_string = dagstream.str();
+
+//    cout << "dagstream: " << dag_string << endl;
+
+    vector<VectorizedInterpreter::BaseType> batch_output =
+            VectorizedInterpreter::main(dag_string, *file->get_file_from_vectorized_interpreter());
+
+    int predicted_checksum = 0;
+    for(int i = 0;i<batch_output.size();i++)
+    {
+        assert(VectorizedInterpreter::is_bit(batch_output[i]));
+        predicted_checksum += batch_output[i];
+    }
+
+//    cout << "PREDICTED_CHECKSUM = " << predicted_checksum << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+//    assert(ground_truth_score == predicted_checksum);
+
+    if(repeats != 0) {
+        assert(false);
+    }
+
+    node_evaluator.reset_src_to_input_id();
+
+    for(int i = 0;i<batch_output.size();i++) {
+        ret[i] = batch_output[i];
+    }
+
+    return ret;
+}
+
+
+vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats, int repeats) {
+    return evaluate_inputs_vectorized_interpreter(*this, file, floats, 0);
+//    return evaluate_inputs_vectorized_interpreter_assert_correctness(*this, file, floats, 0);
+//    return evaluate_inputs_baseline(*this, file, floats, 0);
+
+//    for(int i = 0;i<repeats;i++) {
+//        BooleanDAG::evaluate_inputs(file, floats, 0);
+//    }
+//
+//    NodeEvaluator node_evaluator(*this, floats);
+//
+//    vector<bool> ret(file->size());
+//
+//    string size_str = std::to_string(size());
+//    size_str = zeros(4-size_str.size()) + size_str;
+//    int ground_truth_score = 0;
+//    auto after_prep = chrono::steady_clock::now();
+//    for(int i = 0;i<file->size();i++) {
+//        VarStore* row_pointer = (VarStore*)file->at(i);
+//        bool fails = node_evaluator.run(*row_pointer, false, true);
+//        ret[i] = !fails;
+//        ground_truth_score += ret[i];
+//    }
+//    timestamp(after_prep, "exec_n"+size_str);
+//
+//    vector<VectorizedInterpreter::BaseType> batch_output;
+//
+//    if(repeats != 0) {
+//
+//        vector<VectorizedInterpreter::BaseType> batch_output;
+//
+//        stringstream dagstream;
+//
+//        this->mrprint(dagstream, true);
+//
+//        cout << "ground_truth_score: " << ground_truth_score << endl;
+//        cout << performance_summary_to_string(true) << endl;
+//
+//
+//        auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
+//
+//        vector<VectorizedInterpreter::BaseType> vectorized_result =
+//                VectorizedInterpreter::main(dagstream.str(), file->get_file_from_vectorized_interpreter());
+//
+//        cout << performance_summary_to_string(true) << endl;
+//
+//        assert(false);
+//
+//
+////        cout << "HERE!" << endl;
+////
+////        stringstream dagstream;
+////
+////        this->mrprint(dagstream, true);
+////        ofstream fout("exhaustive_inputs.data");
+////        fout << file->to_string() << endl;
+////        fout.flush();
+////        fout.close();
+////
+////        cout << "ground_truth_score: " << ground_truth_score << endl;
+////        cout << performance_summary_to_string(true) << endl;
+////
+////
+////        auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
+////
+////        VectorizedInterpreter::FileForVectorizedInterpreter file_from_vectorized_intepreter(
+////                "/Users/klimentserafimov/CLionProjects/VectorizedDagExecutor/src/exhaustive_inputs.data");
+////
+////        auto start_vecinterp_main = timestamp(start_reading_exhausitve_inputs, "reading_exhaustive_inputs");
+////
+////         vector<VectorizedInterpreter::BaseType> vectorized_result =
+////                VectorizedInterpreter::main(dagstream.str(), file_from_vectorized_intepreter);
+////
+////        cout << performance_summary_to_string(true) << endl;
+////
+////        assert(false);
+//    }
+//
+//    node_evaluator.reset_src_to_input_id();
+//
+//    return ret;
+//}
+
+}
+
+int BooleanDAG::get_passing_input_id(const File* file, FloatManager& floats)
+{
+    NodeEvaluator node_evaluator(*this, floats);
+
+    string size_str = std::to_string(size());
+    size_str = zeros(4-size_str.size()) + size_str;
+
+    int ret = -1;
+
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+
+        if(!fails)
+        {
+            ret = i;
+            break;
+        }
+    }
+    timestamp(after_prep, "exec_n"+size_str+"_m"+std::to_string(ret));
+
+    node_evaluator.reset_src_to_input_id();
+
+    return ret;
+}
+
 
 void BooleanDAG::set_dag_id_from_the_user(int _dag_id_from_the_user) {
     assert(dag_id_from_the_user == -1);

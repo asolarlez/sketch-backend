@@ -177,7 +177,8 @@ bool CEGISSolver::solveCore(){
 	while(doMore){
 		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
-		{ // Check
+
+        { // Check
 			if(PARAMS->verbosity > 5){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
 			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
@@ -249,7 +250,7 @@ bool CEGISSolver::solveCore(){
                 timestamp(start_finder,
                           "solve__f_"+std::to_string(counterexample_concretized_dag->get_dag_id_from_the_user())+
                           "__step_"+std::to_string(finder_step_id)+
-                          "__n"+std::to_string(dag_size)+
+                          "__n"+std::to_string(finder->get_all_inputs_dag()->size())+
                           "__nctrlbs"+std::to_string(nctrlbs));
                 finder_step_id++;
 //                cout << performance_summary_to_string() << endl;

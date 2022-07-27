@@ -8,6 +8,8 @@
 
 #include <random>
 #include "VarStore.h"
+#include "FileForVectorizedInterpreter.h"
+#include "BenchmarkScore.h"
 
 //MODIFIES InputStore
 void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
@@ -94,6 +96,32 @@ public:
     void init(const BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
     File(const BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
+
+    explicit File(const VarStore& _controls)
+    {
+        const int num_bits = _controls.getBitsize();
+
+        assert(num_bits <= 16); // otherwise too many inputs.
+        for(int _i = 0; _i < (1<<num_bits); _i++)
+        {
+            this->push_back(new VarStore(_controls));
+
+            auto local_controls = this->at(this->size()-1);
+
+            int at_bit_id = 0;
+
+            for(int idx = 0;idx<local_controls->size();idx++)
+            {
+                objP& obj = local_controls->_getObj(idx);
+                for(size_t j = 0;j<obj.get_size();j++, at_bit_id++)
+                {
+                    obj.set_bit(j, ((_i & (1<<at_bit_id)) != 0));
+                }
+            }
+//            cout << "_i: " << _i << " | " <<local_controls->to_string() << endl;
+        }
+
+    }
 
     void clear() {
         light_clear();
@@ -353,7 +381,7 @@ public:
 
     File();
 
-    string to_string()
+    string to_string() const
     {
         string ret;
         for(int i = 0;i<size();i++)
@@ -368,6 +396,22 @@ public:
     }
 
 
+private:
+    mutable const VectorizedInterpreter::FileForVectorizedInterpreter* vecinterp_version = nullptr;
+public:
+
+    const VectorizedInterpreter::FileForVectorizedInterpreter* get_file_from_vectorized_interpreter() const {
+
+        if(vecinterp_version == nullptr) {
+            auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
+            vecinterp_version = new VectorizedInterpreter::FileForVectorizedInterpreter(this);
+            timestamp(start_reading_exhausitve_inputs, "reading_exhaustive_inputs");
+        }
+        return vecinterp_version;
+    }
+
+
+    int num_inputs_per_row() const;
 };
 
 class SketchFunction;

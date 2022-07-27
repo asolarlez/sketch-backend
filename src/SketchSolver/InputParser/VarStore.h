@@ -44,35 +44,10 @@ public:
 
 	void clear() const;
 
-//    int size() const
-//    {
-//        return objs.size();
-//    }
-
     VarStore() = default;
 
     VarStore(const VarStore& to_copy, bool deep_clone = false);
     VarStore(const VarStore& to_copy, LightInliningTree* _inlining_tree);
-
-//    bool operator == (const VarStore& other) const
-//    {
-//        AssertDebug(other.synths.empty(), "TODO: implement eq logic for synths and synthouths.");
-//        AssertDebug(other.synthouts.empty(), "TODO: implement eq logic for synths and synthouths.");
-//
-//        if(objs.size() != other.objs.size()) {
-//            return false;
-//        }
-//
-//        for(int i = 0;i<objs.size();i++) {
-//            if(!(objs[i] == other.objs[i])) {
-//                return false;
-//            }
-//        }
-//
-//        assert(bitsize == other.bitsize);
-//
-//        return true;
-//    }
 
     void operator = (const VarStore& to_copy);
 
@@ -80,116 +55,16 @@ public:
         return new VarStore(*this);
     }
 
-//    auto begin()const { return objs.begin();}
-//	auto end()const{ return objs.end(); }
-//    auto begin() { return objs.begin();}
-//    auto end(){ return objs.end(); }
-//
-//	void makeRandom(float sparseArray){
-//		for(size_t i=0; i<objs.size(); ++i){
-//			objs[i].makeRandom(sparseArray);
-//		}
-//	}
-//	void makeRandom(){
-//		for(size_t i=0; i<objs.size(); ++i){
-//			objs[i].makeRandom();
-//		}
-//	}
-//	void zeroOut(){
-//		for(size_t i=0; i<objs.size(); ++i){
-//			objs[i].zeroOut();
-//		}
-//	}
-
-//	bool increment(const string& name){
-//		// cout<<"Upgraded "<<name<<" ";
-//		int idx = getId(name);
-//
-//		objP& tmp = objs[idx];
-//		bool rv = tmp.increment();
-//		// tmp.printContent(cout);
-//		//cout<<endl;
-//		return rv;
-//	}
 
     void insertObj(const string& name, int idx, const objP& obj)
     {
         LightVarStore::insertObj(name, idx, obj);
         insert_name_in_original_name_to_dag_name_to_name(obj.get_name(), obj.get_original_name(), obj.get_source_dag_name());
     }
-//
-//	void newArr(const string& name, int nbits, int arrsz, OutType* otype, bool_node::Type type){
-//		Assert(index.count(name)==0, name<<": This array already existed!!");
-//		int begidx = objs.size();
-//		index[name] = begidx;
-//		objs.emplace_back(name, nbits, otype, type);
-//		objs[begidx].makeArr(0, arrsz);
-//		bitsize += nbits*arrsz;
-//        assert(objs[begidx].get_is_array());
-//	}
-//
-//    void setArr(const string& name, const vector<int>& arr) {
-//	    Assert(index.find(name) != index.end(), name + " not found.");
-//        objs[index[name]].setArr(&arr);
-//        assert(objs[index[name]].get_is_array());
-//	}
 
 	void newVar(const string& name, int nbits, const OutType* otype, bool_node::Type type, const string& original_name, const string& source_dag_name);
 
 	void setVarVal(const string& name, int val, const OutType* otype, bool_node::Type type);
-
-//	void resizeVar(const string& name, int size){
-//		int idx = getId(name);
-//		{
-//			objP& tmp = objs[idx];
-//			bitsize -= tmp.globalSize();
-//			int x = tmp.resize(size);
-//			bitsize += x;
-//		}
-//	}
-//	void resizeArr(const string& name, int arrSize){
-//		int idx = getId(name);
-//		{
-//			objP& tmp = objs[idx];
-//            assert(tmp.get_is_array());
-//			bitsize -= tmp.globalSize();
-//			tmp.makeArr(0, arrSize);
-//            assert(arrSize*tmp.element_size() == tmp.get_size());
-//			bitsize += arrSize*tmp.element_size();
-//		}
-//	}
-//	int getBitsize() const{
-//		return bitsize;
-//	}
-//	int getIntsize() const {
-//		return objs.size();
-//	}
-//	void printBrief(ostream& out) const{
-//		for(size_t i=0; i<objs.size(); ++i){
-//			objs[i].printBit(out);
-//		}
-//        cout << endl;
-//	}
-//	void finalizeSynthOutputs() {
-//		synthouts.clear();
-//		for (auto sit = synths.begin(); sit != synths.end(); ++sit) {
-//			stringstream ss;
-//			sit->second->print(ss);
-//			synthouts[sit->first] = ss.str();
-//		}
-//	}
-//	void printContent(ostream& out) const{
-//		for(size_t i=0; i<objs.size(); ++i){
-//			out << objs[i].get_name() << ":";
-//			objs[i].printContent(out);
-//			out << endl;
-//		}
-//		for (auto sit = synths.begin(); sit != synths.end(); ++sit) {
-//			//out << sit->first << ":";
-//			sit->second->print(out);
-//			//out << endl;
-//		}
-//	}
 
 	bool contains(const string& name) const override {
         return LightVarStore::contains(name);
@@ -197,90 +72,23 @@ public:
 
     bool contains(const objP& obj, vector<string>* path) const;
 
-//	void setFromString(const string& in){
-//		for(size_t i=0; i<in.size(); ++i){
-//			set_bit(i, in[i]=='1'? 1 : -1);
-//		}
-//	}
-//	vector<int> serialize() const{
-//		vector<int> out;
-//		for(const auto & obj : objs){
-//            obj.append_vals(out);
-//		}
-//		return out;
-//	}
-//	void set_bit(int i, int val){
-//		bool found = false;
-//		for(size_t t=0; t<objs.size(); ++t){
-//			objP& tmp = objs[t];
-//			int gsz = tmp.globalSize();
-//			if(i < gsz){
-//				tmp.set_bit(i, val);
-//				found = true;
-//				break;
-//			}else{
-//				i = i-gsz;
-//			}
-//		}
-//		Assert(found, "This is a bug");
-//	}
-//	int operator[](const string& name) const {
-//        int id = getId(name);
-//        AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
-//		return objs[id].getInt();
-//	}
-//
-//	int operator[](size_t id) const {
-//        assert(id < objs.size());
-//        AssertDebug(!objs[id].get_is_array(), "Can't return"
-//                                              " array as an int.");
-//		return objs[id].getInt();
-//	}
-//
-//    const objP& getObjConst(const string& name) const {
-//        int id = getId(name);
-//        assert(id < objs.size());
-//        return objs.at(id);
-//    }
-//	objP& _getObj(const string& name) {
-//        int id = getId(name);
-//        assert(id < objs.size());
-//		return objs.at(id);
-//	}
-//
-//	int getId(const string& name) const{
-//        auto ret_it = index.find(name);
-//		AssertDebug(ret_it != index.end(), "Var " + name + " does't exists in this VarStore.")
-//		return ret_it->second;
-//	}
-//    objP& _getObj(int id){
-//        return objs[id];
-//    }
-//	const objP& getObjConst(int id) const{
-//		return objs[id];
-//	}
 	friend VarStore old_join(const VarStore& v1 , const VarStore& v2);
 	friend VarStore* produce_join(const VarStore& v1 , const VarStore& v2);
     friend void append_join(VarStore& v1 , const VarStore& v2);
 
-//    void relabel(const vector<bool_node*>& inputs) const {
-//
-//        Assert(synths.empty(), "TODO: implement copy logic for synths.");
-//        Assert(synthouts.empty(), "TODO: implement copy logic for synthouths.");
-//
-//        assert(inputs.size() == objs.size());
-//        index.clear();
-//        for(int i = 0;i<objs.size();i++)
-//        {
-//            objs[i].relabel(inputs[i]->get_name());
-//            index[objs[i].get_name()] = i;
-//        }
-//    }
-
     bool has_original_name_and_source_dag(const string &original_name, const string &source_dag) const;
     bool has_original_name(const string &original_name) const;
 
-//    void rename(BooleanDagUtility *new_dag_util);
+    int get_id_from_original_name(const string& original_name) const {
+        assert(has_original_name(original_name));
+        assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
+        assert(var_name_to_dag_name_to_name.at(original_name).size() == 1);
+        string target_name = (*var_name_to_dag_name_to_name.at(original_name).begin()).second;
+        int ret = getId(target_name);
+        assert(ret >= 0);
+        assert(objs[ret].get_original_name() == original_name);
+        return ret;
+    }
 
     const string &get_name(const string& var_name, const string &source_dag_name);
 
@@ -289,7 +97,6 @@ public:
     bool check_rep() const;
 
     void set_inlining_tree(LightInliningTree *new_inlining_tree);
-//    void set_inlining_tree(LightInliningTree *new_inlining_tree);
 
     bool check_rep_and_clear();
 
@@ -306,6 +113,8 @@ public:
     const VarStore *produce_restrict(const vector<string>& subdomain) const;
 
     void link_name_and_id(const string &name, int id) const;
+
+    void copy_only_bits(const VarStore *pStore);
 };
 
 template<bool_node::Type type>
