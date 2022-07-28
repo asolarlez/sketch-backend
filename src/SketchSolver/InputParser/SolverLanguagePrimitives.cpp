@@ -36,7 +36,8 @@ HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePr
         try {
             auto start_solver = std::chrono::steady_clock::now();
             solveCode = solver->solve();
-            timestamp(start_solver, "cegis__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+std::to_string(problem->get_dag()->size()));
+//            timestamp(start_solver, "cegis__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+std::to_string(problem->get_dag()->size()));
+            timestamp(start_solver, "cegis__dag__n"+std::to_string(problem->get_dag()->size()));
 
             if (solveCode || !hasGoodEnoughSolution) {
                 holes_to_sk_val = recordSolution();
@@ -134,10 +135,14 @@ HoleVarStore *SolverLanguagePrimitives::WrapperBatchEvaluatorSolver::solve(Solve
         try {
             auto start_solver = std::chrono::steady_clock::now();
             solveCode = solver->solve();
+//            timestamp(
+//                    start_solver,
+//                    "cegiswenum__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+
+//                    std::to_string(problem->get_dag()->size()));
             timestamp(
                     start_solver,
-                    "cegiswenum__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+
-                    std::to_string(problem->get_dag()->size()));
+                    "cegiswenum__dagsize_"+std::to_string(problem->get_dag()->size())
+            );
 
             if (solveCode || !hasGoodEnoughSolution) {
                 holes_to_sk_val = recordSolution();

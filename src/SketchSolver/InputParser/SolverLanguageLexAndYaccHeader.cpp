@@ -553,6 +553,8 @@ void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness)
     sol->set_inlining_tree(harness_inlining_tree);
 }
 
+bool prev_timestep_set = false;
+std::chrono::steady_clock::time_point prev_timestep;
 
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
@@ -787,9 +789,11 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
         }
         case _timestamp:
         {
-            assert(params.size() == 0);
-            cout << "timestamp" << endl;
-//            state->print_hypersketch_timestamp();
+            assert(params.empty());
+            auto at_time = std::chrono::steady_clock::now();
+            auto elapsed = chrono::duration_cast<chrono::microseconds>(at_time - prev_timestep).count();
+            state->console_output << "since_prev: " << elapsed << endl;
+            prev_timestep = std::chrono::steady_clock::now();
             return new VarVal();
         }
         default:

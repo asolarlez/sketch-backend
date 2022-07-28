@@ -5,11 +5,15 @@
 #ifndef SKETCH_VECTORIZED_INTERPRETER_MAIN_H
 #define SKETCH_VECTORIZED_INTERPRETER_MAIN_H
 
-#include "FileForVectorizedInterpreter.h"
+#include "FileForVecInterp.h"
 
 namespace VectorizedInterpreter {
 
-    vector<BaseType> main(string dag_string, const VectorizedInterpreter::FileForVectorizedInterpreter& file_from_vectorized_intepreter);
+    vector<BaseType> main(string dag_string, const VectorizedInterpreter::FileForVecInterp& file_for_vecinterp);
+
+    int main_get_passing_input_idx(
+            string dag_string,
+            const VectorizedInterpreter::FileForVecInterp &file_for_vecinterp);
 }
 
 #endif //SKETCH_VECTORIZED_INTERPRETER_MAIN_H

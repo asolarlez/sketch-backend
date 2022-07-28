@@ -1,11 +1,11 @@
 //
 // Created by Kliment Serafimov on 7/27/22.
 //
-#include "FileForVectorizedInterpreter.h"
+#include "FileForVecInterp.h"
 #include "File.h"
 namespace VectorizedInterpreter {
-    FileForVectorizedInterpreter::FileForVectorizedInterpreter(const File *file) :
-    vector<vector<Var *> >(file->size(), vector<Var *>(file->num_inputs_per_row(), nullptr))
+    FileForVecInterp::FileForVecInterp(const File *file) :
+    vector<vector<const Var *> >(file->size(), vector<const Var *>(file->num_inputs_per_row(), nullptr))
     {
         for (int i = 0; i < file->size(); i++) {
             LightVarStore &inputs = *file->at(i);
@@ -21,4 +21,11 @@ namespace VectorizedInterpreter {
             }
         }
     }
+
+//    FileForVecInterp::FileForVecInterp(const FileForVecInterp* file, int slice_start, int slice_width) :
+//            vector<vector<const Var *> >(slice_width, vector<const Var *>(file->num_inputs_per_row(), nullptr)) {
+//        for (int i = slice_start; i < min((int)file->size(), slice_start+slice_width); i++) {
+//            operator[](i) = file->at(i);
+//        }
+//    }
 }

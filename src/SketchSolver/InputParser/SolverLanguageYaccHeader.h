@@ -25,6 +25,8 @@ public:
 
     SL::Methods* init_root = nullptr;
 
+    std::chrono::steady_clock::time_point start_of_run;
+
     void clear(bool conscious_call = true) override
     {
         console_output.close();

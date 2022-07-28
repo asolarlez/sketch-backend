@@ -8,7 +8,7 @@
 
 #include <random>
 #include "VarStore.h"
-#include "FileForVectorizedInterpreter.h"
+#include "FileForVecInterp.h"
 #include "BenchmarkScore.h"
 
 //MODIFIES InputStore
@@ -397,14 +397,14 @@ public:
 
 
 private:
-    mutable const VectorizedInterpreter::FileForVectorizedInterpreter* vecinterp_version = nullptr;
+    mutable const VectorizedInterpreter::FileForVecInterp* vecinterp_version = nullptr;
 public:
 
-    const VectorizedInterpreter::FileForVectorizedInterpreter* get_file_from_vectorized_interpreter() const {
+    const VectorizedInterpreter::FileForVecInterp* get_file_from_vectorized_interpreter() const {
 
         if(vecinterp_version == nullptr) {
             auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
-            vecinterp_version = new VectorizedInterpreter::FileForVectorizedInterpreter(this);
+            vecinterp_version = new VectorizedInterpreter::FileForVecInterp(this);
             timestamp(start_reading_exhausitve_inputs, "reading_exhaustive_inputs");
         }
         return vecinterp_version;

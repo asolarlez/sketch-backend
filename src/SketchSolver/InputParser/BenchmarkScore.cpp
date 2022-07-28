@@ -12,12 +12,12 @@ map<string, BenchmarkScore> timestamp_counter = map<string, BenchmarkScore>();
 std::chrono::steady_clock::time_point timestamp(std::chrono::steady_clock::time_point  prev_timestamp, const string& name)
 {
     auto local_end = chrono::steady_clock::now();
-    auto elapsed_tokenize = chrono::duration_cast<chrono::microseconds>(local_end - prev_timestamp).count();
+    auto elapsed = chrono::duration_cast<chrono::microseconds>(local_end - prev_timestamp).count();
 //    cout << "ELAPSED(" << name << "): " << elapsed_tokenize << " (us)" << endl;
     if(timestamp_counter.find(name) == timestamp_counter.end()) {
         timestamp_counter[name] = BenchmarkScore();
     }
-    timestamp_counter[name].update(elapsed_tokenize);
+    timestamp_counter[name].update(elapsed);
     auto new_timestamp = chrono::steady_clock::now();
     return new_timestamp;
 }

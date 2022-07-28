@@ -9,7 +9,7 @@
 #include <chrono>
 #include <map>
 #include <utility>
-#include "FileForVectorizedInterpreter.h"
+#include "FileForVecInterp.h"
 #include "test_cases.h"
 #include "BenchmarkScore.h"
 
@@ -110,7 +110,7 @@ namespace VectorizedInterpreter {
         return acc;
     }
 
-    void benchmark_vectorized_interpreter(const string &dag_as_string, const FileForVectorizedInterpreter &file,
+    void benchmark_vectorized_interpreter(const string &dag_as_string, const FileForVecInterp &file,
                                           int exec_trials, bool print_score) {
 
         auto local_benchmarking_init = chrono::steady_clock::now();

@@ -147,19 +147,20 @@ bool CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
 
     auto start_measuring_eval_inptus = timestamp(start_input_construction, "construct_exhaustive_inputs");
 
-//    vector<bool> batch_output = allInputsDag->evaluate_inputs(exhaustive_inputs, floats);
-
-    int passing_input_id = allInputsDag->get_passing_input_id(exhaustive_inputs, floats);
-
-//    int passing_input_id = -1;
-//    for(int i = 0;i<batch_output.size();i++)
-//    {
-//        if(batch_output[i])
-//        {
-//            passing_input_id = i;
-//            break;
-//        }
-//    }
+    int passing_input_id = -1;
+    bool use_evaluate_inputs = false;
+    if(use_evaluate_inputs) {
+        vector<bool> batch_output = allInputsDag->evaluate_inputs(exhaustive_inputs, floats);
+        for (int i = 0; i < batch_output.size(); i++) {
+            if (batch_output[i]) {
+                passing_input_id = i;
+                break;
+            }
+        }
+    }
+    else {
+        passing_input_id = allInputsDag->get_passing_input_id(exhaustive_inputs, floats);
+    }
 
     if(passing_input_id == -1)
     {
@@ -171,7 +172,8 @@ bool CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
     controls.copy_only_bits(ret);
     result = SAT_SATISFIABLE;
 
-    timestamp(start_measuring_eval_inptus, "VecInterp_find_evalinp_n"+std::to_string(allInputsDag->size()));
+//    timestamp(start_measuring_eval_inptus, "BatchEnum_find_n"+std::to_string(allInputsDag->size()));
+    timestamp(start_measuring_eval_inptus, "BatchEnum_find");
 
     return true;
 

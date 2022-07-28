@@ -14,7 +14,7 @@
 
 namespace VectorizedInterpreter {
 
-    class FileForVectorizedInterpreter;
+    class FileForVecInterp;
 
     vector<BaseType> calc_score(const size_t m, const vector<Buffer> &out_buffers, int &rez);
 
@@ -548,7 +548,7 @@ namespace VectorizedInterpreter {
 
             for (size_t i = 0; i < local_m; i++) {
                 for (int j = 0; j < size; j++) {
-                    meta_array[i]->set(j, ((BaseType *) inputs[j].ptr)[i]);
+                    meta_array[i]->hard_set(j, ((BaseType *) inputs[j].ptr)[i]);
                 }
                 output_buff_ptr[i] = meta_meta_array.size() - 1;
             }
@@ -1090,11 +1090,11 @@ namespace VectorizedInterpreter {
 
             graph = Parser::parse(dag_as_string, m, meta_meta_array);
 
-            auto timestep_parse = timestamp(local_start_chrono, "parse");
+            auto timestep_parse = timestamp(local_start_chrono, "parse[VecInterp]");
 
             auto executor = create_graph_executor(graph);
 
-            auto timestep_create_graph_executor = timestamp(timestep_parse, "construct_executor");
+            auto timestep_create_graph_executor = timestamp(timestep_parse, "construct[VecInterp]");
 
             parsed = true;
             return executor;
@@ -1106,7 +1106,7 @@ namespace VectorizedInterpreter {
 
             auto executor = parse_and_construct();
 
-            auto timestep_parse = timestamp(local_start_chrono, "parse_and_construct");
+            auto timestep_parse = timestamp(local_start_chrono, "parse_and_construct[VecInterp]");
 
             n = graph.input_ids.size();
 
@@ -1114,15 +1114,15 @@ namespace VectorizedInterpreter {
 
             output_sizes = executor->compile(input_sizes);
 
-            auto timestep_compile = timestamp(timestep_parse, "compile");
+            auto timestep_compile = timestamp(timestep_parse, "compile[VecInterp]");
 
-            auto timestep_prepare = timestamp(local_start_chrono, "parse_and_compile");
+            auto timestep_prepare = timestamp(local_start_chrono, "parse+construct+compile[VecInterp]");
 
             parsed_and_compiled = true;
             return executor;
         }
 
-        vector<Buffer> get_input_buffers(const FileForVectorizedInterpreter &file) {
+        vector<Buffer> get_input_buffers(const FileForVecInterp &file) {
             assert(m == file.size());
             assert(m >= 1);
             assert(parsed_and_compiled);
@@ -1183,7 +1183,7 @@ namespace VectorizedInterpreter {
 
     using namespace std;
 
-    void benchmark_vectorized_interpreter(const string &dag_as_string, const FileForVectorizedInterpreter &file,
+    void benchmark_vectorized_interpreter(const string &dag_as_string, const FileForVecInterp &file,
                                           int exec_trials = 20, bool print_score = false);
 
     void benchmark_julia_code(const string &dag_as_string, bool do_print = false);

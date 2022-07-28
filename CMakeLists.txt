@@ -29,7 +29,7 @@ include_directories(
 
 add_executable(sketch main.cpp
 
-        src/SketchSolver/InputParser/FileForVectorizedInterpreter.h
+        src/SketchSolver/InputParser/FileForVecInterp.h
         src/SketchSolver/InputParser/DagLikeProgramInterpreter.cpp
         src/SketchSolver/InputParser/HyperParams.h
         src/SketchSolver/InputParser/test_cases.cpp
@@ -243,4 +243,4 @@ add_executable(sketch main.cpp
         src/SketchSolver/InputParser/function_map_transformer_language_yacc.cpp 
         src/SketchSolver/InputParser/SolverLanguage.cpp 
         src/SketchSolver/InputParser/SolverLanguagePrimitives.cpp
-        src/SketchSolver/InputParser/objP.cpp src/SketchSolver/InputParser/objP.h src/SketchSolver/InputParser/BenchmarkScore.cpp src/SketchSolver/InputParser/BenchmarkScore.h src/SketchSolver/InputParser/LightVarStore.cpp src/SketchSolver/InputParser/LightVarStore.h src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.cpp src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.h src/SketchSolver/InputParser/vectorized_interpreter_main.cpp src/SketchSolver/InputParser/vectorized_interpreter_main.h src/SketchSolver/InputParser/FileForVectorizedInterpreter.cpp src/SketchSolver/InputParser/DagLikeProgramInterpreter.h)
+        src/SketchSolver/InputParser/objP.cpp src/SketchSolver/InputParser/objP.h src/SketchSolver/InputParser/BenchmarkScore.cpp src/SketchSolver/InputParser/BenchmarkScore.h src/SketchSolver/InputParser/LightVarStore.cpp src/SketchSolver/InputParser/LightVarStore.h src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.cpp src/SketchSolver/InputParser/CEGISFinderBatchEnumeration.h src/SketchSolver/InputParser/vectorized_interpreter_main.cpp src/SketchSolver/InputParser/vectorized_interpreter_main.h src/SketchSolver/InputParser/FileForVecInterp.cpp src/SketchSolver/InputParser/DagLikeProgramInterpreter.h)

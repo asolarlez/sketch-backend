@@ -972,14 +972,16 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
 
     string size_str = std::to_string(the_dag->size());
     size_str = zeros(4-size_str.size()) + size_str;
-    timestamp(start, "compile_n"+size_str);
+//    timestamp(start, "compile[SkFunc::evalinps]_n"+size_str);
+    timestamp(start, "compile[SkFunc::evalinps]");
 
     assert(the_dag != nullptr);
     vector<bool> result = the_dag->evaluate_inputs(file, get_env()->get_floats());
 
     skfunc->clear();
 
-    timestamp(start, "compile+exec_n"+size_str);
+//    timestamp(start, "compile+exec_n"+size_str);
+    timestamp(start, "compile+exec[SkFunc::evalinps]");
 
     SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
 

@@ -6,9 +6,12 @@
 #include "SolverLanguage.h"
 #include "SolverLanguageLexAndYaccHeader.h"
 
+#include "BenchmarkScore.h"
 
 SL::VarVal * SolverProgramState::eval(){
     assert(init_root != nullptr);
+
+    auto start_run = std::chrono::steady_clock::now();
 
     init_root->populate_state(global);
 
@@ -53,6 +56,11 @@ SL::VarVal * SolverProgramState::eval(){
     assert(frames.empty());
 
     global.clear(true);
+
+    auto end_eval = timestamp(start_run, "solver_program::eval");
+
+    auto elapsed = chrono::duration_cast<chrono::microseconds>(end_eval - start_run).count();
+    console_output << "BENCH[SolverProgramState::eval()]: " << elapsed/1000000 << " (s) ~ " << elapsed << " (us)" << endl;
 
     return var_val_ret;
 }

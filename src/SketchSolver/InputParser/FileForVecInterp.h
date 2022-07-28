@@ -42,29 +42,50 @@ namespace VectorizedInterpreter {
     class IntArrVar : public Var {
         int default_val = 0;
         vector<BaseType> arr;
+        const IntArrVar *copy = nullptr;
+
+        bool is_set = false;
+        int set_idx = -1;
+        BaseType set_val;
     public:
         explicit IntArrVar(vector<BaseType> _arr) : arr(std::move(_arr)), Var(Var::_int_arr) {}
 
-        explicit IntArrVar(const IntArrVar *to_copy) : arr(to_copy->arr), Var(Var::_int_arr) {}
+        explicit IntArrVar(const IntArrVar *to_copy) : copy(to_copy), Var(Var::_int_arr) {}
 
         IntArrVar(int size, int _default_val) : Var(Var::_int_arr) {
             assert(size == 0);
             default_val = _default_val;
         }
 
-        void set(int idx, int val) {
-            while (arr.size() <= idx) {
-                arr.push_back(default_val);
-            }
+        void hard_set(int idx, int val) {
+            assert(idx >=  0 && idx < arr.size());
             arr[idx] = val;
+        }
+
+        void set(int idx, int val) {
+            assert(!is_set);
+            set_idx = idx;
+            set_val = val;
+            is_set = true;
+//            arr.resize(idx+1, 0);
+//            arr[idx] = val;
         }
 
         BaseType get(BaseType idx) const {
             assert(idx >= 0);
-            if (idx < arr.size()) {
-                return arr[idx];
-            } else {
-                return default_val;
+            if(is_set && idx == set_idx) return set_val;
+            if(copy == nullptr)
+            {
+                if (idx < arr.size()) {
+                    return arr[idx];
+                } else {
+                    return default_val;
+                }
+            }
+            else
+            {
+                assert(arr.empty());
+                return copy->get(idx);
             }
         }
     };
@@ -83,10 +104,10 @@ namespace VectorizedInterpreter {
 //    explicit BoolArrVar(vector<bool> _val): val(std::move(_val)) {}
 //};
 
-    class FileForVectorizedInterpreter : public vector<vector<Var *> > {
+    class FileForVecInterp : private vector<vector < const Var *> > {
 
         static void
-        register_token(const string &token, vector<Var *> &ret, bool &in_vec, vector<BaseType> &running_vec) {
+        register_token(const string &token, vector<const Var *> &ret, bool &in_vec, vector<BaseType> &running_vec) {
             if (token == "{") {
                 assert(!in_vec);
                 in_vec = true;
@@ -104,9 +125,9 @@ namespace VectorizedInterpreter {
             }
         }
 
-        static vector<Var *> tokenize_and_parse(const string &line) {
+        static vector<const Var *> tokenize_and_parse(const string &line) {
 
-            vector<Var *> ret;
+            vector<const Var *> ret;
             bool in_vec = false;
             vector<BaseType> running_vec;
 
@@ -138,16 +159,47 @@ namespace VectorizedInterpreter {
             return ret;
         }
 
+        bool is_view = false;
+        const FileForVecInterp* view_of_file = nullptr;
+        int slice_start = 0;
+        int slice_width;
+        int slice_end;
+
     public:
 
-        explicit FileForVectorizedInterpreter(const File* file);
+        int size() const {
+            if(is_view) {
+                return slice_width;
+            } else {
+                return vector<vector < const Var *> >::size();
+            }
+        }
 
-        explicit FileForVectorizedInterpreter(const string &file_name) {
+        int num_inputs_per_row() const
+        {
+            assert(!empty());
+            return at(slice_start).size();
+        }
+
+//        FileForVecInterp(const FileForVecInterp* file, int slice_start, int slice_width);
+
+        FileForVecInterp(const FileForVecInterp* _file, int _slice_start, int _slice_width)
+        {
+            is_view = true;
+            view_of_file = _file;
+            slice_start = _slice_start;
+            slice_width = _slice_width;
+            slice_end = min(_file->size(), slice_start+slice_width);
+        }
+
+        explicit FileForVecInterp(const File* file);
+
+        explicit FileForVecInterp(const string &file_name) {
             ifstream file(file_name);
             assert(file.is_open());
             string line;
             while (getline(file, line)) {
-                vector<Var *> input = tokenize_and_parse(line);
+                vector<const Var *> input = tokenize_and_parse(line);
                 push_back(input);
             }
             if (false) {
@@ -175,6 +227,33 @@ namespace VectorizedInterpreter {
                 }
                 fout.close();
                 assert(false);
+            }
+        }
+
+        vector<const FileForVecInterp*> get_slices(int local_slice_width) const
+        {
+            assert(!is_view);
+            vector<const FileForVecInterp*> ret;
+            int at_idx = 0;
+            int sum = 0;
+            while(at_idx < size())
+            {
+                FileForVecInterp* running_slice = new FileForVecInterp(this, at_idx, local_slice_width);
+                assert(running_slice->size() == local_slice_width);
+                sum += running_slice->size();
+                ret.push_back(running_slice);
+                at_idx+=local_slice_width;
+                assert(sum == at_idx);
+            }
+            return ret;
+        }
+
+        const vector<const Var*>& operator [] (int idx) const {
+            if(is_view) {
+                return view_of_file->operator[](idx+slice_start);
+            }
+            else {
+                return vector<vector<const Var*> >::operator[](idx);
             }
         }
     };
