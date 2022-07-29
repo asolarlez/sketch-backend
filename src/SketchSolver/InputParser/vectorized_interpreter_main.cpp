@@ -60,7 +60,7 @@ namespace VectorizedInterpreter
     {
         auto local_benchmarking_init = chrono::steady_clock::now();
 
-        const int _num_stages = 16;
+        const int _num_stages = 1;
         const int stage_size = (_file_for_vecinterp.size()+_num_stages-1)/_num_stages;
 
         const size_t num_stages = (_file_for_vecinterp.size() + stage_size - 1) / stage_size;

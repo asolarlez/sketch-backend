@@ -1806,9 +1806,9 @@ vector<bool> evaluate_inputs_vectorized_interpreter(BooleanDAG& dag, const File*
 
 
 vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats, int repeats) {
-    return evaluate_inputs_vectorized_interpreter(*this, file, floats, 0);
+//    return evaluate_inputs_vectorized_interpreter(*this, file, floats, 0);
 //    return evaluate_inputs_vectorized_interpreter_assert_correctness(*this, file, floats, 0);
-//    return evaluate_inputs_baseline(*this, file, floats, 0);
+    return evaluate_inputs_baseline(*this, file, floats, 0);
 }
 
 int get_passing_input_id__w__vectorized_interpreter(BooleanDAG& dag, const File* _file, FloatManager& floats)

@@ -19,8 +19,8 @@ Solver main()
     for(int i = 0;i<files.size();i++) {
 
         new_dag = main_sk__Wrapper.deep_clone(i);
-        solution = SATSolver(new_dag, files[i]);
-        //solution = BatchEnumerationSolver(new_dag, files[i]);
+        //solution = SATSolver(new_dag, files[i]);
+        solution = BatchEnumerationSolver(new_dag, files[i]);
         new_dag.make_executable(solution);
         result = new_dag.evaluate_inputs(files[i]);
         print("---------------------------------------");

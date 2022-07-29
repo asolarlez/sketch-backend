@@ -473,6 +473,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	//cout<<"check: Before hard code"<<endl;
 	//getProblemDag()->lprint(std::cout);
 
+
     controls.relabel(getHarness()->get_dag()->getNodesByType(bool_node::CTRL));
 	pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL), true);
 

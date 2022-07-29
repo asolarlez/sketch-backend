@@ -1,0 +1,211 @@
+pragma options "--bnd-inline-amnt 2";
+pragma options "--bnd-arr-size 3";
+
+bit and(bit x0, bit x1) {
+    return x0 && x1;
+}
+
+bit and_or(bit x0, bit x1) {
+    return {|x0 || x1 | x0 && x1|}
+}
+
+bit and_xor(bit x0, bit x1) {
+    return {|x0 ^ x1 | x0 && x1|}
+}
+
+generator bit template_binary_concept(bit x0, bit x1) {
+    if(x0 && x1) {
+        return ??;
+    } else if (x0 && !x1) {
+        return ??;
+    } else if(!x0 && x1) {
+        return ??;
+    } else if(x0 && x1) {
+        return ??;
+    }
+}
+
+bit template_binary_concept_1___meta(bit x0, bit x1)
+{
+    return template_binary_concept(x0, x1);
+}
+
+bit template_binary_concept_2__meta(bit x0, bit x1)
+{
+    return template_binary_concept(x0, x1);
+}
+
+bit template_binary_concept_3__meta(bit x0, bit x1)
+{
+    return template_binary_concept(x0, x1);
+}
+
+
+bit binary_concept___meta2(bit x0, bit x1) {
+    int expressiveness_level = ??; // higher - order hole. This hole gets concretized at a meta-synthesis step.
+    // we are going to try to classify meta-datasets based on the level of expressiveness necessary by the task to be solved.
+    // synthesis strategy based on iterating over ___meta from 0 to n.
+    if(expressiveness_level == 0) {
+        return template_binary_concept_1___meta(x0, x1); // 2^4 = 16 languages with one operator each
+    }
+    else if(expressiveness_level == 1)
+    {
+        return {| template_binary_concept_1___meta(x0, x1) |
+                  template_binary_concept_2___meta(x0, x1) |}; // 16*15 languages with two operators + 16 with one each
+    }
+    else if(expressiveness_level == 2)
+    {
+        return
+            {| template_binary_concept_1___meta(x0, x1) |
+               template_binary_concept_2___meta(x0, x1) |
+               template_binary_concept_3___meta(x0, x1) |}; // 16*15*14 3 ops + 16*15 2 ops + 16 1 op = 3616
+
+               // so this is one dimension of extrapolation - want to vary the expressiveness of the langauge to fit the needs of the usecase
+               // more expressive langauges can overfit; less expressive languages might not be able to represent the problem.
+
+               // the second dimension of varying is the depth of the program; how many of these choices does it need to make?
+               // the third dimension is the width of the input
+               // cap on the representative number of inputs.
+
+               // develop an understanding of
+
+               // meta classification: input: 256 or 256 * 8 or 256 * 8 * 3 bitvector of which functions can be expressed by a language
+               // examples of functions that can be expressed; you want the synthesizer to output the rest of the expressiable functions
+               // or function to code. yeah this is the one
+               // input:
+                    partial function {0, 1}^3 -> {0, 1} as a bitvector,
+                    and a language as a bitvector,
+                    and an input outside of the partial function:
+                    output the result of running that input on the function synthesized by the language given in the meta-input.
+
+               // to give a language; you need to first select a langauge space
+               // a space of languages is a meta-sketch, and a language in the space of languages in bitvector form is
+               the values for the holes that concretize the meta-sketch.
+
+               // so now we can create a dataset:
+                2^n bits partial function mask,
+                k bits s.t. k < 2^n of the outputs for the corresponding inputs;
+                l bits of the bitvector representation of the hyper-sketch language.
+                n bits of the input to be tested.
+                1 bit output.
+
+               // question: how many examples are necessary to synthesize the program that emulates the synthesizer?
+
+               // let's work out an example:
+
+               // say n = 3 => 2^n = 8;
+               // our language space is: any language with 1 boolean operator, nested until saturation.
+               // so that's 16 languages, or l = 4.
+               // let's say k = 4; this means that we will give 4 IO examples to each language to find the best program.
+               // in total there will be 2^4 = 16 'best programs' per langauge per choice of input meta-examples.
+               //               there are 4 choose 8 choices of input meta-examples, with 16 best programs per langauge
+               // so that's in total 8 bits for the mask;
+               // 4 bits for the partial examples;
+               // 4 bits for the language;
+               // and 3 bits for the input
+               // and 1 bit for the output.
+
+               // that's 8 + 4 + 4 + 3 = 19 bits for the input, and 1 bit for the output; which is 20 bits;
+               // so there are 2^19 inputs to this function.
+
+               // we will generate data for the language space specified above.
+               // this will take: 16 concretizations (one for each langauge);
+               // and synthesizing 2^4 * (choose 4 8) programs on each by selecting
+
+
+               // modes of selecting inputs;
+               // select l inputs;
+               // say 4
+               // select inputs with x[??] == {|0|1|}; n * 2
+               // select inputs with x[0] == x[1]
+               // select input with x[1] == x[2]
+               // select input with x[2] == x[0]
+
+               // we can have a space of ways of selecting 4 inputs.
+               // 0 bit ways: only one mask: x = |{x | x \in {0, 1}^(2^n) s.t. sum(x) == l}|
+               // 1 bit ways: two masks: ...
+
+               // to start off we will have 4 masks: only evens, last bit 0, x[0] == x[1], and x[1] == x[2]
+
+               // 2 bits for the choice of set of inputs in the meta-example
+               // 4 bits outputs of the inputs
+               // 4 bits for the language
+               // 3 bits for the input
+
+               // total: = 13 bits.
+
+               // our goal is to synthesize a 13-fan in circuit that has the desired mapping.
+               // the question is how many input-output examples would we need to make it happen?
+               // --
+
+               // 1 bit for the output
+
+
+               // we will basically synthesize a synthesizer as a circuit, and benchmark it against hyper-sketch.
+
+               // we record data of the synthesis process of the circuit; we generate a lot of data of this type.
+               // we fine tune the synthesizer to be able to solve these meta-synthesis problems faster.
+               // such that when we increase the size of the inputs; it can rewire itself quickly,
+               // having the solution of the less general form
+               // I think we could do meta-synthesis like this.
+
+               // the point is that once it comes a time to synthesize circuits over small ios. we will be able to quickly do it.
+
+               // reducing 4 bit problems to 3 bit problems.
+               // you reduce the domain of the input bits to 3 instead of 4, there are 4 ways to do so;
+               // for each way calculate the generalization; select those bits, cast as a problem to the n-1 synthesizer.
+               // use the result to augment synthesis; if you can't solve the problem, than it's not reducable.
+               // in the process you generate; say l = 8; generate bunch of smaller meta-examples; few metcis: if there are no-conflicts then it's purely reducable;
+               // if there are conflicts,
+               //       then record how many bits get resolved /
+               //       record all possible variants <-> some measure of decomposability.
+               //       if they don't agree with the ground-truth then it's non-nativelly decomposable.
+               //       the more it doesn't agree the more it's not decomposable.
+
+               // in a bottom up way build communities of bits that compose naturally together -
+               // as in the problem is compresable - is reducable to lower-order solvers.
+               // maximize the # of bits in a community without compromising reducability => compressable
+               // increase # bits at cost of reducability (how many bits you have to carry arround)
+
+               // so basically first compress, and then operate over the compressed rep.
+
+
+
+               // the idea is to in an online manner synthesize a synthesizer.
+               // so that you are using one synthesizer, you synthesize a faster surrogate of it, and then you test it.
+               // if the surrogate passes the test, you use this instead of the previous synthesizer.
+               // in an online fasion you want to stop as early as possible basically.
+               // build a model of what inputs are not solved.
+
+
+
+
+
+
+
+
+
+    else
+    {
+        return
+    }
+}
+
+generator bit predicate(int n, bit[n] bits) {
+    bit choose = ??(1);
+    if(choose == 0) {
+        return bits[??(2)];
+    } else {
+        return binary_concept(bits[??(2)], bits[??(2)]);
+    }
+}
+
+bit program(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+harness void main_sk(int n, bit[n] bits, bit out) {
+    assert(program(n, bits) == out);
+}

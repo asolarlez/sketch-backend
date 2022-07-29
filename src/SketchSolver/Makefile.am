@@ -133,7 +133,13 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/SolverLanguage.h \
     InputParser/SolverLanguagePrimitives.h \
     InputParser/objP.h \
-    InputParser/BenchmarkScore.h
+    InputParser/BenchmarkScore.h \
+    InputParser/vectorized_interpreter_main.h \
+    InputParser/DagLikeProgramInterpreter.h \
+    InputParser/test_cases.h \
+    InputParser/FileForVecInterp.cpp \
+    InputParser/types.h \
+    InputParser/CEGISFinderBatchEnumeration.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -212,7 +218,13 @@ libcegis_a_SOURCES =				\
     InputParser/SolverLanguage.cpp \
     InputParser/SolverLanguagePrimitives.cpp \
     InputParser/objP.cpp \
-    InputParser/BenchmarkScore.cpp
+    InputParser/BenchmarkScore.cpp \
+    InputParser/vectorized_interpreter_main.cpp \
+    InputParser/DagLikeProgramInterpreter.cpp  \
+    InputParser/test_cases.cpp \
+    InputParser/FileForVecInterp.cpp \
+    InputParser/types.cpp \
+    InputParser/CEGISFinderBatchEnumeration.cpp
 
 
 

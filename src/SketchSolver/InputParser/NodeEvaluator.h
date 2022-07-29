@@ -195,16 +195,19 @@ private:
     const VarStore* inputs = nullptr;
     bool src_name_id_linking_done = false;
     bool_node::Type node_type = bool_node::NO_TYPE;
+    int input_size = 0;
 protected:
     void set_inputs(const VarStore* _inputs, bool assert_invariant = true) {
         inputs = _inputs;
 
         if(_inputs->size() == 0)
         {
+            src_name_id_linking_done = true;
             return;
         }
 
         assert(_inputs->size() != 0);
+        input_size = _inputs->size();
         if(node_type == bool_node::NO_TYPE) {
             node_type = _inputs->getObjConst(0).get_type();
             for (int i = 1; i < _inputs->size(); i++) {
@@ -366,6 +369,7 @@ public:
                 node.local_id_in_inputs = -1;
             }
             src_name_id_linking_done = false;
+            input_size = 0;
             node_type = bool_node::NO_TYPE;
         }
         else if(node_type == bool_node::CTRL) {
@@ -377,11 +381,12 @@ public:
                 node.local_id_in_inputs = -1;
             }
             src_name_id_linking_done = false;
+            input_size = 0;
             node_type = bool_node::NO_TYPE;
         }
         else
         {
-            assert(false);
+            assert(input_size == 0);
         }
     }
 	void display(ostream& out);

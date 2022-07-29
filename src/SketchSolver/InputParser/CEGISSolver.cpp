@@ -50,6 +50,8 @@ void CEGISSolver::addProblem(BooleanDagLightUtility *harness, File *file){
         if(new_clone) {
             inlined_harness->clear();
         }
+
+
     }
 
 	finder->updateCtrlVarStore(ctrlStore);	
