@@ -178,6 +178,151 @@ bit binary_concept___meta2(bit x0, bit x1) {
                // build a model of what inputs are not solved.
 
 
+               // synthesize circuit versions of synthesizers and synthesize synthesis strategies based on decomposition
+               // apply to synthesis of auto-encoders.
+
+               // intermediate state synthesis: getting the trace of the circuit version of the synthesizer;
+               // cutting the circuit such as to limit fan-in and fan-out.
+               // -- these are modules.
+               // try find smallest decomposable modules.
+               // so basically:
+                    GIVEN BLACK BOX < (language encoding, meta-example encoding, target input encoding) -> target output >. [ THIS IS THE SYNTHESIS TASK ]
+                    SYNTHESIZE A CIRCUIT !!!
+                    getting a circuit from sketch.
+                    using the circuit for generation of intermediate state.
+                    making a reasoning schema out of it.
+                    online learning to synthesize a circuit;
+                    once you have it test it and benchmark it against the oracle.
+                    SO NOW THIS CAN BE USED AS A MODULE IN SYNTHESIS.
+                    RATHER THAN WRITING A META-SYNHTESIZER IN SKETCH, YOU SYNTHESIZE A SYNTHESIZER AS A CIRCUIT, AND GIVE IT NATIVELLY TO SKETCH.
+                    Once you have it in native sketch rep, use give it to sketch to synthesize bigger problems.
+
+                    what does this mean? allow sketch to use this
+
+                    harness main(id, input, out):
+                        so use it as a classifier.
+                        id -> [ (??) encoder ] -> meta-model;
+                        input -> [ (??) encoder ] -> meta-example;
+                        input -> [ (??) encoder ] -> mesa-input;
+                        assert(MY_SYNTHESIZER(meta-model [+] meta-example [+] mesa_input) == out);
+
+
+                    harness main(meta_example, mesa_input, out):
+                        so use it as a classifier.
+                        (??) meta-model;
+                        meta-example -> [ (??) encoder ] -> new-meta-example;
+                        mesa-input -> [ (??) encoder ] -> new-mesa-input;
+                        assert(MY_SYNTHESIZER(meta-model [+] new-meta-example [+] new-mesa-input) == out);
+
+
+
+                    // if input can be 3 bits; this can encode a 2d image as such: 2 bits of x and 1 bit for y.
+                    // so x \in [0, 1, 2, 3]; y \in [0, 1]; so an 8 pixel image.
+                    // let's say we want to autoencode some dataset of images:
+                    // so from given 4 pixels to extract the other 4.
+
+                    // so input = [x0, x1, y0]; output: pixel val.
+
+                    // let the image is:
+                    // **..
+                    // .... //
+                        // this is encoded as a program;
+                        // need to choose a language, a way of mapping the input to a
+
+                    // ..**
+                    // .... // this is encoded as a program
+
+                    // ....
+                    // **.. // this is encoded as a program
+
+                    // ....
+                    // ..** // this is encoded as a program
+
+                    // .??.  ->  ....
+                    // .???      ..**
+
+                    // .??.   ...
+                    // ???.
+
+                    // .???
+                    // .??.
+
+                    // ???.
+                    // .??.
+
+                    ...
+
+                    // trying to find a language that does exactly this.
+
+
+                    // .??.  ->  2 bits  -> ....
+                    // .???                 ..**
+
+                    // there are many meta-examples - the meta examples on the pareto frontier of which bits.
+                    // so you can always synthesise the program that goes (x, y) -> {0, 1}
+                    // how do you go from there to an autoencoder?
+                    // you are trying to synthesize a language that when given the meta example and the query inputs,
+                    // for the query inputs it will output the correct bits.
+
+                    // now you want to find a tuple: (sub-dataset, and a meta-model;
+
+                    // compress to 2 bits
+
+                    // all of these are encoded as a program.
+
+
+                    // decompress
+
+
+                    DOING AUTOENCODING!!!
+
+                    set up a problem as:
+
+                    dataset -> finding a pareto frontier of min number of pixel per image to reconstruct it.
+                    // basically kicking pixels off until you can't differentiate between the images
+                    // once you have that; next step is to cast it as a synthesis problem.
+                    // training set: remaining pixels;
+                    // testing set: kicked off pixels.
+                    // now you are trying to synthesize a language that matches that behavior.
+                    // you then get this language and make a synthesizer out of it.
+                    // then you synthesize the programs that represent the pictures.
+                    // this is your intermediate representation.
+                    // what do we know about these programs? they will be different programs.
+                    // 4 programs. they will all be 3 bit programs as descibed (x, y coord).
+                    // you can use them to decode the image by running them per pixel.
+                    // then: synthesize a language s.t. there are 2 1-bit holes. you can encode the program as a 2 bit code.
+                    // sketch <-> 2 bit code => 4 programs <=> images.
+                    // build a classifier over the 2 bit code.
+
+                    // and using these langauges iterate on the next version.
+                    // where you synthesize ever bigger synthesizers.
+
+
+                    harness main(meta_example, mesa_input, out):
+                        so use it as a classifier.
+                        (??) meta-model;
+                        meta-example -> [ (??) encoder ] -> new-meta-example;
+                        mesa-input -> [ (??) encoder ] -> new-mesa-input;
+                        bit inter0 = (MY_SYNTHESIZER(meta-model [+] new-meta-example [+] new-mesa-input) == out);
+                        out -> (??) meta-model;
+                        meta-example, out -> [ (??) encoder ] -> new-meta-example;
+                        mesa-input, out -> [ (??) encoder ] -> new-mesa-input;
+                        bit inter1 = (MY_SYNTHESIZER(meta-model [+] new-meta-example [+] new-mesa-input) == out);
+
+
+
+
+                   synthesis of executors:
+
+                   for a constant sketch.
+                   for all hole assignments
+                   for all inputs
+                   output value.
+                   synthesize an executor first.
+
+
+
+
 
 
 
