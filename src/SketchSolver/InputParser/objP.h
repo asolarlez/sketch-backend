@@ -787,6 +787,7 @@ public:
 
     inline int getInt(int idx) const override
     {
+        assert(0 <= idx);
         if(idx < array()->get_num_vectors()) {
             return array()->get_vector_as_int(idx);
         }

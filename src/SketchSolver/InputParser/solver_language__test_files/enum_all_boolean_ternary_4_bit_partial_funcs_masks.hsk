@@ -1,27 +1,33 @@
-
-
 Solver main()
 {
     file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs_3.txt", main_sk__Wrapper);
     files = [];
 
+    input_masks = [
+        [0, 1, 0, 1, 0, 1, 0, 1],
+        [0, 0, 0, 0, 1, 1, 1, 1],
+        [1, 0, 0, 1, 0, 1, 1, 0],
+        [0, 1, 1, 0, 1, 0, 0, 1]
+    ];
 
     for(int i = 0;i<256;i++) {
-        file_i = file_0.clone();
-        for(int j = 0;j<8;j++) {
-            file_i.set(j, 2, i.get_bit(j));
+        for(int j = 0;j<input_masks.size();j++) {
+            file_i = file_0.clone();
+            for(int j = 0;j<8;j++) {
+                file_i.set(j, 2, i.get_bit(j));
+            }
+            files.append(file_i);
         }
-        files.append(file_i);
     }
-
 
     fs = [];
 
     int score = 0;
     for(int i = 0;i<files.size();i++) {
+
         new_dag = main_sk__Wrapper.deep_clone(i);
-        //solution = SATSolver(new_dag, files[i]);
-        solution = BatchEnumerationSolver(new_dag, files[i]);
+        solution = SATSolver(new_dag, files[i]);
+        //solution = BatchEnumerationSolver(new_dag, files[i]);
         new_dag.make_executable(solution);
         result = new_dag.evaluate_inputs(files[i]);
         print("---------------------------------------");

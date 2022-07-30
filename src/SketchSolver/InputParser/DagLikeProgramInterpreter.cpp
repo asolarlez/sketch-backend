@@ -392,13 +392,6 @@ namespace VectorizedInterpreter {
             assert(buffers[input_buff_id].size == buffer_sizes[input_buff_id]);
             assert(buffers[input_buff_id].ptr != nullptr);
             buffers[input_buff_id].ptr = inputs[input_idx].ptr;
-
-            if (input_buff_id == 3) {
-                int local_m = buffers[input_buff_id].size / sizeof(BaseType);
-                for (int j = 0; j < local_m; j++) {
-                    assert(is_bit(((BaseType *) buffers[input_buff_id].ptr)[j]));
-                }
-            }
         }
 
         for (int i = 0; i < graph.output_ids.size(); i++) {

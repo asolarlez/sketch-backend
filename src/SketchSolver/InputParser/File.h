@@ -97,6 +97,10 @@ public:
 
     File(const BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
 
+    void push_back(VarStore* to_insert) {
+        vector<VarStore*>::push_back(to_insert);
+    }
+
     explicit File(const VarStore& _controls)
     {
         const int num_bits = _controls.getBitsize();

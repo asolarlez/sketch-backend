@@ -11,7 +11,8 @@
 SL::VarVal * SolverProgramState::eval(){
     assert(init_root != nullptr);
 
-    auto start_run = std::chrono::steady_clock::now();
+    start_of_run = std::chrono::steady_clock::now();
+    prev_timestep = std::chrono::steady_clock::now();
 
     init_root->populate_state(global);
 
@@ -57,9 +58,9 @@ SL::VarVal * SolverProgramState::eval(){
 
     global.clear(true);
 
-    auto end_eval = timestamp(start_run, "solver_program::eval");
+    auto end_eval = timestamp(start_of_run, "solver_program::eval");
 
-    auto elapsed = chrono::duration_cast<chrono::microseconds>(end_eval - start_run).count();
+    auto elapsed = chrono::duration_cast<chrono::microseconds>(end_eval - start_of_run).count();
     console_output << "BENCH[SolverProgramState::eval()]: " << elapsed/1000000 << " (s) ~ " << elapsed << " (us)" << endl;
 
     return var_val_ret;

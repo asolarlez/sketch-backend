@@ -350,8 +350,8 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
 }
 
 
-template SL::VarVal *SL::FunctionCall::eval<SolverProgramState, GenericFile>(
-        GenericFile*& file, SolverProgramState *state, const SL::VarVal* const the_var_val);
+//template SL::VarVal *SL::FunctionCall::eval<SolverProgramState, GenericFile>(
+//        GenericFile*& file, SolverProgramState *state, const SL::VarVal* const the_var_val);
 
 template<typename StateType, typename FileType>
 SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::VarVal* const the_var_val) {
@@ -395,18 +395,38 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
             return new SL::VarVal((int) file->size());
             break;
         }
-        case _get:
-        {
-            assert(params.size() == 1);
-            int row_id = params[0]->eval(state)->get_int(true, false);
-            if(is_same<FileType, File>::value) {
-                return new SL::VarVal(new InputVarStore(*((File*)file)->at(row_id)));
+        case _get: {
+            if (params.size() == 1) {
+                int row_id = params[0]->eval(state)->get_int(true, false);
+                if (is_same<FileType, File>::value) {
+                    return new SL::VarVal(new InputVarStore(*((File *) file)->at(row_id)));
+                } else if (is_same<FileType, GenericFile>::value) {
+                    return new SL::VarVal(((GenericFile *) file)->at(row_id));
+                } else {
+                    AssertDebug(false,
+                                "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
+                }
+            } else if (params.size() == 2) {
+                assert((is_same<FileType, File>::value));
+                int row_id = params[0]->eval(state)->get_int(true, false);
+                int col_id = params[1]->eval(state)->get_int(true, false);
+                auto obj = ((File*)file)->at(row_id)->getObjConst(col_id);
+                assert(!obj.get_is_array());
+                return new SL::VarVal((int)obj.getInt());
             }
-            else if(is_same<FileType, GenericFile>::value) {
-                return new SL::VarVal(((GenericFile*)file)->at(row_id));
+            else if (params.size() == 3) {
+                assert((is_same<FileType, File>::value));
+                int row_id = params[0]->eval(state)->get_int(true, false);
+                int col_id = params[1]->eval(state)->get_int(true, false);
+                int vec_id = params[2]->eval(state)->get_int(true, false);
+                auto obj = ((File*)file)->at(row_id)->getObjConst(col_id);
+                assert(obj.get_is_array());
+                int ret = obj.getInt(vec_id);
+                assert(ret != -1);
+                return new SL::VarVal((int)ret);
             }
             else {
-                AssertDebug(false, "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
+                assert(false);
             }
             break;
         }
@@ -472,6 +492,15 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
         case _clone:
         {
             return new VarVal(new FileType(file));
+            break;
+        }
+        case _append:
+        {
+            assert(params.size() == 1);
+            VarVal* var_store_var_val = params[0]->eval(state);
+            assert((is_same<FileType, File>::value));
+            ((File*)file)->push_back(new VarStore(*(var_store_var_val->get_input_holder_const(false))));
+            return new VarVal();
             break;
         }
         default:
@@ -553,8 +582,6 @@ void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness)
     sol->set_inlining_tree(harness_inlining_tree);
 }
 
-bool prev_timestep_set = false;
-std::chrono::steady_clock::time_point prev_timestep;
 
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
@@ -567,14 +594,21 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             SL::VarVal *ret = new SL::VarVal(new GenericFile(file_name, state->args.seed));
             return ret;
 #else
-            assert(params.size() == 2);
-            VarVal* file_name_var_val = params[0]->eval(state);
-            file_name_var_val->increment_shared_ptr();
-            string file_name = file_name_var_val->get_string();
-            file_name_var_val->decrement_shared_ptr();
-            SketchFunction *harness = params[1]->eval(state)->get_skfunc();
-            SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
-            return ret;
+            if(params.size() == 0) {
+                return new SL::VarVal(new File());
+            }
+            else if(params.size() == 2) {
+                VarVal* file_name_var_val = params[0]->eval(state);
+                file_name_var_val->increment_shared_ptr();
+                string file_name = file_name_var_val->get_string();
+                file_name_var_val->decrement_shared_ptr();
+                SketchFunction *harness = params[1]->eval(state)->get_skfunc();
+                SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
+                return ret;
+            }
+            else {
+                assert(false);
+            }
 #endif
             break;
         }
@@ -791,9 +825,10 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
         {
             assert(params.empty());
             auto at_time = std::chrono::steady_clock::now();
-            auto elapsed = chrono::duration_cast<chrono::microseconds>(at_time - prev_timestep).count();
-            state->console_output << "since_prev: " << elapsed << endl;
-            prev_timestep = std::chrono::steady_clock::now();
+            auto elapsed = chrono::duration_cast<chrono::microseconds>(at_time - state->prev_timestep).count();
+            state->console_output << "since_prev : " << elapsed << endl;
+            state->console_output << "since_start: " << chrono::duration_cast<chrono::microseconds>(at_time - state->start_of_run).count() << endl;
+            state->prev_timestep = std::chrono::steady_clock::now();
             return new VarVal();
         }
         default:
@@ -832,9 +867,9 @@ SL::VarVal *SL::FunctionCall::eval(
     switch (method_id) {
         case _get_bit: {
             assert(params.size() == 1);
-            int bit_idx = params[0]->eval(state)->get_int();
+            int bit_idx = params[0]->eval(state)->get_int(false);
             assert(bit_idx <= 31);
-            return new VarVal((bool)((the_int & (1<<bit_idx)) != 0));
+            return new VarVal((int)((the_int & (1<<bit_idx)) != 0));
             break;
         }
         default:
@@ -868,7 +903,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-//    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -1083,7 +1118,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("second", _second, "pair");
     add_to_method_str_to_method_id_map("sort", _sort_vec, "vector");
     add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
-    add_to_method_str_to_method_id_map("append", _append, "vector");
+    add_to_method_str_to_method_id_map("append", _append, "vector", "File");
     add_to_method_str_to_method_id_map("size", _size, "File", "vector");
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
     add_to_method_str_to_method_id_map("relabel", _relabel, "File");

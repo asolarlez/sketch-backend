@@ -26,6 +26,7 @@ public:
     SL::Methods* init_root = nullptr;
 
     std::chrono::steady_clock::time_point start_of_run;
+    std::chrono::steady_clock::time_point prev_timestep;
 
     void clear(bool conscious_call = true) override
     {

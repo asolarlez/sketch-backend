@@ -416,7 +416,11 @@ namespace SL
 
         bool get_bool(bool do_count = true, bool do_assert = true)
         {
-            assert(var_val_type == bool_val_type);
+            if(var_val_type != bool_val_type) {
+                assert(var_val_type == int_val_type);
+                assert(i == 0 || i == 1);
+                return (bool) get<int>(i, do_count, do_assert);
+            }
             return get<bool>(b, do_count, do_assert);
         }
 
