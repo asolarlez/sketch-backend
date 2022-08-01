@@ -1,6 +1,6 @@
-pragma options "--bnd-inline-amnt 1";
 pragma options "--bnd-arr-size 9";
 pragma options "--bnd-unroll-amnt 9";
+pragma options "--bnd-inline-amnt 1";
 
 generator bit template_binary_concept(bit x0, bit x1) {
     if(x0 && x1) {
@@ -69,7 +69,7 @@ generator bit five_ops_lang(int n, bit[n] bits) {
     return {| four_ops_lang(n, bits) | op_4(n, bits) |};
 }
 
-generator bit predicate(int n, bit[n] bits) {
+generator bit predicate_generator(int n, bit[n] bits) {
 
     bit first = op(n, bits);
     bit first_2 = op(n, bits);
@@ -87,67 +87,61 @@ generator bit predicate(int n, bit[n] bits) {
     return {| first | second | third | fourth | second_2 | third_2 | fourth_2 | fourth_3 |};
 }
 
-bit common_subpart(int n, bit[n] bits)
-{
-    return predicate(n, bits);
-}
-
-bit program(int n, bit[n] bits){
-
-    if(predicate(n, bits))
+generator bit program_generator(int num_bools, bit[num_bools] bools) {
+    if(predicate_generator(num_bools, bools))
     {
-        if(predicate(n, bits))
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
-        else
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
+        return predicate_generator(num_bools, bools);
     }
     else
     {
-        if(predicate(n, bits))
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
-        else
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
+        return predicate_generator(num_bools, bools);
     }
 }
 
+bit predicate(int num_bools, bit[num_bools] bools)
+{
+    return predicate_generator(num_bools, bools);
+}
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
-harness void main_sk(int n, bit[n] bits, bit out) {
-    assert(program(n, bits) == out);
+bit condition(int num_bools, bit[num_bools] bools) {return ??;}
+
+bit if_true_branch(int num_bools, bit[num_bools] bools) {return ??;}
+
+bit if_false_branch(int num_bools, bit[num_bools] bools) {return ??;}
+
+bit composite_predicate(int num_bools, bit[num_bools] bools) {
+    if(condition(num_bools, bools)) {
+        return if_true_branch(num_bools, bools);
+    }
+    else {
+        return if_false_branch(num_bools, bools);
+    }
+}
+
+bit program_lvl0(int num_bools, bit[num_bools] bools) {
+    return program_generator(num_bools, bools);
+}
+
+bit dummy_program(int num_bools, bit[num_bools] bools) {return 1;}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
+{
+    assert(dummy_program(num_bools, bools) == out);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness bit eval_program_main(int num_bools, bit[num_bools] bools, bit out)
+{
+    return dummy_program(num_bools, bools);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness void dummy_main(int num_bools, bit[num_bools] bools, bit out)
+{
+    assert(eval_program_main(num_bools, bools, out));
+    assert(dummy_program(num_bools, bools) == 0);
+    assert(predicate(num_bools, bools) == 0);
+    assert(program_lvl0(num_bools, bools) == out);
+    assert(composite_predicate(num_bools, bools) == out);
 }

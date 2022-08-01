@@ -319,11 +319,11 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
 
-    big_num_trials = 10;
-    num_rows_per_sample = 6;
-    select_best = 2;
+    big_num_trials = 30;
+    num_rows_per_sample = 8;
+    select_best = 1;
     assert(big_num_trials >= select_best);
-    small_num_trials = 3;
+    small_num_trials = 15;
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
     sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", sketch_main_lvl0_sub);
@@ -371,14 +371,6 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
 
     int iter_id = 0;
 
-    if(false)
-    {
-        big_num_trials = 4;
-        num_rows_per_sample = 6;
-        select_best = 2;
-        assert(big_num_trials >= select_best);
-    }
-    //while(true)
     while((new_best > prev_best))
     {
         num_rows_per_sample++;
@@ -439,7 +431,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
 
                     //resynthesize lvl0 left and right predicates.
 
-                    local_num_trials = small_num_trials*(select_best - i);
+                    local_num_trials = small_num_trials*(outer_loop_select_best - i);
 
                     left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
                     left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);

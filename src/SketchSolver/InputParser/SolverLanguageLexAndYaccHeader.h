@@ -215,21 +215,7 @@ namespace SL
             assert(false);
         }
 
-        VarVal* plus_op(VarVal* other)
-        {
-            assert(var_val_type == other->var_val_type);
-            switch (var_val_type) {
-                case int_val_type:
-                    return new VarVal((int)(get_int(true, false) + other->get_int(true, false)));
-                    break;
-                case float_val_type:
-                    return new VarVal((float)(get_float(true, false) + other->get_float(true, false)));
-                    break;
-                default:
-                    assert(false);
-            }
-            assert(false);
-        }
+        VarVal* plus_op(VarVal* other);
 
         VarVal* minus_op(VarVal* other)
         {
@@ -1601,44 +1587,66 @@ namespace SL {
 
     enum MethodId {
         _unknown_method,
-        _file, _produce_subset_file,
-        _sat_solver, _batch_evaluation_solver, _size, _get,
-        _passes, _clear,
-//        _Solution,
-        _join,
-        _print, _num_holes, _append,
-        _first, _second,
-        _to_float, _sort_vec,
-        _assert, _reverse,
-        _produce_filter,
-        _not,
+
+        _print,
+        _assert,
+
+        _file,
+        _produce_subset_file,
         _relabel,
+
+        _sat_solver,
+        _batch_evaluation_solver,
+
+        _append,
+        _get,
+        _size,
+        _join,
+        _clear,
+        _sort_vec,
+        _reverse,
+
+        _first,
+        _second,
+
+        _to_float,
+
+        _produce_filter,
+
+        _not,
         _reset,
+
         _produce_deep_concretize,
         //TODO: produce_unit_concretize
         _inplace_deep_concretize,
         _inplace_unit_concretize,
         _produce_executable,
         _make_executable,
+
         _clone,
         _deep_clone,
         _unit_clone,
+
         //_inline_deep_replace,
         _inplace_unit_replace,
         //_produce_deep_replace,
         _produce_unit_replace,
+
+        _num_holes, //syntax: how many parameters is the model? (in therms of variables);
+        _passes, //semantics: SkFunc::passes(VarStore* input);
+
+        _vectorized_count_passing_inputs,
+        _evaluate_inputs,
         _get_solution,
         //FMTL primitives:
         _declare,
-        //_vector
-        _vectorized_count_passing_inputs,
-        _evaluate_inputs,
 
+        //ints
         _set,
         _get_bit,
+        _add,
 
         _timestamp
-
     };
 
     static bool method_str_to_method_id_map_is_defined = false;
@@ -1735,7 +1743,10 @@ namespace SL {
         VarVal *eval(SketchFunction *&skfunc, StateType *state, const VarVal *const the_var_val);
 
         template<typename StateType>
-        VarVal *eval(int the_int, StateType *state, const VarVal *const the_var_val);
+        VarVal *eval(int& the_int, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType>
+        VarVal *eval(bool& the_int, StateType *state, const VarVal *const the_var_val);
     };
 
     class Assignment

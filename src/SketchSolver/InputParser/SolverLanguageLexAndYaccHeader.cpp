@@ -862,7 +862,7 @@ SL::VarVal *SL::FunctionCall::eval(
 
 template<typename StateType>
 SL::VarVal *SL::FunctionCall::eval(
-        int the_int, StateType *state, const SL::VarVal* const the_var_val) {
+        int& the_int, StateType *state, const SL::VarVal* const the_var_val) {
     assert(the_int == the_var_val->get_int_const(false));
     switch (method_id) {
         case _get_bit: {
@@ -872,8 +872,17 @@ SL::VarVal *SL::FunctionCall::eval(
             return new VarVal((int)((the_int & (1<<bit_idx)) != 0));
             break;
         }
-        default:
+        case _add: {
+            assert(params.size() == 1);
+            int add_delta = params[0]->eval(state)->get_int(false);
+            the_int += add_delta;
+            return new VarVal();
+            break;
+        }
+        default: {
             assert(false);
+            break;
+        }
     }
     assert(false);
 }
@@ -1113,6 +1122,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("clone", _clone,  "Solution", "File");
     add_to_method_str_to_method_id_map("set", _set,  "File");
     add_to_method_str_to_method_id_map("get_bit", _get_bit,  "int");
+    add_to_method_str_to_method_id_map("add", _add,  "int");
 
     add_to_method_str_to_method_id_map("first", _first, "pair");
     add_to_method_str_to_method_id_map("second", _second, "pair");
@@ -2301,6 +2311,37 @@ string SL::VarVal::to_string(bool do_count, bool do_assert)
             AssertDebug(false, "MISSING CASE");
     }
     AssertDebug(false, "MISSING CASE");
+}
+
+SL::VarVal *SL::VarVal::plus_op(SL::VarVal *other)
+{
+    assert(var_val_type == other->var_val_type);
+    switch (var_val_type) {
+        case int_val_type:
+            return new VarVal((int)(get_int(true, false) + other->get_int(true, false)));
+            break;
+        case float_val_type:
+            return new VarVal((float)(get_float(true, false) + other->get_float(true, false)));
+            break;
+        case poly_vec_type: {
+            PolyVec *new_poly_vec =
+                    new SL::PolyVec(
+                            new SL::PolyType("any"),
+                            get_poly_vec_const(false)->size() + other->get_poly_vec_const(false)->size());
+            for(int i = 0;i<get_poly_vec_const(false)->size();i++) {
+                new_poly_vec->set(i, get_poly_vec_const(false)->at(i));
+            }
+            for(int i = 0;i<other->get_poly_vec_const(false)->size();i++) {
+                new_poly_vec->set(i+get_poly_vec_const(false)->size(), other->get_poly_vec_const(false)->at(i));
+            }
+            return new VarVal(new_poly_vec);
+            break;
+        }
+
+        default:
+            assert(false);
+    }
+    assert(false);
 }
 
 SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)

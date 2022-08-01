@@ -1,6 +1,69 @@
+Solver get_score(SketchFunction harness, Solution solution, File file)
+{
+    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+    int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
+    program.clear();
+    return score;
+}
+
+Solver best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
+	Solution best_solution;
+	int best_score = 0;
+
+    File subset_file;
+    Solution solution;
+    SketchFunction program;
+    int score;
+
+    vector<pair<int, Solution> > solutions = vector<pair<int, Solution> >();
+    for(int trial_id = 0; trial_id<num_trials; trial_id++)
+	{
+		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
+		solution = SATSolver(harness5.deep_clone(), subset_file); // invoke the Sketch Solver on the harness
+		subset_file.clear();
+		score = get_score(harness5, solution, file);
+		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());
+		solutions.append(pair<int, Solution>(score, solution));
+		if(score > best_score) // update the best_solution
+		{
+			best_solution = solution;
+			best_score = score;
+		}
+	}
+
+	solutions.sort();
+	solutions.reverse();
+
+	print("Sorted solution scores:");
+
+	int solutions_size = solutions.size();
+
+    pair<int, Solution> element;
+	for(int i = 0; i<solutions_size; i++)
+	{
+	    element = solutions.get(i);
+	    print("count ", element.first(), "/", file.size(), "= (", ((float(100) * float(element.first())) / float(file.size())), "%)");
+	}
+	print("Done sorted solution scores");
+
+	print("best_score = ", best_score);
+
+    assert(solutions.size() == num_trials);
+
+    print("ASSERTED TRUE:", "solutions.size()", solutions.size(), "num_trials", num_trials);
+
+    return solutions;
+}
+
 Solver main()
 {
     file = File(file_name, main_sk__Wrapper);
+
+    for(int i = 1; i<file.size();i++) {
+        solutions = best_effort_solutions(main_sk__Wrapper, file, 10, i);
+        timestamp();
+    }
+
     solution = SATSolver(main_sk__Wrapper, file);
     ret = main_sk__Wrapper.produce_executable(solution);
     return ret;

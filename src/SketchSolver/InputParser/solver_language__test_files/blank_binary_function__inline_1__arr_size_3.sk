@@ -1,6 +1,7 @@
 pragma options "--bnd-inline-amnt 1";
-pragma options "--bnd-arr-size 9";
-pragma options "--bnd-unroll-amnt 9";
+pragma options "--bnd-arr-size 3";
+pragma options "--bnd-unroll-amnt 3";
+
 
 bit binary_concept(bit x0, bit x1) {
     if(!x0 && !x1) {
@@ -16,17 +17,18 @@ bit binary_concept(bit x0, bit x1) {
 
 generator bit predicate(int n, bit[n] bits) {
     bit choose = ??(1);
-    if(choose == 0) {
-        return bits[??(2)];
+    if(choose) {
+        int idx = ??(2);
+        assert(idx < n);
+        return bits[idx];
     } else {
-        return binary_concept(bits[??(2)], bits[??(2)]);
+        return binary_concept(predicate(n, bits), predicate(n, bits));
     }
 }
 
 bit program(int n, bit[n] bits){
     return predicate(n, bits);
 }
-
 
 @FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
 harness void main_sk(int n, bit[n] bits, bit out) {

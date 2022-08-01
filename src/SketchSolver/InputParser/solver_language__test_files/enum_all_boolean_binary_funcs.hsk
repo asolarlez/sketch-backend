@@ -1,4 +1,12 @@
 
+Solver main()
+{
+    return synthesize_meta_dataset_over_3_bit_fs();
+    //return scaling_of_training_io_examples_on_best_effort();
+}
+
+// -----
+
 Solver list_of_bits_to_int(list_of_bits)
 {
     int ret = 0;
@@ -19,7 +27,7 @@ Solver list_of_bits_to_int(list_of_bits)
     return ret;
 }
 
-Solver main()
+Solver synthesize_meta_dataset_over_3_bit_fs()
 {
     file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs_3.txt", main_sk__Wrapper);
 
@@ -38,7 +46,7 @@ Solver main()
             ];
 
         int num_partial_funcs = 0;
-        for(int i = 0;i<32;i++) {
+        for(int i = 0;i<256;i++) {
             for(int j = 0;j<input_masks.size();j++) {
                 int meta_example_size = 0;
                 partial_func_ij = File();
@@ -76,6 +84,9 @@ Solver main()
     final_dataset = [];
 
     meta_inputs_to_meta_outputs = [];
+    input_was_printed = [];
+
+    meta_input_as_int_per_meta_example = [];
 
     int score = 0;
     for(int i = 0;i<partial_funcs_files.size();i++) {
@@ -98,84 +109,258 @@ Solver main()
         print("input_mask   :", input_masks[input_mask_id]);
         print("train_passing:", result_train);
         print("total_passing:", result_total);
-        for(int j = 0; j<8;j++) {
-            // print("source_total_funcs_files[i][j]", source_total_funcs_files[i][j]);
-            synthesizer_meta_example = [];
-            //synthesizer_meta_example.append(9);
-            //synthesizer_meta_example.append("{");
-            synthesizer_meta_example.append(input_mask_id.get_bit(0));
-            synthesizer_meta_example.append(input_mask_id.get_bit(1));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(0, 2));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(1, 2));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(2, 2));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(3, 2));
-            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 0));
-            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 1));
-            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 2));
-            //synthesizer_meta_example.append("}");
 
-            // | output
-            out_bit = 0;
-            if(result_total[j] == true) {
-                out_bit = source_total_funcs_files[i].get(j, 2);
-            }
-            else {
-                out_bit = source_total_funcs_files[i].get(j, 2);
-                if(not(out_bit == 0)) {
-                    assert(out_bit == 1);
-                }
-                out_bit = 1 - out_bit; // not!
-            }
-            //add to inputs to outputs;
+        //print delta_score: 1 if all training inputs pass.
+        //print delta_score: 0 if at least one training input is not passing.
+        int delta_score = 0;
+        {
+            int sum = 0;
+            for(int i = 0;i<result_train.size();i++)
             {
-                int meta_example_input_as_an_int = list_of_bits_to_int(synthesizer_meta_example);
+                if(result_train[i]){
+                    sum = sum + 1;
+                }
+            }
+            print("score:", sum == result_train.size());
+            if(sum == result_train.size())
+            {
+                delta_score = 1;
+                score = score+delta_score;
+            }
+            print("running score:", score, "/", i+1);
+        }
 
-                while(meta_example_input_as_an_int >= meta_inputs_to_meta_outputs.size())
+        if(delta_score >= 1) {
+            for(int j = 0; j<8;j++) {
+                // print("source_total_funcs_files[i][j]", source_total_funcs_files[i][j]);
+                synthesizer_meta_example = [];
+                //synthesizer_meta_example.append(9);
+                //synthesizer_meta_example.append("{");
+                synthesizer_meta_example.append(input_mask_id.get_bit(0));
+                synthesizer_meta_example.append(input_mask_id.get_bit(1));
+                synthesizer_meta_example.append(partial_funcs_files[i].get(0, 2));
+                synthesizer_meta_example.append(partial_funcs_files[i].get(1, 2));
+                synthesizer_meta_example.append(partial_funcs_files[i].get(2, 2));
+                synthesizer_meta_example.append(partial_funcs_files[i].get(3, 2));
+                synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 0));
+                synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 1));
+                synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 2));
+                //synthesizer_meta_example.append("}");
+
+                // | output
+                out_bit = 0;
+                if(result_total[j] == true) {
+                    out_bit = source_total_funcs_files[i].get(j, 2);
+                }
+                else {
+                    out_bit = source_total_funcs_files[i].get(j, 2);
+                    if(not(out_bit == 0)) {
+                        assert(out_bit == 1);
+                    }
+                    out_bit = 1 - out_bit; // not!
+                }
+                //add to inputs to outputs;
                 {
-                    meta_inputs_to_meta_outputs.append([]);
+                    int meta_example_input_as_an_int = list_of_bits_to_int(synthesizer_meta_example);
+
+                    while(meta_example_input_as_an_int >= meta_inputs_to_meta_outputs.size())
+                    {
+                        meta_inputs_to_meta_outputs.append([0, 0]);
+                        input_was_printed.append(0);
+                    }
+
+                    assert((meta_example_input_as_an_int < meta_inputs_to_meta_outputs.size()));
+
+                    meta_inputs_to_meta_outputs[meta_example_input_as_an_int][out_bit].add(1);
+
+                    meta_input_as_int_per_meta_example.append(meta_example_input_as_an_int);
                 }
 
-                assert((meta_example_input_as_an_int < meta_inputs_to_meta_outputs.size()));
-                meta_inputs_to_meta_outputs[meta_example_input_as_an_int].append(out_bit);
-            }
+                synthesizer_meta_example = [9, "{"] + synthesizer_meta_example + ["}"];
 
-            synthesizer_meta_example.append(out_bit);
-            print("synthesizer_meta_example", synthesizer_meta_example);
-            final_dataset.append(synthesizer_meta_example);
+                synthesizer_meta_example.append(out_bit);
+                print("synthesizer_meta_example", synthesizer_meta_example);
+                final_dataset.append(synthesizer_meta_example);
+            }
         }
 
         print("---------------------------------------");
         fs.append(new_dag);
-
-        int sum = 0;
-        for(int i = 0;i<result_train.size();i++)
-        {
-            if(result_train[i]){
-                sum = sum + 1;
-            }
-        }
-        print("score:", sum == result_train.size());
-        if(sum == result_train.size())
-        {
-            score = score+1;
-        }
-        print("running score:", score, "/", i+1);
         print("elapsed_time");
         timestamp();
         print("---------------------------------------");
     }
 
-    print("final_dataset");
-    for(int i = 0;i<final_dataset.size();i++) {
-        print(final_dataset[i]);
-    }
-
     print("meta_inputs__to__meta_outputs");
-    for(int i = 0;i<meta_inputs_to_meta_outputs.size();i++) {
-        print(meta_inputs_to_meta_outputs[i]);
+    int omitted = 0;
+    for(int meta_input_as_int = 0;meta_input_as_int<meta_inputs_to_meta_outputs.size();meta_input_as_int++) {
+
+
+        if(
+            (
+                meta_inputs_to_meta_outputs[meta_input_as_int][0] +
+                meta_inputs_to_meta_outputs[meta_input_as_int][1]
+            ) == 0
+        ) {
+            //print("new omitted");
+            omitted = omitted + 1;
+        } else {
+            if((meta_inputs_to_meta_outputs[meta_input_as_int][0] *
+                    meta_inputs_to_meta_outputs[meta_input_as_int][1]) == 0) {
+
+                //print("not omitted");
+                print("[count 0s, count 1s]", meta_inputs_to_meta_outputs[meta_input_as_int], "meta_input_as_int", meta_input_as_int);
+
+            } else {
+                //print("new omitted");
+                omitted = omitted + 1;
+            }
+        }
+
+        //PRINT ANYWAYS
+
+        //print("[count 0s, count 1s]", meta_inputs_to_meta_outputs[meta_input_as_int], "meta_input_as_int", meta_input_as_int);
+        //print("omitted", omitted);
+
+        //DONE PRINT ANYWAYS
+    }
+    print("omitted", omitted);
+
+    print("final_dataset");
+    assert(final_dataset.size() == meta_input_as_int_per_meta_example.size());
+    for(int i = 0;i<final_dataset.size();i++) {
+        print("-----");
+        meta_input_as_int = meta_input_as_int_per_meta_example[i];
+        counts_0s_and_1s = meta_inputs_to_meta_outputs[meta_input_as_int];
+        print("meta_input_as_int", meta_input_as_int, "counts_0s_and_1s", counts_0s_and_1s);
+        if((counts_0s_and_1s[0]+counts_0s_and_1s[1]) == 0) {
+            print("omitted final_dataset[", i, "]", final_dataset[i]);
+        }
+        else
+        {
+            if((counts_0s_and_1s[0]*counts_0s_and_1s[1]) == 0)
+            {
+                print("included final_dataset[", i, "]", final_dataset[i]);
+            }
+            else
+            {
+                print("omitted final_dataset[", i, "]", final_dataset[i]);
+            }
+        }
+        print("-----");
     }
 
-    print("final score:", score, "/", partial_funcs_files.size());
+
+    print("final_dataset");
+    int final_size = 0;
+    assert(final_dataset.size() == meta_input_as_int_per_meta_example.size());
+    for(int i = 0;i<final_dataset.size();i++) {
+        meta_input_as_int = meta_input_as_int_per_meta_example[i];
+        counts_0s_and_1s = meta_inputs_to_meta_outputs[meta_input_as_int];
+        if((counts_0s_and_1s[0]+counts_0s_and_1s[1]) == 0) {
+            //print("omitted final_dataset[", i, "]", final_dataset[i]);
+            int a = 0; a = a+1;
+        }
+        else
+        {
+            if((counts_0s_and_1s[0]*counts_0s_and_1s[1]) == 0)
+            {
+                if(input_was_printed[meta_input_as_int] == 0)
+                {
+                    input_was_printed[meta_input_as_int].add(1);
+                    print(final_dataset[i]);
+                    final_size = final_size + 1;
+                }
+            }
+            else
+            {
+                //print("omitted final_dataset[", i, "]", final_dataset[i]);
+                int a = 0; a = a+1;
+            }
+        }
+    }
+
+    print("initial_size: ", final_dataset.size());
+    print("final_size  : ", final_size);
 
     return fs[0];
+}
+
+
+// -------------
+
+
+Solver get_score(SketchFunction harness, Solution solution, File file)
+{
+    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+    int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
+    program.clear();
+    return score;
+}
+
+Solver best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
+
+    print("best_effort_solutions", "file.size", file.size(), "num_traials", num_trials, "num_rows", num_rows);
+
+	Solution best_solution;
+	int best_score = 0;
+
+    File subset_file;
+    Solution solution;
+    SketchFunction program;
+    int score;
+
+    vector<pair<int, Solution> > solutions = vector<pair<int, Solution> >();
+    for(int trial_id = 0; trial_id<num_trials; trial_id++)
+	{
+		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
+		solution = SATSolver(harness5.deep_clone(), subset_file); // invoke the Sketch Solver on the harness
+		subset_file.clear();
+		score = get_score(harness5, solution, file);
+		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());
+		solutions.append(pair<int, Solution>(score, solution));
+		if(score > best_score) // update the best_solution
+		{
+			best_solution = solution;
+			best_score = score;
+		}
+	}
+
+	solutions.sort();
+	solutions.reverse();
+
+	print("Sorted solution scores:");
+
+	int solutions_size = solutions.size();
+
+    pair<int, Solution> element;
+	for(int i = 0; i<solutions_size; i++)
+	{
+	    element = solutions.get(i);
+	    print("count ", element.first(), "/", file.size(), "= (", ((float(100) * float(element.first())) / float(file.size())), "%)");
+	}
+	print("Done sorted solution scores");
+
+	print("best_score = ", best_score);
+
+    assert(solutions.size() == num_trials);
+
+    print("ASSERTED TRUE:", "solutions.size()", solutions.size(), "num_trials", num_trials);
+
+    return solutions;
+}
+
+Solver scaling_of_training_io_examples_on_best_effort()
+{
+    file = File(file_name, main_sk__Wrapper);
+
+    for(int i = 5; i<26;i = i + 5) {
+
+        solutions = best_effort_solutions(main_sk__Wrapper, file, 20, i);
+        timestamp();
+    }
+
+    solution = SATSolver(main_sk__Wrapper, file);
+    ret = main_sk__Wrapper.produce_executable(solution);
+    return ret;
 }

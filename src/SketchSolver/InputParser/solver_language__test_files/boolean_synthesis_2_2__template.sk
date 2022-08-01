@@ -1,6 +1,4 @@
-pragma options "--bnd-unroll-amnt 197";
-pragma options "--fe-output-code";
-pragma options "--bnd-arr-size 197";
+pragma options "--bnd-arr-size 9";
 pragma options "--bnd-inline-amnt 1";
 
 void print_not() {}
@@ -13,7 +11,7 @@ generator bit unit(int num_bools, bit[num_bools] bools)
     {
         print_not();
     }
-    int bool_id = ??(8);
+    int bool_id = ??(4);
     print_unit(bool_id);
     if(not){
         if(bools[bool_id])

@@ -1,5 +1,6 @@
 pragma options "--bnd-inline-amnt 2";
-pragma options "--bnd-arr-size 3";
+pragma options "--bnd-arr-size 9";
+pragma options "--bnd-unroll-amnt 9";
 
 bit binary_concept(bit x0, bit x1) {
     if(!x0 && !x1) {
