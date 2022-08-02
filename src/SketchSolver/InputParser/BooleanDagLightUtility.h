@@ -70,7 +70,7 @@ protected:
 
     void decrement_num_shared_ptr() const {
         assert(num_shared_ptr >= 1);
-//        if(inlining_tree_id == 622)
+//        if(inlining_tree_id == 0)
 //        {
 //            cout << "here" << endl;
 //        }
@@ -188,6 +188,10 @@ public:
         if(to_copy->var_store != nullptr) {
             var_store = to_copy->var_store->clone();
         }
+        if(inlining_tree_id == 0)
+        {
+            cout << "here" << endl;
+        }
     }
 
     explicit LightSkFuncSetter(const BooleanDagUtility* _skfunc);
@@ -203,6 +207,10 @@ public:
     }
 
     void increment_num_shared_ptr() {
+        if(inlining_tree_id == 0)
+        {
+            cout << "here" << endl;
+        }
         num_shared_ptr++;
     }
 };
@@ -211,6 +219,12 @@ class LightInliningTree: public LightSkFuncSetter
     static long long global_clear_id;
     mutable long long local_clear_id = -1;
     mutable bool deleted = false;
+public:
+    bool has_this_been_deleted() const
+    {
+        return deleted;
+    }
+private:
 
     bool soft_clear(bool clear_root = true, bool sub_clear = false) const {
         if (deleted) {
@@ -654,6 +668,12 @@ class BooleanDagLightUtility
     bool has_been_concretized = false;
 
 public:
+
+    void force_set_has_not_been_concretized()
+    {
+        has_been_concretized = false;
+    }
+
     static bool new_way;
 
     vector<bool> evaluate_inputs();

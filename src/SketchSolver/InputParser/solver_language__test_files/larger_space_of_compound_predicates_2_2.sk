@@ -2,7 +2,7 @@ pragma options "--bnd-arr-size 9";
 pragma options "--bnd-unroll-amnt 9";
 pragma options "--bnd-inline-amnt 1";
 
-generator bit template_binary_concept(bit x0, bit x1) {
+/*generator bit template_binary_concept(bit x0, bit x1) {
     if(x0 && x1) {
         return ??;
     } else if (x0 && !x1) {
@@ -32,6 +32,10 @@ bit template_binary_concept_4___meta(bit x0, bit x1) {
 
 generator bit bin(bit x0, bit x1) {
     return {|template_binary_concept_1___meta(x0, x1) | template_binary_concept_2___meta(x0, x1) | template_binary_concept_3___meta(x0, x1) | template_binary_concept_4___meta(x0, x1) |};
+}*/
+
+generator bit bin(bit x0, bit x1) {
+return  {| x0 ^ x1 | !(x0 && x1) | !(x0 || x1) | x0 ||  x1|};
 }
 
 generator bit f(int n, bit[n] bits)
@@ -69,7 +73,7 @@ generator bit five_ops_lang(int n, bit[n] bits) {
     return {| four_ops_lang(n, bits) | op_4(n, bits) |};
 }
 
-generator bit predicate_generator(int n, bit[n] bits) {
+generator bit choose_one_of_8(int n, bit[n] bits) {
 
     bit first = op(n, bits);
     bit first_2 = op(n, bits);
@@ -84,17 +88,43 @@ generator bit predicate_generator(int n, bit[n] bits) {
     bit fourth_2 = bin(third_3, op(n, bits));
     bit fourth_3 = bin(second_2, second_3);
 
-    return {| first | second | third | fourth | second_2 | third_2 | fourth_2 | fourth_3 |};
+    return {| first | second | third | fourth | second_2 | third_2 | fourth_2 | fourth_3 | };
+}
+
+generator bit choose_one_of_4(int n, bit[n] bits) {
+    return {| op(n, bits) |
+    bin(op(n, bits), op(n, bits)) |
+    bin(bin(op(n, bits), op(n, bits)), bin(op(n, bits), op(n, bits))) |
+    bin(bin(bin(op(n, bits), op(n, bits)), bin(op(n, bits), op(n, bits))), bin(op(n, bits), op(n, bits))) |};
+}
+
+generator bit predicate_generator(int n, bit[n] bits) {
+
+    return {|choose_one_of_8(n, bits) | choose_one_of_4(n, bits)}
 }
 
 generator bit program_generator(int num_bools, bit[num_bools] bools) {
     if(predicate_generator(num_bools, bools))
     {
-        return predicate_generator(num_bools, bools);
+        if(predicate_generator(num_bools, bools))
+        {
+            return predicate_generator(num_bools, bools);
+        }
+        else
+        {
+            return predicate_generator(num_bools, bools);
+        }
     }
     else
     {
-        return predicate_generator(num_bools, bools);
+        if(predicate_generator(num_bools, bools))
+        {
+            return predicate_generator(num_bools, bools);
+        }
+        else
+        {
+            return predicate_generator(num_bools, bools);
+        }
     }
 }
 

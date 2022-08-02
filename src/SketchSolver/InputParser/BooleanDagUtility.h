@@ -31,8 +31,8 @@ public:
             original_program_env(_original_env) {
         if(_inlining_tree != nullptr) {
             inlining_tree = new LightInliningTree(this, _inlining_tree);
-            inlining_tree->get_solution();
             assert(inlining_tree->get_dag_id()  == get_dag_id());
+            inlining_tree->get_solution();
         }
     }
 
@@ -65,14 +65,6 @@ public:
         }
     }
 
-//    void calc_inlining_tree()
-//    {
-//        assert(inlining_tree == nullptr);
-//        inlining_tree = new LightInliningTree(this);
-//        if(inlining_tree != nullptr) {
-//            assert(inlining_tree->get_dag_id()  == get_dag_id());
-//        }
-//    }
 
     virtual void clear() override {
         return BooleanDagLightUtility::clear(inlining_tree);
@@ -290,12 +282,17 @@ public:
             assert(_var_store->get_inlining_tree() != nullptr);
         }
 
+        if(inlining_tree != nullptr && inlining_tree->has_this_been_deleted()) {
+            inlining_tree = nullptr;
+        }
+
         if(inlining_tree != nullptr) {
             assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
         }
         else {
             assert(inlining_tree == nullptr);
             inlining_tree = new LightInliningTree(this, _var_store);
+            assert(inlining_tree->get_dag_id()  == get_dag_id());
             inlining_tree->get_solution();
         }
         if(inlining_tree != nullptr) {
@@ -304,6 +301,10 @@ public:
 
         bool is_being_concretized = false;
         if(var_type == bool_node::CTRL) {
+            if(!get_dag()->getNodesByType(bool_node::CTRL).empty())
+            {
+                force_set_has_not_been_concretized();
+            }
             if(get_has_been_concretized())
             {
                 assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
@@ -314,7 +315,7 @@ public:
                 if(_var_store != nullptr) {
                     is_being_concretized = true;
                     if(_var_store->size() == 0) {
-                        assert(inlining_tree->has_no_holes());
+//                        assert(inlining_tree->has_no_holes());
                     }
                 }
                 else {
@@ -334,8 +335,9 @@ public:
             for (auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
                 if (it->get_name() != "#PC") {
                     assert(_var_store != nullptr);
-                    assert(_var_store->contains(it->get_name()));
-                    local_hole_names.push_back(it->get_name());
+                    if(_var_store->contains(it->get_name())) {
+                        local_hole_names.push_back(it->get_name());
+                    }
                 }
             }
 

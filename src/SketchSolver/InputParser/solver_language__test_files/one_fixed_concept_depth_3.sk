@@ -87,63 +87,8 @@ generator bit predicate(int n, bit[n] bits) {
     return {| first | second | third | fourth | second_2 | third_2 | fourth_2 | fourth_3 |};
 }
 
-bit common_subpart(int n, bit[n] bits)
-{
-    return predicate(n, bits);
-}
-
 bit program(int n, bit[n] bits){
-
-    if(predicate(n, bits))
-    {
-        if(predicate(n, bits))
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
-        else
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
-    }
-    else
-    {
-        if(predicate(n, bits))
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
-        else
-        {
-            if(predicate(n, bits))
-            {
-                return predicate(n, bits);
-            }
-            else
-            {
-                return predicate(n, bits);
-            }
-        }
-    }
+    return predicate(n, bits);
 }
 
 

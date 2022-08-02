@@ -10,7 +10,7 @@ class TopologyMatcher;
 class VarStore: public LightVarStore {
 private:
     map<string, map<string, string> > var_name_to_dag_name_to_name;
-    LightInliningTree* inlining_tree = nullptr;
+    mutable LightInliningTree* inlining_tree = nullptr;
 
     void insert_name_in_original_name_to_dag_name_to_name(const string& name, string original_name, const string& source_dag_name) {
         assert(!original_name.empty() && !source_dag_name.empty());

@@ -1,0 +1,137 @@
+
+pragma options "--bnd-inline-amnt 2";
+pragma options "--bnd-arr-size 9";
+pragma options "--bnd-unroll-amnt 9";
+pragma options "--slv-lightverif";
+
+
+//-- generators begin --
+
+bit const_0(){
+    return 0;
+}
+
+bit const_1(){
+    return 1;
+}
+
+generator bit const_gen() {
+    return {| const_0() | const_1() |};
+}
+
+generator bit literal_gen(int n, bit[n] bits)
+{
+    return {| bits[??] | !bits[??] |};
+}
+
+bit const_circ_0(int n, bit[n] bits){
+    return condition(n, bits);
+}
+
+bit const_circ_1(int n, bit[n] bits){
+    return composite_predicate(n, bits);
+}
+
+generator bit const_circ_gen(int n, bit[n] bits)
+{
+    return {|const_circ_0(n, bits) | const_circ_1(n, bits)|};
+}
+
+generator bit literal_ext_gen(int n, bit[n] bits)
+{
+    return {| literal_gen(n, bits) | const_circ_gen(n, bits) |};
+}
+
+generator bit const_circ_choice(int n, bit[n] bits)
+{
+    return {| const_circ_0(n, bits) | const_circ_1(n, bits) |};
+}
+
+generator bit binop_gen(bit x, bit y)
+{
+    return {| !(x && y) | x ^ y | x || y | !(x || y) |};
+}
+
+generator bit predicate4_gen(int n, bit[n] bits) {
+    return binop_gen(binop_gen(literal_gen(n, bits), literal_gen(n, bits)), binop_gen(literal_gen(n, bits), literal_gen(n, bits)));
+}
+
+generator bit predicate4_ext_gen(int n, bit[n] bits) {
+    return binop_gen(binop_gen(literal_ext_gen(n, bits), literal_ext_gen(n, bits)), binop_gen(literal_ext_gen(n, bits), literal_ext_gen(n, bits)));
+}
+
+// -- generators end --
+
+bit predicate0(int n, bit[n] bits) {
+    return const_gen();
+}
+
+bit predicate1(int n, bit[n] bits) {
+    return literal_gen(n, bits); // const circuit.
+}
+
+bit predicate2(int n, bit[n] bits) {
+    return binop_gen(literal_gen(n, bits), literal_gen(n, bits));
+}
+
+bit predicate3(int n, bit[n] bits) {
+    return binop_gen(binop_gen(literal_gen(n, bits), literal_gen(n, bits)), literal_gen(n, bits));
+}
+
+bit predicate4(int n, bit[n] bits) {
+    return predicate4_gen(n, bits);
+}
+
+bit choose_predicate(int n, bit[n] bits)
+{
+    return {| predicate0(n, bits) | predicate1(n, bits) | predicate2(n, bits) | predicate3(n, bits) |};
+}
+
+bit condition(int n, bit[n] bits) { return predicate4_gen(n, bits);}
+
+bit left_branch(int n, bit[n] bits) { return predicate4_gen(n, bits); }
+
+bit right_branch(int n, bit[n] bits) { return predicate4_gen(n, bits); }
+
+bit composite_predicate(int n, bit[n] bits) {
+    if(condition(n, bits)) {
+        return left_branch(n, bits);
+    }
+    else {
+        return right_branch(n, bits);
+    }
+}
+
+bit condition_ext(int n, bit[n] bits) { return predicate4_ext_gen(n, bits);}
+
+bit left_branch_ext(int n, bit[n] bits) { return predicate4_ext_gen(n, bits); }
+
+bit right_branch_ext(int n, bit[n] bits) { return predicate4_ext_gen(n, bits); }
+
+
+bit composite_predicate_ext(int n, bit[n] bits) {
+    if(condition_ext(n, bits)) {
+        return left_branch_ext(n, bits);
+    }
+    else {
+        return right_branch_ext(n, bits);
+    }
+}
+
+//--
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness void sketch_main(int n, bit[n] bits, bit out) {
+    assert(composite_predicate(n, bits) == out);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness void sketch_main_ext(int n, bit[n] bits, bit out) {
+    assert(composite_predicate_ext(n, bits) == out);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness bit eval_program_main(int n, bit[n] bits, bit out)
+{
+    return composite_predicate(n, bits);
+}

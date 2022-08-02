@@ -248,7 +248,7 @@ bool CEGISSolver::solveCore(){
                 int nctrlbs = ctrlStore.getBitsize();
                 doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged);
                 assert(dag_size == counterexample_concretized_dag->size());
-                assert(nctrlbs = ctrlStore.getBitsize());
+                assert(nctrlbs == ctrlStore.getBitsize());
 //                timestamp(start_finder,
 //                          "solve__f_"+std::to_string(counterexample_concretized_dag->get_dag_id_from_the_user())+
 //                          "__step_"+std::to_string(finder_step_id)+

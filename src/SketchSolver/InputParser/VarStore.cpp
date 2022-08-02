@@ -292,6 +292,7 @@ void VarStore::clear() const
 
     if(inlining_tree != nullptr) {
         inlining_tree->clear();
+        inlining_tree = nullptr;
     }
 
 //    objs.clear();
@@ -422,8 +423,11 @@ const VarStore *VarStore::produce_restrict(const vector<string>& subdomain) cons
     VarStore* ret = new VarStore();
     int idx = 0;
     for(const auto& name : subdomain) {
-        AssertDebug(contains(name), "SUBDOMAIN MUST BE CONTAINED IN DOMAIN. " + name + " NOT FOUND IN VAR_STORE");
-        ret->insertObj(name, idx++, getObjConst(name));
+        bool contains_name = contains(name);
+        if(contains_name)
+        {
+            ret->insertObj(name, idx++, getObjConst(name));
+        }
     }
     return ret;
 }

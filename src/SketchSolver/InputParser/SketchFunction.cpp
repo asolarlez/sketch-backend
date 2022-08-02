@@ -25,7 +25,7 @@ SketchFunction *SketchFunction::produce_concretization(
     if(do_clone) {
         assert(do_deep_clone_tail);
         ret = deep_clone();
-//        SketchFunction* the_clone = unit_clone();
+
     }
     else {
         ret = this;
@@ -36,6 +36,9 @@ SketchFunction *SketchFunction::produce_concretization(
 
     ret->increment_shared_ptr();
 
+    if(ret->get_inlining_tree(false) != nullptr) {
+        assert(ret->get_inlining_tree()->get_dag_id() == ret->get_dag_id());
+    }
     ret->_inplace_recursive_concretize(var_store, var_type, do_recursive_concretize);
 
     ret->decrement_shared_ptr_wo_clear();
@@ -50,11 +53,36 @@ SketchFunction *SketchFunction::produce_concretization(
 
 void SketchFunction::_inplace_recursive_concretize(
         VarStore* var_store, const bool_node::Type var_type, bool do_recursive_concretize) {
+
+    if(get_inlining_tree(false) != nullptr) {
+        assert(get_inlining_tree()->get_dag_id()  == get_dag_id());
+    }
+
     if (do_recursive_concretize) {
         if (var_type == bool_node::CTRL) {
-            LightInliningTree *tmp_inlining_tree = new LightInliningTree(this);
+
+
+            if(get_inlining_tree(false) != nullptr) {
+                assert(get_inlining_tree()->get_dag_id()  == get_dag_id());
+            }
+
+            const LightInliningTree *tmp_inlining_tree = nullptr;
+            if(get_inlining_tree(false) != nullptr) {
+                tmp_inlining_tree = new LightInliningTree(get_inlining_tree(false));
+            }
+            else {
+                tmp_inlining_tree = new LightInliningTree(this);
+            }
+
+            if(get_inlining_tree(false) != nullptr) {
+                assert(get_inlining_tree()->get_dag_id()  == get_dag_id());
+            }
 
             set<string> *subf_names = get_inlined_functions();
+
+            if(get_inlining_tree(false) != nullptr) {
+                assert(get_inlining_tree()->get_dag_id()  == get_dag_id());
+            }
 
             //for every subfunction
             for (const auto &f_name: *subf_names) {
@@ -82,16 +110,25 @@ void SketchFunction::_inplace_recursive_concretize(
                 }
             }
 
+            if(get_inlining_tree(false) != nullptr) {
+                assert(get_inlining_tree()->get_dag_id()  == get_dag_id());
+            }
+
             if (var_store != nullptr) {
                 assert(tmp_inlining_tree->match_topology(var_store->get_inlining_tree()));
                 tmp_inlining_tree->rename_var_store(*var_store);
-                for (const auto &it: get_deep_holes()) {
-                    AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
-                }
+//                for (const auto &it: get_deep_holes()) {
+//                    AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
+//                }
+            }
+
+            if(get_inlining_tree(false) != nullptr) {
+                assert(get_inlining_tree()->get_dag_id()  == get_dag_id());
             }
 
             tmp_inlining_tree->concretize(this, var_store);
             tmp_inlining_tree->clear();
+            tmp_inlining_tree = nullptr;
         }
     }
     else {
@@ -101,22 +138,30 @@ void SketchFunction::_inplace_recursive_concretize(
         }
     }
 
-    _inplace_concretize__assert_subfuncts_are_concretized(var_store, var_type);
+    {
+        if(get_inlining_tree(false) != nullptr) {
+            assert(get_inlining_tree()->get_dag_id()  == get_dag_id());
+        }
+        _inplace_concretize__assert_subfuncts_are_concretized(var_store, var_type);
+    }
 
 }
 
 SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concretized(
         const VarStore* var_store, const bool_node::Type var_type)
 {
-    assert(!get_has_been_concretized());
+//    assert(!get_has_been_concretized());
 
-    for(const auto& assignment: get_unit_ufuns_map()) {
-        auto it = assignment.second;
-        assert(get_env()->function_map.find(it) != get_env()->function_map.end());
-        if(it != get_dag_name()) {
-            AssertDebug(get_env()->function_map[it]->get_has_been_concretized(),
-                        "INVARIANT NOT SATISFIED: NEED ALL SUBFUNCTIONS TO BE CONCRETIZED. "
-                        "USED TO RESTRICT VAR STORE TO ONLY THE THIS SUBFUNCTION FOR PRINTING PURPOSES.");
+//    if(var_store != nullptr)
+    {
+        for (const auto &assignment: get_unit_ufuns_map()) {
+            auto it = assignment.second;
+            assert(get_env()->function_map.find(it) != get_env()->function_map.end());
+            if (it != get_dag_name()) {
+                AssertDebug(get_env()->function_map[it]->get_has_been_concretized(),
+                            "INVARIANT NOT SATISFIED: NEED ALL SUBFUNCTIONS TO BE CONCRETIZED. "
+                            "USED TO RESTRICT VAR STORE TO ONLY THE THIS SUBFUNCTION FOR PRINTING PURPOSES.");
+            }
         }
     }
 
@@ -133,7 +178,7 @@ SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concre
                 AssertDebug(found, "THE SELF IS IT'S OWN DEPENDENCY, WHICH IS FINE. THE REASON FOR THIS ASSERT IS BECAUSE AS OF THIS MOMENT, THE SELF IS ONLY A DEPENDENCY IF IT HAS A UFUN POINTING TO ITSELF.")
             }
         }
-        AssertDebug(found, "THERE ARE DEPENDENCIES THAT ARE UNNECESSARY.");
+//        AssertDebug(found, "THERE ARE DEPENDENCIES THAT ARE UNNECESSARY.");
     }
 
     vector<string> unit_holes = get_unit_holes();
@@ -142,10 +187,29 @@ SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concre
     concretize_this_dag(var_store, var_type, inlined_functions);
     assert(inlined_functions != nullptr);
 
-    rep = get_env()->function_map.concretize(
-            get_dag_name(), var_store->produce_restrict(unit_holes), var_type, inlined_functions);
+    if(var_store == nullptr) {
+        rep = get_env()->function_map.concretize(
+                get_dag_name(), nullptr, var_type, inlined_functions);
+    }
+    else {
+        rep = get_env()->function_map.concretize(
+                get_dag_name(), var_store->produce_restrict(unit_holes), var_type, inlined_functions);
+    }
     if(!get_dag()->getNodesByType(bool_node::UFUN).empty() || !get_dag()->getNodesByType(bool_node::CTRL).empty()) {
-        assert(get_dag()->get_failed_assert() != nullptr);
+        if(var_store == nullptr) {
+            assert(!get_dag()->getNodesByType(bool_node::CTRL).empty());
+            assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
+        }
+        else {
+            if(var_store->size() != 0) {
+                assert(get_dag()->get_failed_assert() != nullptr);
+            }
+            else
+            {
+                assert(!get_dag()->getNodesByType(bool_node::CTRL).empty());
+                assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
+            }
+        }
     }
     delete inlined_functions;
 
@@ -583,6 +647,7 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
     }
 
     SketchFunction* clone_of_this = nullptr;
+    const bool inlining_tree_invariant_assert = false;
 
     bool entered_recursive_case = false;
     map<string, SketchFunction *> to_inline_skfuncs;
@@ -607,6 +672,15 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
             if (_inlined_function_name == get_dag_name()) {
                 entered_recursive_case = true;
                 clone_of_this = to_inline_skfuncs[to_clone_fname];
+
+                if(inlining_tree_invariant_assert) {
+                    if (clone_of_this != nullptr) {
+                        if (clone_of_this->get_inlining_tree(false) != nullptr) {
+                            assert(clone_of_this->get_inlining_tree()->get_dag_id() == get_dag_id());
+                        }
+                    }
+                }
+
             }
         }
     }
@@ -644,6 +718,15 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
             assert(to_inline_skfuncs.find(to_clone_fname) == to_inline_skfuncs.end());
             to_inline_skfuncs[to_clone_fname] = unit_clone_and_insert_in_function_map();
             clone_of_this = to_inline_skfuncs[to_clone_fname];
+
+            if(inlining_tree_invariant_assert) {
+                if (clone_of_this != nullptr) {
+                    if (clone_of_this->get_inlining_tree(false) != nullptr) {
+                        assert(clone_of_this->get_inlining_tree()->get_dag_id() == get_dag_id());
+                    }
+                }
+            }
+
         }
     }
 
@@ -681,6 +764,14 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
 
     if(only_tail) {
         assert(clone_of_this == nullptr);
+    }
+
+    if(inlining_tree_invariant_assert) {
+        if (clone_of_this != nullptr) {
+            if (clone_of_this->get_inlining_tree(false) != nullptr) {
+                assert(clone_of_this->get_inlining_tree()->get_dag_id() == get_dag_id());
+            }
+        }
     }
 
     return clone_of_this;

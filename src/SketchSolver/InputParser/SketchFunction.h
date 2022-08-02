@@ -156,7 +156,7 @@ public:
         SketchFunction* ret = produce_concretization(nullptr, var_type, true);
 
         AssertDebug(ret->get_dag()->getNodesByType(bool_node::UFUN).empty(), "failed to produce executable, bc there are uninlined ufuns.");
-        AssertDebug(ret->get_dag()->getNodesByType(bool_node::CTRL).empty(), "failed to produce executable, bc there are unconcretized holes.");
+        //AssertDebug(ret->get_dag()->getNodesByType(bool_node::CTRL).empty(), "failed to produce executable, bc there are unconcretized holes.");
 
         return ret;
     }
@@ -223,6 +223,12 @@ public:
     SL::PolyVec* evaluate_inputs(const File *file, unsigned int repeat = 0);
 
     void set_dag_id_from_the_user(int dag_id_from_user_id);
+
+    string to_string() {
+        stringstream ss;
+        get_dag()->mrprint(ss, true);
+        return ss.str();;
+    }
 };
 
 #include "NodeEvaluator.h"

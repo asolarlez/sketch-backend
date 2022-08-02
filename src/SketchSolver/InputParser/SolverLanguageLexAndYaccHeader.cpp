@@ -141,23 +141,25 @@ void SL::Assignment::run(StateType *state)
 {
     Var* to_var = nullptr;
     switch (dest_type) {
-        case name_dest_type:
+        case name_dest_type: {
             try {
                 to_var = state->name_to_var_throws(dest_name);
             }
-            catch (exception& e) {
-                SL::SLType* any_type = new SL::SLType(new SL::Identifier("any"));
-                SL::Identifier* copy_name = new SL::Identifier(dest_name);
-                SL::Var* var = new SL::Var(any_type, copy_name);
+            catch (exception &e) {
+                SL::SLType *any_type = new SL::SLType(new SL::Identifier("any"));
+                SL::Identifier *copy_name = new SL::Identifier(dest_name);
+                SL::Var *var = new SL::Var(any_type, copy_name);
                 state->add_var(var);
                 var->clear();
                 to_var = state->name_to_var(dest_name);
             }
             break;
-        case var_dest_type:
+        }
+        case var_dest_type: {
             to_var = dest_var;
             state->add_var(to_var);
             break;
+        }
         default:
             assert(false);
     }
@@ -385,7 +387,7 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
         case _produce_subset_file:
         {
             assert(params.size() == 1);
-            int num_rows = params[0]->eval(state)->get_int();
+            int num_rows = params[0]->eval(state)->get_int(false);
             return new SL::VarVal(file->sample_sub_file(num_rows));
             break;
         }
@@ -557,7 +559,9 @@ SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMT
                 auto ufuns_map = skfunc->get_unit_ufuns_map();
                 assert(ufuns_map.size() == ports_map->size());
                 for (const auto &it: ufuns_map) {
-                    assert(ports_map->at(it.first)->get_string(false) == it.second);
+                    auto left = ports_map->at(it.first)->get_string(false);
+                    auto right =  it.second;
+                    assert(left == right);
                 }
 
                 ports_map_var_val->decrement_shared_ptr();
@@ -630,7 +634,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 
             assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
-            harness->inline_this_dag();
+            harness->inline_this_dag(false);
 
 //            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
@@ -642,7 +646,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             vector<string> after_holes = harness->get_deep_holes();
             sort(prev_holes.begin(), prev_holes.end());
             sort(after_holes.begin(), after_holes.end());
-            assert(prev_holes.size() == after_holes.size());
+//            assert(prev_holes.size() == after_holes.size());
 
             FILE_TYPE* file = nullptr;
 
@@ -1034,6 +1038,17 @@ pair<SL::Var *, SL::VarVal* > SL::FunctionCall::get_var_and_var_val_and_assert_t
             break;
         }
     }
+    if(!enter)
+    {
+        cout << "IN get_var_and_var_val_and_assert_type" << endl;
+        cout << "The function accepts only the types [";
+        for(int i = 0;i<type_names.size();i++)
+        {
+            cout << type_names[i] <<" ";
+        }
+        cout << "]";
+        cout << " But it's called on an object with type '" + var_type_str + "'" << endl;
+    }
     assert(enter);
 
     if(var_val == nullptr)
@@ -1129,7 +1144,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("sort", _sort_vec, "vector");
     add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
     add_to_method_str_to_method_id_map("append", _append, "vector", "File");
-    add_to_method_str_to_method_id_map("size", _size, "File", "vector");
+    add_to_method_str_to_method_id_map("size", _size, "File", "vector", "SketchFunction");
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
     add_to_method_str_to_method_id_map("relabel", _relabel, "File");
     add_to_method_str_to_method_id_map("produce_subset_file", _produce_subset_file, "File");
@@ -1377,7 +1392,7 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
         {
 //            assert(params.size() == 1);
             assert(params.size() >= 1);
-            bool do_assert = true;
+            bool do_assert = false;
             if(params.size() == 2) {
                 do_assert = params[1]->eval(state)->get_bool();
             }
@@ -1419,6 +1434,11 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             assert(dags_diff == 0);
 
             return new VarVal(num_ctrls);
+            break;
+        }
+        case _size: {
+            assert(params.empty());
+            return new VarVal((int)skfunc->get_dag()->size());
             break;
         }
         case _deep_clone:
@@ -2277,6 +2297,7 @@ string SL::VarVal::to_string(bool do_count, bool do_assert)
             assert(false);
             break;
         case skfunc_val_type:
+            return skfunc->to_string();
             assert(false);
             break;
         case solution_val_type:

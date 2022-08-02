@@ -483,6 +483,7 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                 }
             }
 
+            return main_parent->extract_sketch_function(to_this_dag, under_this_var, root);
             AssertDebug(false,
                         "DIDN'T FIND to_this_dag. Can't look further than a _concretization step. You could potentially look further, in the case that to_this_dag was concretized before");
             break;

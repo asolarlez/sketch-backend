@@ -112,6 +112,10 @@ LightInliningTree::LightInliningTree(
 
     if(ufun_nodes.empty()) {
         if(skfunc_inlining_tree != nullptr) {
+            skfunc_inlining_tree->clear();
+            skfunc_inlining_tree = nullptr;
+        }
+        if(skfunc_inlining_tree != nullptr) {
             AssertDebug(false, "DEAD CODE (skfunc_inlining_tree should always be == nullptr here), otherwise you don't need to construct the inliing_tree");
             assert(_skfunc->get_has_been_concretized());
             for(const auto& it: skfunc_inlining_tree->get_var_name_to_inlining_subtree()) {
@@ -198,6 +202,7 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
         }
     } else
     {
+        has_been_concretized = false;
         assert(!has_been_concretized);
     }
 
@@ -216,6 +221,7 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
                     it.second->concretize(next_skfunc, var_store, visited);
                 }
                 else {
+                    assert(var_store != nullptr);
                     const VarStore* sub_var_store = var_store->get_sub_var_store(it.first);
                     it.second->concretize(next_skfunc, sub_var_store, visited);
                     delete sub_var_store;
@@ -300,20 +306,25 @@ void LightInliningTree::rename_var_store(VarStore &var_store, const LightInlinin
 //        }
 //    }
 
-    for (const auto& it: LightSkFuncSetter::get_unconc_map()) {
-        const string& original_name = it.first;
-        if (original_name != "#PC") {
-            AssertDebug(var_store.has_original_name(original_name),
-                        "NODE.original_name(): " + original_name + " DOESN'T EXIST.");
-        }
-    }
+//    for (const auto& it: LightSkFuncSetter::get_unconc_map()) {
+//        const string& original_name = it.first;
+//        if (original_name != "#PC") {
+//            AssertDebug(var_store.has_original_name(original_name),
+//                        "NODE.original_name(): " + original_name + " DOESN'T EXIST IN VAR STORE. AE YOU NOT CONCRETIZING FULLY?.");
+//        }
+//    }
 
     map<string, string> prev_name_to_new_name;
 
     for (const auto& it: LightSkFuncSetter::get_unconc_map()) {
+        const string& original_name = it.first;
+        if (original_name != "#PC") {
+            if(!var_store.has_original_name(original_name)) {
+                continue;
+            }
+        }
         assert(it.second.find(get_dag_name()) != it.second.end());
         string new_name = it.second.at(get_dag_name());
-        string original_name = it.first;
         if (original_name != "#PC") {
             const string& subdag_name = get_dag_name();
 
@@ -456,4 +467,8 @@ LightSkFuncSetter::LightSkFuncSetter(const BooleanDagUtility *_skfunc): dag_name
             unconc_hole_original_name_to_name[org_name][get_dag_name()] = name;
         }
     }
+//    if(inlining_tree_id == 0)
+//    {
+//        cout << "here" << endl;
+//    }
 }
