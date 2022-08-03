@@ -56,6 +56,10 @@ generator bit predicate4_gen(int n, bit[n] bits) {
     return binop_gen(binop_gen(literal_gen(n, bits), literal_gen(n, bits)), binop_gen(literal_gen(n, bits), literal_gen(n, bits)));
 }
 
+generator bit predicate6_gen(int n, bit[n] bits) {
+    return binop_gen(binop_gen(binop_gen(literal_gen(n, bits), literal_gen(n, bits)), literal_gen(n, bits)), binop_gen(binop_gen(literal_gen(n, bits), literal_gen(n, bits)), literal_gen(n, bits)));
+}
+
 generator bit predicate4_ext_gen(int n, bit[n] bits) {
     return binop_gen(binop_gen(literal_ext_gen(n, bits), literal_ext_gen(n, bits)), binop_gen(literal_ext_gen(n, bits), literal_ext_gen(n, bits)));
 }
@@ -87,7 +91,7 @@ bit choose_predicate(int n, bit[n] bits)
     return {| predicate0(n, bits) | predicate1(n, bits) | predicate2(n, bits) | predicate3(n, bits) |};
 }
 
-bit condition(int n, bit[n] bits) { return predicate4_gen(n, bits);}
+bit condition(int n, bit[n] bits) { return predicate6_gen(n, bits);}
 
 bit left_branch(int n, bit[n] bits) { return predicate4_gen(n, bits); }
 
@@ -125,10 +129,11 @@ harness void sketch_main(int n, bit[n] bits, bit out) {
     assert(composite_predicate(n, bits) == out);
 }
 
+/*
 @FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness void sketch_main_ext(int n, bit[n] bits, bit out) {
     assert(composite_predicate_ext(n, bits) == out);
-}
+}*/
 
 @FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
 harness bit eval_program_main(int n, bit[n] bits, bit out)

@@ -9,9 +9,10 @@ SEE binary_boolean_predicates_dsl.sk
 Solver main_left_then_right_then_mid_train()
 {
 
+    int rows_per_sample_mult = 2;
 
-    int num_trials = 20;
-    int num_rows_per_sample = 24;
+    int num_trials = 5;
+    int num_rows_per_sample = 12*rows_per_sample_mult;
 
     file = File(file_name, sketch_main__Wrapper);
     local_dags = best_effort_programs(sketch_main__Wrapper.deep_clone(), file, num_trials, num_rows_per_sample, file.size());
@@ -55,9 +56,10 @@ Solver main_left_then_right_then_mid_train()
 
     //always include if_false_file; sample from if_true_file.
 
-    num_rows_per_sample = 28;
+    num_rows_per_sample = 16*rows_per_sample_mult;
+    local_num_trials = 4;
     local_dags = best_effort_programs_always_and_sometimes_include(
-        sketch_main__Wrapper.deep_clone(), if_false_file, if_true_file, num_trials, num_rows_per_sample, file.size());
+        sketch_main__Wrapper.deep_clone(), if_false_file, if_true_file, local_num_trials, num_rows_per_sample, file.size());
     left_score = local_dags[0].first();
     left_dag = local_dags[0].second();
 
@@ -80,10 +82,11 @@ Solver main_left_then_right_then_mid_train()
             )
         );
 
-    num_rows_per_sample = 24;
+    num_rows_per_sample = 11*rows_per_sample_mult;
+    local_num_trials = 10;
     file = File(file_name, resynth_cond);
     local_dags = best_effort_programs(
-        resynth_cond, file, num_trials, num_rows_per_sample, file.size());
+        resynth_cond, file, local_num_trials, num_rows_per_sample, file.size());
 
     final_dag = local_dags[0].second();
 
@@ -109,18 +112,27 @@ Solver main_left_then_right_then_mid_train()
     print("STARTING if_true_file.size()", if_true_file.size());
     new_harness = sketch_main__Wrapper.deep_clone();
     if_true_file.relabel(new_harness);
+    num_rows_per_sample = if_true_file.size();
+    local_num_trials = 20;
     local_dags = best_effort_programs(
-        new_harness, if_true_file, num_trials, num_rows_per_sample, if_true_file.size());
+        new_harness, if_true_file, local_num_trials, num_rows_per_sample, if_true_file.size()-1);
 
+    best_if_true_score = local_dags[0].first();
     best_if_true = local_dags[0].second();
 
     print("STARTING if_false_file.size()", if_false_file.size());
     new_harness = sketch_main__Wrapper.deep_clone();
     if_false_file.relabel(new_harness);
+    num_rows_per_sample = if_false_file.size()-3;
+    local_num_trials = 8;
     local_dags = best_effort_programs(
-        new_harness, if_false_file, num_trials, num_rows_per_sample, if_false_file.size());
+        new_harness, if_false_file, local_num_trials, num_rows_per_sample, if_false_file.size()-1);
 
+    best_if_false_score = local_dags[0].first();
     best_if_false = local_dags[0].second();
+
+    if((best_if_true_score + best_if_false_score) == file.size())
+    {
 
         comp_pred = composite_predicate.produce_replace(
             "left_branch",
@@ -147,9 +159,77 @@ Solver main_left_then_right_then_mid_train()
 
         no_resynth.make_executable();
 
+        file = File(file_name, no_resynth);
+        int final_score = no_resynth.vectorized_count_passing_inputs(file);
 
-    return final_dag;
+        print("final_score", final_score, "/", file.size(), "dag.size", no_resynth.size());
 
+        return no_resynth;
+    }
+
+    else
+    {
+        file = File(file_name, best_if_false);
+        //split file based on condition
+        passes_file = file.produce_filter(lambda[best_if_false](x){
+            return best_if_false.passes(x);});
+        not_passes_file = file.produce_filter(lambda[best_if_false](x){
+            return not(best_if_false.passes(x));});
+
+        print("passes_file.size()", passes_file.size());
+        print("not_passes_file.size()", not_passes_file.size());
+
+        assert((passes_file.size() + not_passes_file.size()) == file.size());
+
+        {
+            new_harness = sketch_main__Wrapper.deep_clone();
+            not_passes_file.relabel(new_harness);
+            num_rows_per_sample = not_passes_file.size() + 12;
+            local_num_trials = 20;
+
+            local_dags = best_effort_programs_always_and_sometimes_include(
+                new_harness, not_passes_file, passes_file, local_num_trials, num_rows_per_sample, file.size());
+
+            best_not_passes = local_dags[0].second();
+
+            {
+                comp_pred = composite_predicate.produce_replace(
+                    "right_branch",
+                     best_not_passes["sketch_main"]["composite_predicate"]
+                );
+
+                comp_pred = comp_pred.produce_replace(
+                    "left_branch",
+                     best_if_false["sketch_main"]["composite_predicate"]
+                );
+
+                resynth_cond = sketch_main__Wrapper.produce_replace(
+                    "sketch_main",
+                    sketch_main.produce_replace(
+                        "composite_predicate",
+                        comp_pred
+                    )
+                );
+
+                num_rows_per_sample = 18*rows_per_sample_mult;
+                local_num_trials = 20;
+                file = File(file_name, resynth_cond);
+                local_dags = best_effort_programs(
+                    resynth_cond, file, local_num_trials, num_rows_per_sample, file.size()-1);
+
+                final_dag = local_dags[0].second();
+
+                int final_score = final_dag.vectorized_count_passing_inputs(file);
+
+                print("final_score", final_score, "/", file.size(), "dag.size", final_dag.size());
+
+                return final_dag;
+
+            }
+
+        }
+
+    }
 }
 
 Solver main()
@@ -235,6 +315,7 @@ Solver main()
 
 Solver main_em_cond_branches_step(best_score, current_dag, dont_resynth_left)
 {
+    assert(false);
     int local_score = best_score;
     all_dags = [];
     int num_trials = 3;
@@ -449,6 +530,8 @@ Solver main_bot_top_one_step()
 
 Solver best_effort_programs_always_and_sometimes_include(_harness, file_always, file_sometimes, num_trials, num_rows, break_early_threshold) {
 
+    timestamp();
+
     print("|.hsk ENTERING best_effort_programs num_trials", num_trials, "num_rows_per_sample", num_rows);
 
     harness = _harness.deep_clone();
@@ -527,6 +610,8 @@ Solver best_effort_programs_always_and_sometimes_include(_harness, file_always, 
 
 	print("best_score = ", best_score);
 	print("average_score = ", float(sum_scores)/float(ret_dags.size()));
+
+    timestamp();
 
     return ret_dags;
 }
