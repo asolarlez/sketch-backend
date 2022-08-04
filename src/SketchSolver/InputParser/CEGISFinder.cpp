@@ -16,10 +16,11 @@
 int CEGISsolveCount=0;
 
 
-bool CEGISFinder::find(BooleanDAG* problem,
-//                       VarStore& input,
-                       VarStore& controls, bool hasInputChanged){
-	
+bool CEGISFinder::find(
+        BooleanDAG* problem,
+        VarStore& controls,
+        bool hasInputChanged,
+        unsigned long long max_finder_solve_timeout_in_microseconds){
 	// the caller expects find to keep track of all the constraints.
 	// here dirfind is doing that.
 
@@ -55,8 +56,9 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	}
 
 	//Solve
-	
-	SATSolverResult result = mngFind.solve();
+	cout << "in bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) in CEGISFinder.cpp" << endl;
+	SATSolverResult result = mngFind.solve(max_finder_solve_timeout_in_microseconds);
+    cout << "out bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged)  in CEGISFinder.cpp " << endl;
 
 	if(PARAMS->outputSat){
 		++CEGISsolveCount;

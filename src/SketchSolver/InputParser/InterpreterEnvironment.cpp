@@ -1078,7 +1078,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
     int solveCode = 0;
     try {
 
-        solveCode = solver->solve();
+        solveCode = solver->solve(numeric_limits<unsigned long long>::max());
         if (solveCode || !hasGoodEnoughSolution) {
             recordSolution();
         }
@@ -1224,7 +1224,7 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
 	int solveCode = 0;
 	try {
 
-		solveCode = solver->solve();
+		solveCode = solver->solve(numeric_limits<unsigned long long>::max());
 		if (solveCode || !hasGoodEnoughSolution) {
 			recordSolution();
 		}

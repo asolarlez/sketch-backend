@@ -25,7 +25,7 @@ protected:
     BooleanDAG* allInputsDag = nullptr;
 public:
     explicit CEGISFinderSpec(FloatManager& _floats): floats(_floats) {}
-	virtual bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) {
+	virtual bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) {
         Assert(false, "CEGISFinderSpec is just an interface.");
         return false;
     }
@@ -94,7 +94,7 @@ public:
         delete this;
     }
 
-	bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) override;
+	bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) override;
 
 	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override;
 
@@ -165,7 +165,7 @@ public:
 	}
 
 
-	bool find(BooleanDAG* newdag, VarStore& controls, bool hasInputChanged) override
+	bool find(BooleanDAG* newdag, VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout = numeric_limits<unsigned long long>::max()) override
 	{
 		if(hasInputChanged)
         {

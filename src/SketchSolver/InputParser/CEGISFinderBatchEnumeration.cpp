@@ -111,7 +111,7 @@ File* exhaustive_file(VarStore& _controls)
 }
 
 bool CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
-                       VarStore& controls, bool hasInputChanged){
+                       VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout){
 
     // the caller expects find to keep track of all the constraints.
     // here dirfind is doing that.

@@ -420,7 +420,7 @@ bool MiniSATSolver::ignoreOld(){
 	 
 
 
-SATSolverResult MiniSATSolver::solve(){
+SATSolverResult MiniSATSolver::solve(unsigned long long timeout_max_microseconds){
  	if(solveNegation){
  		vec<Lit> lits;
 		Dout(cout<<"@asserting "; for(int i=0; i<finalOr.size(); ++i){ cout<<finalOr[i]<<", ";} cout<<endl; )
@@ -429,7 +429,7 @@ SATSolverResult MiniSATSolver::solve(){
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }
 	s->simplifyAndCompact();
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return SAT_UNSATISFIABLE; }
-	lbool result = s->solve(assumptions);
+	lbool result = s->solve(assumptions, timeout_max_microseconds);
  	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}		
 
 	if( result == l_True) {

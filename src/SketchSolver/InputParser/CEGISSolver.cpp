@@ -89,7 +89,7 @@ void CEGISSolver::declareControl(CTRL_node* cnode){
     ctrlStore.newVar(cname, size, cnode->getOtype(), bool_node::CTRL, cnode->get_original_name(), cnode->get_source_dag_name());
 }
 
-bool CEGISSolver::solve(){
+bool CEGISSolver::solve(unsigned long long find_solve_max_timeout_in_microseconds){
 	if(problems.size()==0){
 		return true;
 	}
@@ -112,7 +112,7 @@ bool CEGISSolver::solve(){
 //	cpt.checkpoint('c', ctrlstore_serialized);
 //	setNewControls(ctrlStore);	
 	
-	bool succeeded = solveCore();
+	bool succeeded = solveCore(find_solve_max_timeout_in_microseconds);
 	//bool succeeded = solveOptimization();
 	
 	//**
@@ -149,7 +149,7 @@ bool CEGISSolver::solveOptimization() {
 */
 
 
-bool CEGISSolver::solveCore(){	
+bool CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microseconds){
 	int iterations = 0;
 	bool fail = false;
     BooleanDAG* counterexample_concretized_dag = nullptr;
@@ -246,7 +246,7 @@ bool CEGISSolver::solveCore(){
                 auto start_finder = std::chrono::steady_clock::now();
                 int dag_size = counterexample_concretized_dag->size();
                 int nctrlbs = ctrlStore.getBitsize();
-                doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged);
+                doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged, find_solve_max_timeout_in_microseconds);
                 assert(dag_size == counterexample_concretized_dag->size());
                 assert(nctrlbs == ctrlStore.getBitsize());
 //                timestamp(start_finder,

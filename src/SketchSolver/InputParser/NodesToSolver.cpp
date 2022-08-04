@@ -2824,8 +2824,7 @@ void NodesToSolver::regTuple(vector<Tvalue>* new_vec, Tvalue& nvar) {
 	}
 }
 
-void
-NodesToSolver::visit (ASSERT_node &node)
+void NodesToSolver::visit (ASSERT_node &node)
 {
 	
 	Tvalue fval = tval_lookup (node.mother());
@@ -2888,7 +2887,9 @@ NodesToSolver::visit (ASSERT_node &node)
 	
 	if(PARAMS->debug){
 		cout<<"ASSERTING "<<node.getMsg()<<endl;
-		int res = dir.getMng().solve();
+        cout << "in void NodesToSolver::visit (ASSERT_node &node) in NodesToSolver.cpp" << endl;
+		int res = dir.getMng().solve(numeric_limits<unsigned long long>::max());
+        cout << "out void NodesToSolver::visit (ASSERT_node &node) in NodesToSolver.cpp" << endl;
 		Assert(res == SAT_SATISFIABLE, "Failed assertion!");
 		lgv.clear();
 		for(int i=1; i < dir.getVarCnt(); ++i){

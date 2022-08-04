@@ -121,7 +121,7 @@ public:
     virtual bool ignoreOld()=0;
 
     
-    virtual SATSolverResult solve()=0;
+    virtual SATSolverResult solve(unsigned long long timeout_max_microseconds)=0;
 
     virtual void reset()=0;
     virtual void retractAssumptions()=0;

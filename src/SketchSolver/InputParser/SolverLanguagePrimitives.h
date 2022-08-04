@@ -60,7 +60,7 @@ namespace SolverLanguagePrimitives {
     public:
         Solver_AE() = default;
 
-        virtual HoleVarStore *solve(ProblemAE *problem) { assert(false); }
+        virtual HoleVarStore *solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) { assert(false); }
 
         virtual string to_string() { assert(false); }
     };
@@ -109,7 +109,7 @@ namespace SolverLanguagePrimitives {
             return new HoleVarStore(solver->ctrlStore);
         }
 
-        HoleVarStore *solve(ProblemAE *problem) override;
+        HoleVarStore *solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) override;
     };
 
     class WrapperBatchEvaluatorSolver : public Solver_AE {
@@ -145,7 +145,7 @@ namespace SolverLanguagePrimitives {
             return new HoleVarStore(solver->ctrlStore);
         }
 
-        HoleVarStore *solve(ProblemAE *problem) override;
+        HoleVarStore *solve(ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds) override;
     };
 
 };

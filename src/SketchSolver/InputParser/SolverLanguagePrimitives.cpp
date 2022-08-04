@@ -9,7 +9,7 @@
 
 //#define CHECK_SOLVE
 
-HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePrimitives::ProblemAE *problem)
+HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePrimitives::ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds)
 {
 //            cout << endl;
 //            cout << "ENTERING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
@@ -35,7 +35,7 @@ HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePr
         int solveCode = 0;
         try {
             auto start_solver = std::chrono::steady_clock::now();
-            solveCode = solver->solve();
+            solveCode = solver->solve(find_solve_max_timeout_in_microseconds);
 //            timestamp(start_solver, "cegis__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+std::to_string(problem->get_dag()->size()));
             timestamp(start_solver, "cegis__dag__n"+std::to_string(problem->get_dag()->size()));
 
@@ -108,7 +108,7 @@ HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePr
 
 
 
-HoleVarStore *SolverLanguagePrimitives::WrapperBatchEvaluatorSolver::solve(SolverLanguagePrimitives::ProblemAE *problem)
+HoleVarStore *SolverLanguagePrimitives::WrapperBatchEvaluatorSolver::solve(SolverLanguagePrimitives::ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds)
 {
 //            cout << endl;
 //            cout << "ENTERING WrapperBatchEvaluatorSolver->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
@@ -134,7 +134,7 @@ HoleVarStore *SolverLanguagePrimitives::WrapperBatchEvaluatorSolver::solve(Solve
         int solveCode = 0;
         try {
             auto start_solver = std::chrono::steady_clock::now();
-            solveCode = solver->solve();
+            solveCode = solver->solve(find_solve_max_timeout_in_microseconds);
 //            timestamp(
 //                    start_solver,
 //                    "cegiswenum__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+

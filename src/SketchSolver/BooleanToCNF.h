@@ -523,7 +523,9 @@ public:
 
     bool solvePendingConstraints(){
         if(pendingConstraints){
-            int res = getMng().solve();
+            cout << "in solvePendingConstraints in BooleanToCNF.h" << endl;
+            int res = getMng().solve(numeric_limits<unsigned long long>::max());
+            cout << "out solvePendingConstraints in BooleanToCNF.h" << endl;
             if(res != SAT_SATISFIABLE){
                 return false;
             }

@@ -637,8 +637,9 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
 	setNewControls(controls, dirCheck);
 	//if(PARAMS->verbosity > 2){ tc.stop().print(); }
 	
-    
-    int result = mngCheck.solve();
+    cout << "in lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input) in CEGISChecker.cpp" << endl;
+    int result = mngCheck.solve(numeric_limits<unsigned long long>::max());
+    cout << "out lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input) in CEGISChecker.cpp" << endl;
     
 	//dirCheck.printAllVars();
     if(params.printDiag){

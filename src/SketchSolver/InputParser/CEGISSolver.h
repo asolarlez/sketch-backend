@@ -57,7 +57,7 @@ protected:
     vector<File*> files;
 
 	void declareControl(CTRL_node* cnode);
-	bool solveCore();
+	bool solveCore(unsigned long long find_solve_max_timeout_in_microseconds);
 
 	void normalizeInputStore();
 
@@ -111,7 +111,7 @@ public:
         return last_elapsed_time;
     }
 
-	virtual bool solve();
+	virtual bool solve(unsigned long long find_solve_max_timeout_in_microseconds);
 	void print_control_map(ostream& out);
 	
 
