@@ -35,7 +35,7 @@ HoleVarStore *SolverLanguagePrimitives::WrapperAssertDAG::solve(SolverLanguagePr
         int solveCode = 0;
         try {
             auto start_solver = std::chrono::steady_clock::now();
-            solveCode = solver->solve(find_solve_max_timeout_in_microseconds);
+            solveCode = solver->solve(find_solve_max_timeout_in_microseconds).success;
 //            timestamp(start_solver, "cegis__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+std::to_string(problem->get_dag()->size()));
             timestamp(start_solver, "cegis__dag__n"+std::to_string(problem->get_dag()->size()));
 
@@ -134,7 +134,7 @@ HoleVarStore *SolverLanguagePrimitives::WrapperBatchEvaluatorSolver::solve(Solve
         int solveCode = 0;
         try {
             auto start_solver = std::chrono::steady_clock::now();
-            solveCode = solver->solve(find_solve_max_timeout_in_microseconds);
+            solveCode = solver->solve(find_solve_max_timeout_in_microseconds).success;
 //            timestamp(
 //                    start_solver,
 //                    "cegiswenum__dag_"+std::to_string(problem->get_dag()->get_dag_id_from_the_user())+"__n"+

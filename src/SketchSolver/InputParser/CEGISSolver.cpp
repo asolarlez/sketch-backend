@@ -89,9 +89,9 @@ void CEGISSolver::declareControl(CTRL_node* cnode){
     ctrlStore.newVar(cname, size, cnode->getOtype(), bool_node::CTRL, cnode->get_original_name(), cnode->get_source_dag_name());
 }
 
-bool CEGISSolver::solve(unsigned long long find_solve_max_timeout_in_microseconds){
+CEGISSolverResult CEGISSolver::solve(unsigned long long find_solve_max_timeout_in_microseconds){
 	if(problems.size()==0){
-		return true;
+		return CEGISSolverResult{true, 0};
 	}
 	Assert(problemStack_is_empty(), "A big bug");
 
@@ -112,7 +112,7 @@ bool CEGISSolver::solve(unsigned long long find_solve_max_timeout_in_microsecond
 //	cpt.checkpoint('c', ctrlstore_serialized);
 //	setNewControls(ctrlStore);	
 	
-	bool succeeded = solveCore(find_solve_max_timeout_in_microseconds);
+	CEGISSolverResult succeeded = solveCore(find_solve_max_timeout_in_microseconds);
 	//bool succeeded = solveOptimization();
 	
 	//**
@@ -149,7 +149,7 @@ bool CEGISSolver::solveOptimization() {
 */
 
 
-bool CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microseconds){
+CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microseconds){
 	int iterations = 0;
 	bool fail = false;
     BooleanDAG* counterexample_concretized_dag = nullptr;
@@ -176,6 +176,8 @@ bool CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microse
 
     int finder_step_id = 0;
 
+    int num_counterexample_concretized_dags = 0;
+
 	while(doMore){
 		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
@@ -200,6 +202,10 @@ bool CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microse
 
             counterexample_concretized_dag = checker->check(ctrlStore);
 			doMore = counterexample_concretized_dag != nullptr;
+            if(doMore)
+            {
+                num_counterexample_concretized_dags+=1;
+            }
 
 		 	ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }			
@@ -246,7 +252,37 @@ bool CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microse
                 auto start_finder = std::chrono::steady_clock::now();
                 int dag_size = counterexample_concretized_dag->size();
                 int nctrlbs = ctrlStore.getBitsize();
-                doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged, find_solve_max_timeout_in_microseconds);
+                SATSolverResult sat_solver_result_from_find = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged, find_solve_max_timeout_in_microseconds);
+
+                switch (sat_solver_result_from_find) {
+                    case UNSPECIFIED:
+                        assert(false);
+                        break;
+                    case SAT_UNDETERMINED:
+                        assert(false);
+                        doMore = false;
+                        break;
+                    case SAT_UNSATISFIABLE:
+                        doMore = false;
+                        break;
+                    case SAT_SATISFIABLE:
+                        doMore = true;
+                        break;
+                    case SAT_TIME_OUT:
+                        doMore = false; //play with this
+                        break;
+                    case SAT_MEM_OUT:
+                        doMore = false;
+                        break;
+                    case SAT_ABORTED:
+                        doMore = false;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                    assert(false);
+                }
+
                 assert(dag_size == counterexample_concretized_dag->size());
                 assert(nctrlbs == ctrlStore.getBitsize());
 //                timestamp(start_finder,
@@ -389,7 +425,7 @@ bool CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microse
     {
         assert(iterations == 1);
     }
-	return !fail;
+	return CEGISSolverResult{!fail, num_counterexample_concretized_dags};
 }
 
 

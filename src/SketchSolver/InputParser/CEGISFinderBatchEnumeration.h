@@ -34,7 +34,7 @@ class CEGISFinderBatchEnumeration : public CEGISFinderSpec  {
             delete this;
         }
 
-        bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout) override;
+        SATSolverResult find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout) override;
 
         bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override;
 

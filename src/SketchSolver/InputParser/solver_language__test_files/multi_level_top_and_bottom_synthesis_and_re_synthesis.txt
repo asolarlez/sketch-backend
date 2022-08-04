@@ -9,12 +9,13 @@ SEE binary_boolean_predicates_dsl.sk
 Solver main()
 {
     int trials_mult = 32;
-    int rows_mult = 100;
+    int rows_mult = 4;
 
     int small_num_trials = 1*trials_mult;
     int big_num_trials = 4*trials_mult;
 
-    float timeout = float(1); // in seconds
+    float timeout = float(1)/float(4); // in seconds
+    float timeout_mult = float(2); // in seconds
 
     _left_branch__Wrapper = sketch_main__Wrapper.produce_replace(
         "sketch_main",
@@ -26,25 +27,41 @@ Solver main()
     file = File(file_name, _left_branch__Wrapper);
     local_dags = best_effort_programs(
         _left_branch__Wrapper, file, 6*small_num_trials, 1*rows_mult, timeout, file.size()-1, []);
+    timeout = timeout * timeout_mult;
     local_dags = best_effort_programs(
         _left_branch__Wrapper, file, 3*small_num_trials, 2*rows_mult, timeout, file.size()-1, local_dags);
+    timeout = timeout * timeout_mult;
     local_dags = best_effort_programs(
         _left_branch__Wrapper, file, 2*small_num_trials, 3*rows_mult, timeout, file.size()-1, local_dags);
+    timeout = timeout * timeout_mult;
     local_dags = best_effort_programs(
         _left_branch__Wrapper, file, (3*small_num_trials)/2, 4*rows_mult, timeout, file.size()-1, local_dags);
+    timeout = timeout * timeout_mult;
     local_dags = best_effort_programs(
         _left_branch__Wrapper, file, (6*small_num_trials)/5, 5*rows_mult, timeout, file.size()-1, local_dags);
+    timeout = timeout * timeout_mult;
     local_dags = best_effort_programs(
-        _left_branch__Wrapper, file, small_num_trials, 6*rows_mult, file.size()-1, timeout, local_dags);
+        _left_branch__Wrapper, file, small_num_trials, 6*rows_mult, timeout, file.size()-1, local_dags);
+    timeout = timeout * timeout_mult;
 
     frontier_union_intersection = Frontier(4);
-    int iterate_for = 4;
-    for(int i = 0;i<iterate_for;i++)
+    int first_loop_consider_best = 6;
+    if(first_loop_consider_best > local_dags.size())
     {
-        print("processing dag i", i);
-        for(int j = i+1;j<local_dags.size();j++)
+        first_loop_consider_best = local_dags.size();
+    }
+    int second_loop_consider_best = 64;
+    if(second_loop_consider_best > local_dags.size())
+    {
+        second_loop_consider_best = local_dags.size();
+    }
+    for(int i = 0;i<first_loop_consider_best;i++)
+    {
+        print("processing dag i", i, "/", first_loop_consider_best);
+        for(int j = i+1;j<second_loop_consider_best;j++)
         {
 
+        print("processing dag j", j, "/", second_loop_consider_best);
             left_score = local_dags[i].first();
             left_dag = local_dags[i].second();
             right_score = local_dags[j].first();
@@ -141,20 +158,17 @@ Solver main()
                 )
             );
 
-            num_rows_per_sample = 9;
-
             file.relabel(resynth_cond);
             ret_dags = best_effort_programs(
-                resynth_cond, file, big_num_trials, num_rows_per_sample, timeout, file.size()-1, ret_dags);
+                resynth_cond, file, small_num_trials, 6*rows_mult, timeout, file.size()-1, ret_dags);
 
         }
 
         print("FINAL PRINT");
 
         for(int i = 0; i<ret_dags.size(); i++) {
-            print("count ", ret_dags[i].first(), "/", file_size, "%",
-                ((float(100) * float(ret_dags[i].first())) / float(file_size)));
-            sum_scores = sum_scores + ret_dags[i].first();
+            print("count ", ret_dags[i].first(), "/", file.size(), "%",
+                ((float(100) * float(ret_dags[i].first())) / float(file.size())));
         }
 
         print("return", ret_dags[0].second());
@@ -281,7 +295,7 @@ Solver main_em_cond_branches_step(best_score, current_dag, file, num_trials, del
             num_rows_per_sample = num_rows_per_sample+delta_num_rows_per_sample;
 
             file.relabel(resynth_cond);
-            local_dags = best_effort_programs(resynth_cond, file, num_trials, num_rows_per_sample, timeout, local_score);
+            local_dags = best_effort_programs(resynth_cond, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
             all_dags.append(local_dags);
 
@@ -349,7 +363,7 @@ Solver main_em_cond_branches_step(best_score, current_dag, file, num_trials, del
 
             resynth_branches = _resynth_branches;
             file.relabel(resynth_branches);
-            local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score);
+            local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
             all_dags.append(local_dags);
 
@@ -417,7 +431,7 @@ Solver main_em_cond_branches_step(best_score, current_dag, file, num_trials, del
 
             resynth_branches = _resynth_branches;
             file.relabel(resynth_branches);
-            local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score);
+            local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
             all_dags.append(local_dags);
 
@@ -460,7 +474,7 @@ Solver main_em_cond_branches_step(best_score, current_dag, file, num_trials, del
 
 }
 
-Solver best_effort_programs(_harness, file, num_trials, num_rows, timeout_per_trial, break_early_threshold, old_ret_dags) {
+Solver best_effort_programs(_harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold, old_ret_dags) {
 
     timestamp();
 

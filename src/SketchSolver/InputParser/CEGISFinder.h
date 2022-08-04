@@ -25,9 +25,9 @@ protected:
     BooleanDAG* allInputsDag = nullptr;
 public:
     explicit CEGISFinderSpec(FloatManager& _floats): floats(_floats) {}
-	virtual bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) {
+	virtual SATSolverResult find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) {
         Assert(false, "CEGISFinderSpec is just an interface.");
-        return false;
+        return UNSPECIFIED;
     }
 
 	virtual bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes)
@@ -94,7 +94,7 @@ public:
         delete this;
     }
 
-	bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) override;
+	SATSolverResult find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) override;
 
 	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override;
 
@@ -165,7 +165,7 @@ public:
 	}
 
 
-	bool find(BooleanDAG* newdag, VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout = numeric_limits<unsigned long long>::max()) override
+    SATSolverResult find(BooleanDAG* newdag, VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout = numeric_limits<unsigned long long>::max()) override
 	{
 		if(hasInputChanged)
         {
@@ -181,7 +181,9 @@ public:
 		else
 		{
 			//claim: solution is already optimal.
-			return false;
+            assert(allInputsDag->get_failed_assert() == nullptr);
+            AssertDebug(false, "THIS NEEDS TO BE CONFIRMED THAT IT'S WHAT WE WANT IF YOU CAN EVEN GET HERE.");
+			return SAT_SATISFIABLE;
 		}
 
 		map<string, string> outputControls;
@@ -191,9 +193,9 @@ public:
 		SATSolverResult result =
 			assertDAGNumerical(allInputsDag, outputControls, outputControlInts, outputControlFloats);
 		
-		if(result != SAT_SATISFIABLE)
+		if(result != SAT_TIME_OUT && result != SAT_SATISFIABLE)
 		{
-			return false;
+			return result;
 		}
 
 		updateCtrlVarStore(controls);
@@ -237,7 +239,7 @@ public:
 			}
 		}
 
-		return true;
+		return result;
 	}
 
 	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override

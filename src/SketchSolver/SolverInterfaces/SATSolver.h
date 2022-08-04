@@ -19,14 +19,14 @@ using namespace MSsolverNS;
 class Tvalue;
 
 enum SATSolverResult{
+    UNSPECIFIED,
+
 	SAT_UNDETERMINED,
 	SAT_UNSATISFIABLE,
 	SAT_SATISFIABLE,
 	SAT_TIME_OUT,
 	SAT_MEM_OUT,
 	SAT_ABORTED,
-
-    SAT_NOT_FULLY_CONCRETIZED
 };
 
 static const string SATSolverResultNames[7] =

@@ -16,7 +16,7 @@
 int CEGISsolveCount=0;
 
 
-bool CEGISFinder::find(
+SATSolverResult CEGISFinder::find(
         BooleanDAG* problem,
         VarStore& controls,
         bool hasInputChanged,
@@ -42,7 +42,8 @@ bool CEGISFinder::find(
     else
     {
         //claim: solution is already optimal.
-        return false;
+        AssertDebug(false, "INVESTIGATE");
+        return SAT_SATISFIABLE;
     }
 
 	//hasInputChange == is it a new problem;
@@ -57,8 +58,7 @@ bool CEGISFinder::find(
 
 	//Solve
 	cout << "in bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) in CEGISFinder.cpp" << endl;
-    assert(max_finder_solve_timeout_in_microseconds == 1000000);
-	SATSolverResult result = mngFind.solve(max_finder_solve_timeout_in_microseconds);
+    SATSolverResult result = mngFind.solve(max_finder_solve_timeout_in_microseconds);
     cout << "out bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged)  in CEGISFinder.cpp " << endl;
 
 	if(PARAMS->outputSat){
@@ -74,18 +74,18 @@ bool CEGISFinder::find(
         mngFind.printDiagnostics('f');
 	}
 
-    if (result != SAT_SATISFIABLE){ 	//If solve is bad, return false.
+    if (result != SAT_TIME_OUT && result != SAT_SATISFIABLE){ 	//If solve is bad, return false.
     	if( result != SAT_UNSATISFIABLE){
 	    	switch( result ){
 			    case SAT_UNDETERMINED: {
 					if (params.lightVerif) {
-						return false;
+						return result;
 					}
 					else {
 						throw new SolverException(result, "SAT_UNDETERMINED"); break;
 					}
 				}									
-	    		case SAT_TIME_OUT: throw new SolverException(result, "SAT_UNDETERMINED"); break;
+	    		case SAT_TIME_OUT:  throw new SolverException(result, "SAT_TIME_OUT"); break;
 	    		case SAT_MEM_OUT:  throw new SolverException(result, "SAT_MEM_OUT"); break;
 	    		case SAT_ABORTED:  throw new SolverException(result, "SAT_ABORTED"); break;
 
@@ -96,7 +96,7 @@ bool CEGISFinder::find(
 		if(this->stoppedEarly){
 			cout<<dirFind.lastErrMsg<<endl;
 		}
-    	return false;
+    	return result;
     }
 	Dout( dirFind.print() );
 	//dirFind.printAllVars();
@@ -128,7 +128,7 @@ bool CEGISFinder::find(
 	}
 
 	mngFind.reset();
-	return true;
+	return result;
 }
 
 void CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)

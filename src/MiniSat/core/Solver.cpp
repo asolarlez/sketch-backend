@@ -2091,16 +2091,20 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
                 cout << endl;
             }
 
+            double delta_runtime_factor_growth_x = -1;
             if (prev_elapsed != 0) {
-                double delta_runtime_factor_growth_x = (double) elapsed_since_prev / prev_elapsed;
+                delta_runtime_factor_growth_x = (double) elapsed_since_prev / prev_elapsed;
                 cout << "delta_runtime_factor_growth_x " << delta_runtime_factor_growth_x << endl;
                 predict_next_elapsed_since_start =
                         elapsed_since_start + elapsed_since_prev * delta_runtime_factor_growth_x;
             }
 
-            if (elapsed_since_start > max_num_microseconds) {
+            if (predict_next_elapsed_since_start > max_num_microseconds) {
                 cout << "TIMEOUT in < main solver loop in Solver::solve in Solver.cpp >" << endl;
-                cout << "elapsed_since_start " << elapsed_since_prev << endl;
+                cout << "elapsed_since_start " << elapsed_since_start << endl;
+                cout << "elapsed_since_prev " << elapsed_since_prev << endl;
+                cout << "delta_runtime_factor_growth_x " << delta_runtime_factor_growth_x << endl;
+                cout << "predict_next_elapsed_since_start " << predict_next_elapsed_since_start << endl;
                 cout << "is_greater_than" << endl;
                 cout << "max_num_microseconds " << max_num_microseconds << endl;
 

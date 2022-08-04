@@ -110,7 +110,7 @@ File* exhaustive_file(VarStore& _controls)
     return var_stores_to_exhaustive_files[var_store_shape];
 }
 
-bool CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
+SATSolverResult CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
                        VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout){
 
     // the caller expects find to keep track of all the constraints.
@@ -134,7 +134,8 @@ bool CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
     else
     {
         //claim: solution is already optimal.
-        return false;
+        AssertDebug(false, "INVESTIGATE.");
+        return SAT_SATISFIABLE;
     }
 
     //Solve
@@ -164,7 +165,7 @@ bool CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
 
     if(passing_input_id == -1)
     {
-        return false;
+        return result;
     }
 
     controls = *exhaustive_inputs->at(passing_input_id);
@@ -175,33 +176,7 @@ bool CEGISFinderBatchEnumeration::find(BooleanDAG* problem,
 //    timestamp(start_measuring_eval_inptus, "BatchEnum_find_n"+std::to_string(allInputsDag->size()));
     timestamp(start_measuring_eval_inptus, "BatchEnum_find");
 
-    return true;
-
-    assert(false);
-
-    if (result != SAT_SATISFIABLE){ 	//If solve is bad, return false.
-        if( result != SAT_UNSATISFIABLE){
-            switch( result ){
-                case SAT_UNDETERMINED: {
-                    if (params.lightVerif) {
-                        return false;
-                    }
-                    else {
-                        throw new SolverException(result, "SAT_UNDETERMINED"); break;
-                    }
-                }
-                case SAT_TIME_OUT: throw new SolverException(result, "SAT_UNDETERMINED"); break;
-                case SAT_MEM_OUT:  throw new SolverException(result, "SAT_MEM_OUT"); break;
-                case SAT_ABORTED:  throw new SolverException(result, "SAT_ABORTED"); break;
-
-                default:
-                    Assert(false, "MISSING CASE in CEGISFinder::find.");
-            }
-        }
-        return false;
-    }
-
-    return true;
+    return result;
 }
 
 bool CEGISFinderBatchEnumeration::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes){
