@@ -53,8 +53,211 @@ Solver main_baseline()
     return local_dags[0].second();
 }
 
+
+Solver run_one_step_bottom_up(init_timeout)
+{
+    int trials_mult = 4;
+    int init_num_rows = 10;
+    int delta_rows = 5;
+    
+    int consider_top_count_mult = 1;
+
+    int init_num_trials = 1*trials_mult;
+    int big_num_trials = 4*trials_mult;
+    int serious_num_trials = init_num_trials;
+
+    float timeout = init_timeout; // in seconds
+    int trials_meta_multiple = 2; // as x in # of meta inputs.
+    float timeout_mult = float(trials_meta_multiple); // in seconds
+
+    _left_branch__Wrapper = sketch_main__Wrapper.produce_replace(
+        "sketch_main",
+        sketch_main.produce_replace(
+            "composite_predicate",
+            left_branch.deep_clone()
+        )
+    );
+    file = File(file_name, _left_branch__Wrapper);
+
+    int max_number_of_rows = 15;
+    int trials_multiple = 1;
+    local_dags = [];
+    number_of_rows_per_trial = delta_rows;
+    for(
+        number_of_rows_per_trial = init_num_rows;
+        number_of_rows_per_trial < max_number_of_rows+1;
+        number_of_rows_per_trial = number_of_rows_per_trial + delta_rows)
+    {
+        serious_num_trials = init_num_trials/trials_multiple;
+        local_dags = best_effort_programs(
+            _left_branch__Wrapper, file, serious_num_trials, number_of_rows_per_trial, timeout, file.size()-1, local_dags);
+        timeout = timeout * timeout_mult;
+        trials_multiple = trials_multiple * trials_meta_multiple;
+    }
+
+    frontier_union_intersection = Frontier(4);
+    int first_loop_consider_best = 1*consider_top_count_mult;
+    if(first_loop_consider_best > local_dags.size())
+    {
+        first_loop_consider_best = local_dags.size();
+    }
+    int second_loop_consider_best = 6*consider_top_count_mult;
+    if(second_loop_consider_best > local_dags.size())
+    {
+        second_loop_consider_best = local_dags.size();
+    }
+    for(int i = 0;i<first_loop_consider_best;i++)
+    {
+        print("processing dag i", i, "/", first_loop_consider_best);
+        for(int j = i+1;j<second_loop_consider_best;j++)
+        {
+
+        print("processing dag j", j, "/", second_loop_consider_best);
+            left_score = local_dags[i].first();
+            left_dag = local_dags[i].second();
+            right_score = local_dags[j].first();
+            right_dag = local_dags[j].second();
+
+            union = lambda[left_dag, right_dag](x) {
+                if (left_dag.passes(x)) {
+                    return true;
+                }
+                return right_dag.passes(x);
+            };
+
+            intersection = lambda[left_dag, right_dag](x) {
+                if (left_dag.passes(x)) {
+                    return right_dag.passes(x);
+                }
+                return false;
+            };
+
+            num_u = file.count(union);
+            num_i = file.count(intersection);
+            heuristic = ((4*num_u) + num_i);
+            bool was_inserted =
+                frontier_union_intersection.insert(
+                    [num_u, num_i, num_u + num_i, heuristic, "|", left_score, right_score, "@", i, j], // solution
+                    [0-heuristic, 0-num_u, 0-num_i, 0-(num_u + num_i)] // score
+                );
+
+            bool do_print = false;
+            if(do_print)
+            {
+                print("new");
+                print("combine scores: ", left_score, right_score);
+
+                if(was_inserted) {
+                    print("was inserted");
+                }
+                else {
+                    print("was not inserted");
+                }
+
+                print("print");
+                for(int i = 0;i<frontier_union_intersection.size();i++) {
+                    print(frontier_union_intersection[i]);
+                }
+            }
+        }
+
+        print("frontier at dag i", i);
+        for(int i = 0;i<frontier_union_intersection.size();i++) {
+            print(frontier_union_intersection[i]);
+        }
+    }
+
+    print("START for(int i = 0;i<frontier_union_intersection.size();i++)");
+    print("START print(frontier_union_intersection[i]);");
+
+    for(int i = 0;i<frontier_union_intersection.size();i++)
+    {
+        print(frontier_union_intersection[i]);
+    }
+
+    print("DONE print(frontier_union_intersection[i]);");
+
+    if(true)
+    {
+        ret_dags = [];
+        int best_tuple_id = 0-1;
+        int best_score = 0-1;
+        for(int i = 0;i<frontier_union_intersection.size();i++)
+        {
+            print("frontier_union_intersection[", i, "]:");
+            print(frontier_union_intersection[i]);
+            assert(frontier_union_intersection[0][7] == "@");
+            main_dag_id = frontier_union_intersection[0][8];
+            dual_dag_id = frontier_union_intersection[0][9];
+            best_score = local_dags[main_dag_id].first();
+            main_dag = local_dags[main_dag_id].second();
+            //print("best_score", best_score);
+
+            best_dual_score = local_dags[dual_dag_id].first();
+            best_dual_dag = local_dags[dual_dag_id].second();
+            //print("best_dual_score", best_dual_score);
+
+            comp_pred = composite_predicate.produce_replace(
+                "right_branch",
+                 best_dual_dag["sketch_main"]["composite_predicate"]
+            );
+
+            comp_pred = comp_pred.produce_replace(
+                "left_branch",
+                 main_dag["sketch_main"]["composite_predicate"]
+            );
+
+            resynth_cond = sketch_main__Wrapper.produce_replace(
+                "sketch_main",
+                sketch_main.produce_replace(
+                    "composite_predicate",
+                    comp_pred
+                )
+            );
+
+            file.relabel(resynth_cond);
+            ret_dags = best_effort_programs(
+                resynth_cond, file,
+                trials_mult, init_num_rows,
+                init_timeout, file.size()-1, ret_dags);
+
+            if(ret_dags[0].first() > best_score)
+            {
+                best_score = ret_dags[0].first();
+                best_tuple_id = i;
+            }
+
+        }
+
+        print("FINAL PRINT");
+
+        for(int i = 0; i<ret_dags.size(); i++) {
+            print("count ", ret_dags[i].first(), "/", file.size(), "%",
+                ((float(100) * float(ret_dags[i].first())) / float(file.size())));
+        }
+
+        return_dag_score = ret_dags[0].first();
+        return_dag = ret_dags[0].second();
+
+        assert(return_dag_score == best_score);
+
+        print("--------- SUMM ---------");
+        print("return_dag_score", return_dag_score);
+        print("return_dag BooleanDAG::to_string");
+        print("--------- INIT ---------");
+        print(return_dag);
+        print("--------- DONE ---------");
+
+        return ret_dags[0];
+    }
+
+}
+
 Solver main()
 {
+    float timeout = float(1)/float(4); // in seconds
+    best_score_and_best_dag = run_one_step_bottom_up(timeout);
+    return best_score_and_best_dag.second();
     //return main_baseline();
     int trials_mult = 512;
     int init_num_rows = 10;
@@ -94,13 +297,13 @@ Solver main()
     }
 
     frontier_union_intersection = Frontier(4);
-    int consider_best_mult = 6;
-    int first_loop_consider_best = 1*consider_best_mult;
+    int consider_top_count_mult = 6;
+    int first_loop_consider_best = 1*consider_top_count_mult;
     if(first_loop_consider_best > local_dags.size())
     {
         first_loop_consider_best = local_dags.size();
     }
-    int second_loop_consider_best = 6*consider_best_mult;
+    int second_loop_consider_best = 6*consider_top_count_mult;
     if(second_loop_consider_best > local_dags.size())
     {
         second_loop_consider_best = local_dags.size();
