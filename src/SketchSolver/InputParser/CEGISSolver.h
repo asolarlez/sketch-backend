@@ -43,6 +43,7 @@ struct CEGISSolverResult
 };
 
 class CEGISSolver
+
 {
 
 	CEGISFinderSpec* finder;

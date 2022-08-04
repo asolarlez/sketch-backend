@@ -21,7 +21,7 @@ public:
 
     const string& file_name;
 
-    ofstream console_output = ofstream("console_output.out");
+    ofstream console_output = ofstream("console_output__n9_m429__gen_8__incremental.out");
 
     SL::Methods* init_root = nullptr;
 

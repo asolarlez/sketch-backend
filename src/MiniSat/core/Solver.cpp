@@ -2110,9 +2110,11 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
 
                 printf("WARNING: You are running with a timeout, so I am bailing\n");
                 printf("out and assuming the problem is UNDEF; return l_MainLoopTimeout;.\n");
+                status = l_MainLoopTimeout;
+//                break;
                 cout << "HERE pre cancelUntil(0);" << endl;
                 cancelUntil(0);
-                cout << "HERE pre cancelUntil(0);" << endl;
+                cout << "HERE poset cancelUntil(0);" << endl;
                 return l_MainLoopTimeout;
             }
 
@@ -2147,9 +2149,16 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
         verifyModel();
 #endif
     }else{
-        assert(status == l_False);
-        if (conflict.size() == 0)
-            ok = false;
+        if(status == l_MainLoopTimeout)
+        {
+            cout << "at < if(status == l_MainLoopTimeout) in Solver.cpp >" << endl;
+            cout << "almost at out in lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_microseconds)" << endl;
+        }
+        else {
+            assert(status == l_False);
+            if (conflict.size() == 0)
+                ok = false;
+        }
     }
 
 	for (int i = 0; i < sins.size(); ++i) {

@@ -34,7 +34,7 @@ namespace MSsolverNS{
 
 template<class T>
 class vec {
-    T*  data;
+    T*  data = nullptr;
     size_t sz;
     int cap;
 
@@ -134,12 +134,14 @@ public:
 #ifdef _DEBUG
 		assert( index >= 0 && index < sz );
 #endif
+        assert(data != nullptr);
 		return data[index]; 
 	}
     T&       operator [] (int index)        { 
 #ifdef _DEBUG
 		assert( index >= 0 && index < sz );
-#endif		
+#endif
+        assert(data != nullptr);
 		return data[index]; }
 	T* begin(){ return data; }
 

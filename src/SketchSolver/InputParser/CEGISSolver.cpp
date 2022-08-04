@@ -57,8 +57,6 @@ void CEGISSolver::addProblem(BooleanDagLightUtility *harness, File *file){
 	finder->updateCtrlVarStore(ctrlStore);	
 }
 
-
-
 CEGISSolver::~CEGISSolver(void)
 {
     //assumption: all problems are already deleted
@@ -69,7 +67,6 @@ CEGISSolver::~CEGISSolver(void)
 		delete problems[i];
 	}
 }
-
 
 void CEGISSolver::declareControl(CTRL_node* cnode){
 	const string& cname = cnode->get_name();
@@ -147,7 +144,6 @@ bool CEGISSolver::solveOptimization() {
 	return !fail;f
 }
 */
-
 
 CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microseconds){
 	int iterations = 0;
@@ -428,9 +424,6 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
 	return CEGISSolverResult{!fail, num_counterexample_concretized_dags};
 }
 
-
-
-
 void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
 	map<string, CTRL_node*> minimizes;
 	for(size_t i=0; i<problems.size(); ++i){
@@ -461,16 +454,16 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 	prevSolutionFound = true;
 }
 
- void BitSet::print(ostream& os){
-		int i=next(-1);
-		os<<"{";
-		while(i != -1){
-			os<<", "<<i;
-			i = next(i);
-		}
-		os<<"}"<<endl;
+void BitSet::print(ostream& os){
+    int i=next(-1);
+    os<<"{";
+    while(i != -1){
+        os<<", "<<i;
+        i = next(i);
+    }
+    os<<"}"<<endl;
 
-	}
+}
 
 void CEGISSolver::normalizeInputStore(){
 	VarStore tmp = old_join(checker->get_input_store(), ctrlStore);
@@ -502,8 +495,6 @@ void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
     values = ctrlStore.to_map_str_str(floats);
 }
 
-
-
 // can remove
 void CEGISSolver::outputEuclid(ostream& fout){
 		cout<<"BEFORE OUTPUTING STATE"<<endl;
@@ -512,7 +503,6 @@ void CEGISSolver::outputEuclid(ostream& fout){
 			neuc.process(*getProblem());
 		}
 	}
-
 
 void CEGISSolver::setup2QBF(ofstream& out){
 	MiniSATSolver mngCheck("checker", SATSolver::CHECKER);		

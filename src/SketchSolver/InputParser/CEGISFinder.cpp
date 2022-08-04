@@ -84,14 +84,14 @@ SATSolverResult CEGISFinder::find(
 					else {
 						throw new SolverException(result, "SAT_UNDETERMINED"); break;
 					}
-				}									
+				}
 	    		case SAT_TIME_OUT:  throw new SolverException(result, "SAT_TIME_OUT"); break;
 	    		case SAT_MEM_OUT:  throw new SolverException(result, "SAT_MEM_OUT"); break;
 	    		case SAT_ABORTED:  throw new SolverException(result, "SAT_ABORTED"); break;
 
                 default:
                     Assert(false, "MISSING CASE in CEGISFinder::find.");
-	    	}    			
+	    	}
     	}
 		if(this->stoppedEarly){
 			cout<<dirFind.lastErrMsg<<endl;
