@@ -108,6 +108,7 @@ inline lbool toLbool(int   v) { return lbool(v);  }
 const lbool l_True  = toLbool( 1);
 const lbool l_False = toLbool(-1);
 const lbool l_Undef = toLbool( 0);
+const lbool l_MainLoopTimeout = toLbool( 2);
 
 //=================================================================================================
 // Clause -- a simple class for representing a clause:

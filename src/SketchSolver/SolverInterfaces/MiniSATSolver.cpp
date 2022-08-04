@@ -439,7 +439,12 @@ SATSolverResult MiniSATSolver::solve(unsigned long long timeout_max_microseconds
 	if(result==l_False){
 		//cout<<"Returned UNSAT"<<endl;
 		return SAT_UNSATISFIABLE;
-	}	
+	}
+    if(result==l_MainLoopTimeout)
+    {
+        cout<<"Returned SAT_TIME_OUT"<<endl;
+        return SAT_TIME_OUT;
+    }
 	return SAT_UNDETERMINED;
 }
 

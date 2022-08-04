@@ -1,0 +1,143 @@
+
+Solver main_bot_top_one_step()
+{
+    // here you want:
+    // start small;
+    // combine
+    // extract best modules.
+    // add base modules as primitives.
+    // resynthsize
+
+    int num_trials = 100;
+    int num_rows_per_sample = 10;
+
+    left_branch_0 = sketch_main.produce_replace("composite_predicate", left_branch.deep_clone());
+    left_branch_sketch_0 = sketch_main__Wrapper.produce_replace("sketch_main", left_branch_0);
+
+    right_branch_0 = sketch_main.produce_replace("composite_predicate", right_branch.deep_clone());
+    right_branch_sketch_0 = sketch_main__Wrapper.produce_replace("sketch_main", right_branch_0);
+
+    File file = File(file_name, left_branch_sketch_0);
+    left_branch_0_dags = best_effort_programs(left_branch_sketch_0, file, num_trials, num_rows_per_sample);
+
+    file = File(file_name, right_branch_sketch_0);
+    right_branch_0_dags = best_effort_programs(right_branch_sketch_0, file, num_trials, num_rows_per_sample);
+
+
+    // take best 4 and place them in the language in the sketch.
+
+    _depth_2_program =
+        composite_predicate.produce_replace(
+            "left_branch",
+            left_branch.produce_executable(
+                left_branch_0_dags[0].second()["sketch_main"]["composite_predicate"].get_solution()));
+    _depth_2_program.replace(
+            "right_branch",
+            right_branch.produce_executable(
+                 right_branch_0_dags[0].second()["sketch_main"]["composite_predicate"].get_solution()));
+
+    _depth_2_sketch = sketch_main.produce_replace("composite_predicate", _depth_2_program);
+    depth_2_sketch = sketch_main__Wrapper.produce_replace("sketch_main", _depth_2_sketch);
+
+    file = File(file_name, depth_2_sketch);
+    depth_2_dags = best_effort_programs(depth_2_sketch, file, num_trials, num_rows_per_sample);
+
+    // concretize the original as you wish.
+
+
+    current_dag = depth_2_dags[0].second();
+
+    /*
+    left_branch.inplace_unit_concretize(current_dag["sketch_main"]["composite_predicate"]["left_branch"].get_solution());
+    right_branch.inplace_unit_concretize(current_dag["sketch_main"]["composite_predicate"]["right_branch"].get_solution());
+    condition.inplace_unit_concretize(current_dag["sketch_main"]["composite_predicate"]["condition"].get_solution());
+    */
+
+    return current_dag;
+
+    //return sketch_main__Wrapper.produce_executable(current_dag.get_solution());
+}
+
+Solver best_effort_programs_always_and_sometimes_include(_harness, file_always, file_sometimes, num_trials, num_rows, break_early_threshold) {
+
+    print("|.hsk ENTERING best_effort_programs num_trials", num_trials, "num_rows_per_sample", num_rows);
+
+    harness = _harness.deep_clone();
+
+	Solution best_solution;
+	int best_score = 0;
+
+    File subset_file;
+    Solution solution;
+    SketchFunction program;
+    int score;
+    int file_size = file_always.size() + file_sometimes.size();
+
+    file_sometimes_size = 0;
+    subfile_always_size = num_rows;
+    if(file_always.size() < num_rows)
+    {
+        file_sometimes_size = num_rows - file_always.size();
+    }
+    print("file_sometimes_size", file_sometimes_size);
+    if(subfile_always_size > num_rows)
+    {
+        subfile_always_size = num_rows;
+    }
+
+    ret_dags = [];
+    for(int trial_id = 0; trial_id<num_trials; trial_id++)
+	{
+		subset_file = file_sometimes.produce_subset_file(file_sometimes_size); //sample subset of the rows
+		always_subset = file_always.produce_subset_file(subfile_always_size);
+		for(int i = 0;i<always_subset.size();i++)
+		{
+		    subset_file.append(always_subset[i]);
+		}
+		solution = SATSolver(harness.deep_clone(), subset_file); // invoke the Sketch Solver on the harness
+		subset_file.clear();
+
+		//--{
+		    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+            int score_always = program.vectorized_count_passing_inputs(file_always); // count how many input-output examples are solved with this solution
+		    int score_sometimes = program.vectorized_count_passing_inputs(file_sometimes);
+		    int score = score_always+score_sometimes;
+		//--}
+        ret_dags.append(pair<int, SketchFunction>(score, program));
+		print(
+		    "trial", trial_id+1, "/", num_trials,
+		    "score_always", score_always, "/", file_always.size(), "%", ((float(100) * float(score_always)) / float(file_always.size())),
+		    "score_sometimes", score_sometimes, "/", file_sometimes.size(), "%", ((float(100) * float(score_sometimes)) / float(file_sometimes.size())),
+		    "score", score, "/", file_size, "%", ((float(100) * float(score)) / float(file_size)),
+            "dag.size", program.size());
+		if(score > best_score) // update the best_solution
+		{
+			best_solution = solution;
+			best_score = score;
+			if(best_score > break_early_threshold)
+			{
+			    trial_id = num_trials; //break
+			}
+		}
+	}
+
+	ret_dags.sort();
+	ret_dags.reverse();
+
+	print("sorted dag scores:");
+	int sum_scores = 0;
+
+	for(int i = 0; i<ret_dags.size(); i++)
+	{
+	    print(
+	        "count ", ret_dags[i].first(), "/", file_size, "%",
+	        ((float(100) * float(ret_dags[i].first())) / float(file_size)));
+        sum_scores = sum_scores + ret_dags[i].first();
+	}
+	print("Done sorted solution scores");
+
+	print("best_score = ", best_score);
+	print("average_score = ", float(sum_scores)/float(ret_dags.size()));
+
+    return ret_dags;
+}

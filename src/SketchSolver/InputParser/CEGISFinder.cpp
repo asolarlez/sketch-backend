@@ -57,6 +57,7 @@ bool CEGISFinder::find(
 
 	//Solve
 	cout << "in bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) in CEGISFinder.cpp" << endl;
+    assert(max_finder_solve_timeout_in_microseconds == 1000000);
 	SATSolverResult result = mngFind.solve(max_finder_solve_timeout_in_microseconds);
     cout << "out bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged)  in CEGISFinder.cpp " << endl;
 
