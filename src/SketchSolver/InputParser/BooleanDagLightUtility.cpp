@@ -276,7 +276,10 @@ void LightInliningTree::print(int ntabs, set<const LightInliningTree*>* visited)
     if(is_root) delete visited;
 }
 
-void LightInliningTree::rename_var_store(VarStore &var_store, const LightInliningTree* var_store_sub_inlining_tree, set<const LightInliningTree*>* visited, const TopologyMatcher* topology_matcher) const {
+void LightInliningTree::rename_var_store(
+        VarStore &var_store,
+        const LightInliningTree* var_store_sub_inlining_tree,
+        set<const LightInliningTree*>* visited, const TopologyMatcher* topology_matcher) const {
 
     bool is_root = visited->empty();
     if(is_root) {
@@ -310,7 +313,7 @@ void LightInliningTree::rename_var_store(VarStore &var_store, const LightInlinin
 //        const string& original_name = it.first;
 //        if (original_name != "#PC") {
 //            AssertDebug(var_store.has_original_name(original_name),
-//                        "NODE.original_name(): " + original_name + " DOESN'T EXIST IN VAR STORE. AE YOU NOT CONCRETIZING FULLY?.");
+//                        "NODE.original_name(): " + original_name + " DOESN'T EXIST IN VAR STORE. ARE YOU NOT CONCRETIZING FULLY?.");
 //        }
 //    }
 

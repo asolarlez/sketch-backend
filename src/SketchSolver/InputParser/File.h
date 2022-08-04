@@ -416,6 +416,8 @@ public:
 
 
     int num_inputs_per_row() const;
+
+    int count(function<bool(const VarStore *)> function1);
 };
 
 class SketchFunction;

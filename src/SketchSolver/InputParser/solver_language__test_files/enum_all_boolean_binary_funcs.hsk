@@ -40,9 +40,9 @@ Solver synthesize_meta_dataset_over_3_bit_fs()
         input_masks =
             [
                 [0, 1, 0, 1, 0, 1, 0, 1],
-                //[0, 0, 0, 0, 1, 1, 1, 1],
-                //[1, 0, 0, 1, 0, 1, 1, 0],
-                //[0, 1, 1, 0, 1, 0, 0, 1]
+                [0, 0, 0, 0, 1, 1, 1, 1],
+                [1, 0, 0, 1, 0, 1, 1, 0],
+                [0, 1, 1, 0, 1, 0, 0, 1]
             ];
 
         int num_partial_funcs = 0;
@@ -136,8 +136,8 @@ Solver synthesize_meta_dataset_over_3_bit_fs()
                 synthesizer_meta_example = [];
                 //synthesizer_meta_example.append(9);
                 //synthesizer_meta_example.append("{");
-                //synthesizer_meta_example.append(input_mask_id.get_bit(0));
-                //synthesizer_meta_example.append(input_mask_id.get_bit(1));
+                synthesizer_meta_example.append(input_mask_id.get_bit(0));
+                synthesizer_meta_example.append(input_mask_id.get_bit(1));
                 synthesizer_meta_example.append(partial_funcs_files[i].get(0, 2));
                 synthesizer_meta_example.append(partial_funcs_files[i].get(1, 2));
                 synthesizer_meta_example.append(partial_funcs_files[i].get(2, 2));
@@ -176,7 +176,7 @@ Solver synthesize_meta_dataset_over_3_bit_fs()
                     meta_input_as_int_per_meta_example.append(meta_example_input_as_an_int);
                 }
 
-                synthesizer_meta_example = [7, "{"] + synthesizer_meta_example + ["}"];
+                synthesizer_meta_example = [9, "{"] + synthesizer_meta_example + ["}"];
 
                 synthesizer_meta_example.append(out_bit);
                 print("synthesizer_meta_example", synthesizer_meta_example);

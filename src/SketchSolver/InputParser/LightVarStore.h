@@ -24,6 +24,10 @@ protected:
 
 public:
 
+    const vector<objP> &get_objs() const {
+        return objs;
+    }
+
     string to_string()
     {
         string ret = "{";

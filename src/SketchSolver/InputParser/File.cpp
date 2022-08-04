@@ -338,6 +338,14 @@ int File::num_inputs_per_row() const {
     return ret;
 }
 
+int File::count(function<bool(const VarStore *)> lambda_condition) {
+    int ret = 0;
+    for(int i = 0;i<size();i++) {
+        ret += lambda_condition(at(i));
+    }
+    return ret;
+}
+
 
 File::File() = default;
 

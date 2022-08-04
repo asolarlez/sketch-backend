@@ -121,6 +121,7 @@ template<bool_node::Type type>
 class GenericVarStore: public VarStore {
 public:
     explicit GenericVarStore(const VarStore& _to_copy): VarStore(_to_copy) {}
+
 };
 
 typedef GenericVarStore<bool_node::SRC> InputVarStore;

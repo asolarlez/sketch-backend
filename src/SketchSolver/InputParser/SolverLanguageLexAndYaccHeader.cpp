@@ -352,6 +352,41 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
 }
 
 
+template<typename StateType>
+SL::VarVal *SL::FunctionCall::eval(SL::PolyFrontier*& poly_frontier, StateType* state, const SL::VarVal* const the_var_val)
+{
+    assert(poly_frontier == the_var_val->get_poly_frontier_const(false));
+    switch (method_id) {
+        case _size: {
+            assert(params.empty());
+            return new SL::VarVal((int) poly_frontier->size());
+            break;
+        }
+        case _get:
+        {
+            assert(params.size() == 1);
+            int idx = params[0]->eval(state)->get_int(true, false);
+            return poly_frontier->at(idx);
+            break;
+        }
+        case _insert:
+        {
+            assert(params.size() == 2);
+            VarVal* poly_vec_var_val = params[1]->eval(state);
+            poly_vec_var_val->increment_shared_ptr();
+
+            bool ret = poly_frontier->insert(params[0]->eval(state), poly_vec_var_val->get_poly_vec());
+            poly_vec_var_val->decrement_shared_ptr();
+            return new VarVal(ret);
+            break;
+        }
+        default:
+            assert(false);
+    }
+    assert(false);
+}
+
+
 //template SL::VarVal *SL::FunctionCall::eval<SolverProgramState, GenericFile>(
 //        GenericFile*& file, SolverProgramState *state, const SL::VarVal* const the_var_val);
 
@@ -480,6 +515,33 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
             else {
                 AssertDebug(false, "TODO: Integrate new type of file. Why do you need a new type of file? Must be interesting.");
             }
+        }
+
+        case _count:
+        {
+            assert(params.size() == 1);
+            VarVal* method_var_val = params[0]->eval(state);
+            method_var_val->increment_shared_ptr();
+            Method* condition_method = method_var_val->get_method();
+            assert(condition_method->get_params()->size() == 1);
+            assert(condition_method->get_params()->at(0)->get_var()->accepts_type("bool"));
+
+            assert((is_same<FileType, File>::value));
+
+            std::function<bool(const VarStore*) > lambda_condition = [&state, &condition_method](const VarStore* x) {
+                vector<SL::VarVal*> local_inputs;
+                local_inputs.push_back(new VarVal(new InputVarStore(*x)));
+                auto var_val = condition_method->eval(state, local_inputs);
+                auto ret = var_val->get_bool(true, false);
+                return ret;
+            };
+
+            int ret = ((File*)file)->count(lambda_condition);
+
+            method_var_val->decrement_shared_ptr();
+            return new VarVal(ret);
+
+            break;
         }
         case _relabel:
         {
@@ -616,6 +678,18 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 #endif
             break;
         }
+        case _Frontier:
+        {
+            if(params.size() == 1) {
+                int int_num_objectives = params[0]->eval(state)->get_int(true, false);
+                SL::VarVal *ret = new SL::VarVal(new PolyFrontier(int_num_objectives));
+                return ret;
+            }
+            else {
+                assert(false);
+            }
+            break;
+        }
         case _sat_solver:
         {
             assert(params.size() == 2);
@@ -647,6 +721,7 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             sort(prev_holes.begin(), prev_holes.end());
             sort(after_holes.begin(), after_holes.end());
 //            assert(prev_holes.size() == after_holes.size());
+            assert(after_holes.size() == harness->get_dag()->getNodesByType(bool_node::CTRL).size());
 
             FILE_TYPE* file = nullptr;
 
@@ -666,6 +741,13 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
             auto* problem = new ProblemAE(harness, file);
 
             HoleVarStore* sol = (solver)->solve(problem);
+            assert(sol->size() == after_holes.size());
+            for(const auto& hole_name : after_holes) {
+                assert(sol->contains(hole_name));
+            }
+            for(const auto& obj : sol->get_objs()) {
+                assert(sol->contains(obj.get_name()));
+            }
 
             set_inlining_tree(sol, harness);
 
@@ -916,7 +998,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -1100,7 +1182,7 @@ SL::FunctionCall::FunctionCall(SL::FunctionCall *to_copy): method_meta_type(to_c
 }
 
 void SL::add_to_method_str_to_method_id_map(
-        const string& method_str, SL::MethodId method_id, string type_str_1, string type_str_2, string type_str_3)
+        const string& method_str, SL::MethodId method_id, string type_str_1, string type_str_2, string type_str_3, string type_str_4)
 {
     assert(method_str_to_method_id_map.find(method_str) == method_str_to_method_id_map.end());
     method_str_to_method_id_map[method_str] = method_id;
@@ -1118,15 +1200,25 @@ void SL::add_to_method_str_to_method_id_map(
         assert(!type_str_2.empty());
         method_id_to_type_str[method_id].push_back(type_str_3);
     }
+    else {
+        assert(type_str_4.empty());
+    }
+    if(!type_str_4.empty()){
+        assert(!type_str_4.empty());
+        method_id_to_type_str[method_id].push_back(type_str_4);
+    }
 }
 
 void SL::init_method_str_to_method_id_map()
 {
     assert(method_str_to_method_id_map_is_defined == false);
+    add_to_method_str_to_method_id_map("Frontier", _Frontier, "namespace");
+    add_to_method_str_to_method_id_map("insert", _insert, "Frontier");
+
     add_to_method_str_to_method_id_map("File", _file, "namespace");
     add_to_method_str_to_method_id_map("SATSolver", _sat_solver, "namespace");
     add_to_method_str_to_method_id_map("BatchEnumerationSolver", _batch_evaluation_solver, "namespace");
-//    add_to_method_str_to_method_id_map("Solution", _Solution, "namespace");
+
     add_to_method_str_to_method_id_map("print", _print, "namespace");
     add_to_method_str_to_method_id_map("timestamp", _timestamp, "namespace");
     add_to_method_str_to_method_id_map("float", _to_float, "namespace");
@@ -1144,13 +1236,14 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("sort", _sort_vec, "vector");
     add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
     add_to_method_str_to_method_id_map("append", _append, "vector", "File");
-    add_to_method_str_to_method_id_map("size", _size, "File", "vector", "SketchFunction");
+    add_to_method_str_to_method_id_map("size", _size, "File", "vector", "SketchFunction", "Frontier");
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
     add_to_method_str_to_method_id_map("relabel", _relabel, "File");
+    add_to_method_str_to_method_id_map("count", _count, "File");
     add_to_method_str_to_method_id_map("produce_subset_file", _produce_subset_file, "File");
 
     add_to_method_str_to_method_id_map("clear", _clear, "SketchFunction", "File");
-    add_to_method_str_to_method_id_map("get", _get, "File", "vector", "SketchFunction");
+    add_to_method_str_to_method_id_map("get", _get, "File", "vector", "SketchFunction", "Frontier");
 
     add_to_method_str_to_method_id_map("passes", _passes, "SketchFunction");
     add_to_method_str_to_method_id_map("num_holes", _num_holes, "SketchFunction");
@@ -1800,14 +1893,13 @@ void SL::PolyVec::reverse() {
     ::reverse(begin(), end());
 }
 
-void SL::PolyVec::clear()  {
-    for(int i = 0;i<size();i++)
-    {
-        if(at(i) != nullptr) {
+void SL::PolyVec::clear() {
+    for (int i = 0; i < size(); i++) {
+        if (at(i) != nullptr) {
             at(i)->decrement_shared_ptr();
         }
     }
-    vector<SL::VarVal*>::clear();
+    vector<SL::VarVal *>::clear();
     PolyType::soft_clear();
     delete this;
 }
@@ -1833,6 +1925,23 @@ vector<bool> SL::PolyVec::to_vector_bool() {
     vector<bool> ret;
     for(int i = 0;i<size();i++) {
         ret.push_back(at(i)->get_bool());
+    }
+    return ret;
+}
+
+vector<double> SL::PolyVec::to_vector_double() const {
+    vector<double> ret;
+    for(int i = 0; i<size();i++) {
+        ret.push_back(at(i)->get_float());
+    }
+    return ret;
+}
+
+
+vector<int> SL::PolyVec::to_vector_int() const {
+    vector<int> ret;
+    for(int i = 0; i<size();i++) {
+        ret.push_back(at(i)->get_int());
     }
     return ret;
 }
@@ -2026,6 +2135,7 @@ SL::VarVal::VarVal(File* _file) : file(_file) , var_val_type(file_val_type){
 #endif
 }
 SL::VarVal::VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
+SL::VarVal::VarVal(PolyFrontier* _poly_frontier) : poly_frontier(_poly_frontier), var_val_type(poly_frontier_type){}
 SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){
     skfunc->increment_shared_ptr();
 }
@@ -2161,6 +2271,9 @@ SL::VarVal *SL::VarVal::eval(StateType *state, SL::FunctionCall *func_call) {
         case poly_vec_type:
             return eval<StateType, PolyVec*>(poly_vec, state, func_call);
             break;
+        case poly_frontier_type:
+            return eval<StateType, PolyFrontier*>(poly_frontier, state, func_call);
+            break;
         default:
             assert(false);
     }
@@ -2279,16 +2392,16 @@ bool SL::VarVal::operator<(const SL::VarVal &other) const
     assert(false);
 }
 
-string SL::VarVal::to_string(bool do_count, bool do_assert)
+string SL::VarVal::to_string(bool do_count, bool do_assert) const
 {
     switch (var_val_type) {
-
         case string_val_type:
-            return "\"" + get_string(do_count, do_assert) + "\"";
+            return "\"" + s->to_string() + "\"";
             break;
-        case int_val_type:
-            return std::to_string(get_int(do_count, do_assert));
+        case int_val_type: {
+            return std::to_string(i);
             break;
+        }
         case file_val_type:
             return file->to_string();
             assert(false);
@@ -2307,7 +2420,7 @@ string SL::VarVal::to_string(bool do_count, bool do_assert)
             return input_holder->to_string();
             break;
         case bool_val_type:
-            return std::to_string(get_bool(do_count, do_assert));
+            return std::to_string(b);
             break;
         case void_val_type:
             assert(false);
@@ -2316,9 +2429,10 @@ string SL::VarVal::to_string(bool do_count, bool do_assert)
             assert(false);
             break;
         case float_val_type:
-            return std::to_string(get_float(do_count, do_assert));
+            return std::to_string(float_val);
             break;
         case poly_pair_type:
+            return poly_pair->to_string();
             assert(false);
             break;
         case poly_vec_type:
@@ -2326,6 +2440,10 @@ string SL::VarVal::to_string(bool do_count, bool do_assert)
             assert(false);
             break;
         case poly_map_type:
+            assert(false);
+            break;
+        case poly_frontier_type:
+            return poly_frontier->to_string();
             assert(false);
             break;
         default:

@@ -13,6 +13,7 @@
 #include <vector>
 #include <fstream>
 #include "FunctionMap.h"
+#include "Frontier.h"
 
 using namespace std;
 
@@ -73,6 +74,7 @@ namespace SL
     class PolyPair;
     class PolyVec;
     class PolyMap;
+    class PolyFrontier;
     class FunctionCall;
     class Param;
 
@@ -81,7 +83,7 @@ namespace SL
         generic_file_val_type, file_val_type,
         method_val_type, skfunc_val_type,
         solution_val_type, input_val_type,
-        poly_vec_type, poly_pair_type, poly_map_type,
+        poly_vec_type, poly_pair_type, poly_map_type, poly_frontier_type,
         no_type};
 
     template <typename T>
@@ -116,6 +118,7 @@ namespace SL
             PolyVec* poly_vec;
             PolyPair* poly_pair;
             PolyMap* poly_map;
+            PolyFrontier* poly_frontier;
         };
         const VarValType var_val_type;
         mutable int num_shared_ptr = 0;
@@ -144,6 +147,7 @@ namespace SL
         explicit VarVal(PolyPair* _poly_pair);
         explicit VarVal(PolyVec* _poly_vec);
         explicit VarVal(PolyMap* _poly_map);
+        explicit VarVal(PolyFrontier* _to_copy);
         explicit VarVal(HoleVarStore* _solution);
         explicit VarVal(InputVarStore* _input_holder);
         explicit VarVal(VarVal* _to_copy);
@@ -159,6 +163,9 @@ namespace SL
                     break;
                 case bool_val_type:
                     return new VarVal((bool)(get_bool(true, false) == other->get_bool(true, false)));
+                    break;
+                case string_val_type:
+                    return new VarVal((bool)(get_string(true, false) == other->get_string(true, false)));
                     break;
                 default:
                     assert(false);
@@ -318,6 +325,9 @@ namespace SL
                 case no_type:
                     assert(false);
                     break;
+                case poly_frontier_type:
+                    return "Frontier";
+                    break;
                 default:
                     assert(false);
             }
@@ -375,6 +385,9 @@ namespace SL
             }
             else if(std::is_same<File*,T>::value){
                 assert(var_val_type == file_val_type);
+            }
+            else if(std::is_same<PolyFrontier*,T>::value){
+                assert(var_val_type == poly_frontier_type);
             }
             else {
                 assert(false);
@@ -539,6 +552,12 @@ namespace SL
             return poly_vec;
         }
 
+        PolyFrontier *get_poly_frontier_const(bool do_count) const {
+            assert(!do_count);
+            assert(var_val_type == poly_frontier_type);
+            return poly_frontier;
+        }
+
         PolyMap *get_poly_map(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == poly_map_type);
             assert(do_assert);
@@ -563,7 +582,7 @@ namespace SL
             return poly_pair;
         }
 
-        string to_string(bool do_count = true, bool do_assert = true);
+        string to_string(bool do_count = true, bool do_assert = true) const;
 
         bool decrement_shared_ptr()
         {
@@ -635,6 +654,9 @@ namespace SL
                     break;
                 case poly_map_type:
                     clear<SL::PolyMap*>(poly_map, false);
+                    break;
+                case poly_frontier_type:
+                    clear<SL::PolyFrontier*>(poly_frontier, false);
                     break;
                 default:
                     AssertDebug(false, "MISSING CASE");
@@ -1046,11 +1068,11 @@ void run(StateType* state);
             return vector<SL::VarVal*>::end();
         }
 
-        size_t size() override {
+        size_t size() const {
             return vector<SL::VarVal*>::size();
         }
 
-        SL::VarVal* at(int idx)
+        SL::VarVal* at(int idx) const
         {
             assert(idx >= 0 && idx < size());
             return vector<SL::VarVal*>::at(idx);
@@ -1071,6 +1093,68 @@ void run(StateType* state);
         vector<bool> to_vector_bool();
 
         void reverse();
+
+        string to_string()
+        {
+            string ret = "[";
+            for(int i = 0;i<size();i++)
+            {
+                if(i > 0)
+                {
+                    ret+=", ";
+                }
+                ret += at(i)->to_string();
+            }
+            ret += "]";
+            return ret;
+        }
+
+        vector<double> to_vector_double() const;
+        vector<int> to_vector_int() const;
+    };
+
+    class VarValWrapper
+    {
+    public:
+        SL::VarVal* pointer;
+        VarValWrapper(SL::VarVal* _p): pointer(_p){};
+        void clear() {
+            pointer->decrement_shared_ptr();
+        }
+    };
+
+    class PolyFrontier: public PolyType, private Frontier<int, VarValWrapper>
+    {
+    public:
+
+        explicit PolyFrontier(size_t num_objectives):
+                Frontier<int, VarValWrapper>(num_objectives), PolyType(new PolyType("any")){
+            assert(get_type_params()->size() == 1);
+        }
+
+        void clear() override
+        {
+            Frontier<int, VarValWrapper>::clear();
+            PolyType::soft_clear();
+            delete this;
+        }
+
+        bool insert(VarVal* new_solution, PolyVec* scores) {
+            new_solution->increment_shared_ptr();
+            bool ret = (nullptr != Frontier<int, VarValWrapper>::insert(VarValWrapper(new_solution), scores->to_vector_int()));
+            Frontier<int, VarValWrapper>::_remove_erased();
+            return ret;
+        }
+
+        size_t size() override {
+            return Frontier<int, VarValWrapper>::size();
+        }
+
+        SL::VarVal* at(int idx)
+        {
+            assert(idx >= 0 && idx < size());
+            return Frontier<int, VarValWrapper>::at(idx).pointer;
+        }
 
         string to_string()
         {
@@ -1513,6 +1597,11 @@ namespace SL {
         void clear() override;
 
         bool operator < (const PolyPair& other) const;
+
+        string to_string()
+        {
+            return "pair(" + pair<SL::VarVal*, SL::VarVal*>::first->to_string() + ", " + pair<SL::VarVal*, SL::VarVal*>::second->to_string() + ")";
+        }
     };
 
     class PolyMap: public PolyType, private map<string, SL::VarVal*>
@@ -1594,9 +1683,13 @@ namespace SL {
         _file,
         _produce_subset_file,
         _relabel,
+        _count,
 
         _sat_solver,
         _batch_evaluation_solver,
+
+        _Frontier,
+        _insert,
 
         _append,
         _get,
@@ -1654,7 +1747,7 @@ namespace SL {
     static map<MethodId, vector<string> > method_id_to_type_str;
 
     static void add_to_method_str_to_method_id_map(
-            const string& method_str, MethodId method_enum, string type_str_1, string type_str_2 = "", string type_str_3 = "");
+            const string& method_str, MethodId method_enum, string type_str_1, string type_str_2 = "", string type_str_3 = "", string type_str_4 = "");
 
     static void init_method_str_to_method_id_map();
 
@@ -1747,6 +1840,9 @@ namespace SL {
 
         template<typename StateType>
         VarVal *eval(bool& the_int, StateType *state, const VarVal *const the_var_val);
+
+        template<typename StateType>
+        VarVal *eval(PolyFrontier *&poly_frontier, StateType *state, const VarVal *const the_var_val);
     };
 
     class Assignment

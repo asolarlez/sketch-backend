@@ -2025,6 +2025,9 @@ lbool Solver::solve(const vec<Lit>& assumps)
     double  nof_learnts   = max(nClauses() * learntsize_factor, 1000.0);
     lbool   status        = l_Undef;
 	uint64_t decisionsStart = decisions;
+
+    cout << "H3LLo #0" << endl;
+
     if (verbosity >= 1){
         cout << "DECISIONS START = " << decisionsStart << endl;
         printf("============================[ Search Statistics ]==============================\n");
@@ -2033,6 +2036,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
         printf("===============================================================================\n");
     }
     // Search:
+    int local_loop_count = 0;
     while (status == l_Undef){
         if (verbosity >= 1)
             printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", (int)conflicts, order_heap.size(), nClauses(), (int)clauses_literals, (int)nof_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progress_estimate*100), fflush(stdout);
@@ -2045,7 +2049,10 @@ lbool Solver::solve(const vec<Lit>& assumps)
 			cancelUntil(0);
 			return l_Undef;
 		}
+        cout << "H3LLo #1 local_loop_count " << local_loop_count << endl;
     }
+
+    cout << "H3LLo #2" << endl;
 
 	
     if (verbosity >= 1)
@@ -2053,6 +2060,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
 
 
     if (status == l_True){
+        cout << "H3LLo #3" << endl;
         // Extend & copy model:
         model.growTo(nVars());
 		
@@ -2060,12 +2068,14 @@ lbool Solver::solve(const vec<Lit>& assumps)
 			auto val = value(i);
 			model[i] = val;
 			polarity[i] = (char)(val == l_False);
+            cout << "H3LLo #4 i" << i << endl;
 		}		
 		polarity_mode = polarity_user;
 #ifdef _DEBUG
         verifyModel();
 #endif
     }else{
+        cout << "H3LLo #5"<< endl;
         assert(status == l_False);
         if (conflict.size() == 0)
             ok = false;
@@ -2073,9 +2083,12 @@ lbool Solver::solve(const vec<Lit>& assumps)
 
 	for (int i = 0; i < sins.size(); ++i) {
 		sins[i]->finalize();
+        cout << "H3LLo #6"<< endl;
 	}
 
+    cout << "H3LLo #7"<< endl;
     cancelUntil(0);
+    cout << "H3LLo #8"<< endl;
     return status;
 }
 
