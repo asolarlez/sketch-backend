@@ -56,9 +56,12 @@ Solver main_baseline()
 
 Solver run_one_step_bottom_up(init_timeout)
 {
-    int trials_mult = 4;
-    int init_num_rows = 10;
-    int delta_rows = 5;
+    int trials_mult = 32;
+    int init_num_rows = 12;
+    int delta_rows = 2;
+    int lvl0_hyperparam_steps = 3;
+    int max_number_of_rows = init_num_rows+delta_rows*lvl0_hyperparam_steps;
+    print("max_number_of_rows", max_number_of_rows);
     
     int consider_top_count_mult = 1;
 
@@ -78,8 +81,6 @@ Solver run_one_step_bottom_up(init_timeout)
         )
     );
     file = File(file_name, _left_branch__Wrapper);
-
-    int max_number_of_rows = 15;
     int trials_multiple = 1;
     local_dags = [];
     number_of_rows_per_trial = delta_rows;
@@ -215,10 +216,12 @@ Solver run_one_step_bottom_up(init_timeout)
                 )
             );
 
+            local_num_trials = (trials_mult * lvl0_hyperparam_steps) / frontier_union_intersection.size();
+
             file.relabel(resynth_cond);
             ret_dags = best_effort_programs(
                 resynth_cond, file,
-                trials_mult, init_num_rows,
+                local_num_trials, init_num_rows,
                 init_timeout, file.size()-1, ret_dags);
 
             if(ret_dags[0].first() > best_score)
@@ -253,8 +256,60 @@ Solver run_one_step_bottom_up(init_timeout)
 
 }
 
+Solver main_plot_initial_timeout_vs_score()
+{
+
+    file = File(file_name, sketch_main__Wrapper);
+
+    init_timeouts = [];
+    float init_timeout = float(1)/float(16);
+    float p = float(1);
+    for(int i = 0;i<8;i++)
+    {
+        init_timeouts.append(init_timeout*p);
+        p = p * float(2);
+    }
+
+    print("init_timeouts", init_timeouts);
+    best_score = 0;
+    best_id = 0-1;
+    all_best_dags = [];
+    for(int i = 0;i<init_timeouts.size();i++)
+    {
+        print("running with init_timeouts", init_timeouts[i]);
+        best_score_and_dag = run_one_step_bottom_up(init_timeout);
+        all_best_dags.append(best_score_and_dag);
+        print("done running; results:");
+        print(init_timeouts[i], "->", best_score_and_dag);
+        if(best_score < best_score_and_dag.first())
+        {
+            print("prev_best", best_score);
+            print("NEW BEST!!!!");
+            best_score = best_score_and_dag.first();
+            print("new_best", best_score);
+            best_id = i;
+        }
+        print("print chronological dag scores");
+        for(int i = 0; i<all_best_dags.size(); i++) {
+             print(
+                "i", i,
+                "init_timeouts[i]", init_timeouts[i],
+                "count", all_best_dags[i].first(), "/", file.size(),
+                "%", ((float(100) * float(all_best_dags[i].first())) / float(file.size())));
+         }
+    }
+
+    print("best_id", best_id);
+    print("all_best_dags[best_id].first()", all_best_dags[best_id].first());
+
+    ret_dag = all_best_dags[best_id].second();
+
+    return ret_dag;
+}
+
 Solver main()
 {
+    return main_plot_initial_timeout_vs_score();
     float timeout = float(1)/float(4); // in seconds
     best_score_and_best_dag = run_one_step_bottom_up(timeout);
     return best_score_and_best_dag.second();
