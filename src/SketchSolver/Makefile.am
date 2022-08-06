@@ -139,7 +139,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/test_cases.h \
     InputParser/FileForVecInterp.cpp \
     InputParser/types.h \
-    InputParser/CEGISFinderBatchEnumeration.h
+    InputParser/CEGISFinderBatchEnumeration.h \
+    InputParser/Frontier.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -224,7 +225,8 @@ libcegis_a_SOURCES =				\
     InputParser/test_cases.cpp \
     InputParser/FileForVecInterp.cpp \
     InputParser/types.cpp \
-    InputParser/CEGISFinderBatchEnumeration.cpp
+    InputParser/CEGISFinderBatchEnumeration.cpp \
+    InputParser/Frontier.cpp
 
 
 

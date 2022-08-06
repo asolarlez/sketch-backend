@@ -858,7 +858,7 @@ namespace SL
         }
 
         template<typename StateType>
-void run(StateType* state);
+        void run(StateType* state);
 
         bool defined() const
         {
@@ -1125,6 +1125,7 @@ void run(StateType* state);
 
     class PolyFrontier: public PolyType, private Frontier<int, VarValWrapper>
     {
+
     public:
 
         explicit PolyFrontier(size_t num_objectives):
@@ -1132,12 +1133,7 @@ void run(StateType* state);
             assert(get_type_params()->size() == 1);
         }
 
-        void clear() override
-        {
-            Frontier<int, VarValWrapper>::clear();
-            PolyType::soft_clear();
-            delete this;
-        }
+        void clear() override;
 
         bool insert(VarVal* new_solution, PolyVec* scores) {
             new_solution->increment_shared_ptr();
@@ -1171,6 +1167,7 @@ void run(StateType* state);
             return ret;
         }
     };
+
 }
 
 static exception NameNotFound;

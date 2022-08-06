@@ -270,11 +270,8 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			try {
 				doInline(*sketch, functionMap, inlineAmnt, replaceMap);
 			}catch (BadConcretization& bc) {
-                assert(false);
 				sketch->clear();
 				spec->clear();
-				delete sketch;
-				delete spec;
 				throw bc;
 			}
 			

@@ -1,6 +1,6 @@
 
-pragma options "--bnd-arr-size 32";
-pragma options "--bnd-unroll-amnt 32";
+pragma options "--bnd-arr-size 22";
+pragma options "--bnd-unroll-amnt 22";
 
 void print_line_num(int line_id){}
 void print_x_y(int x, int y){}
@@ -48,16 +48,16 @@ harness void sketch_main(int n, int width, int[n] input_grid)
 
     int[n] output_grid;
 
-    int max_num_primitives = 32; //4 bits;
+    int max_num_primitives = 18; //4 bits;
+    int max_execution_steps = 20;
     int[max_num_primitives] karel_program;
 
     repeat(i : max_num_primitives)
     {
-        karel_program[i] = ??(42);
+        karel_program[i] = ??(2);
     }
 
     int at_op_id = 0;
-    int max_execution_steps = max_num_primitives;
 
 
     bit use_fs = false;
@@ -93,8 +93,8 @@ harness void sketch_main(int n, int width, int[n] input_grid)
                     y = y+1;
                 }
             }
+            assert(0 <= x && x < width && 0 <= y && y < height);
             at_op_id = at_op_id+1;
-            assert(0 <= x && x < height && 0 <= y && y < width);
         } else if(op == 1) {
             //print_switch_axis();
             turn_right();

@@ -2345,6 +2345,7 @@ template void SL::VarVal::clear<SL::Identifier*>(SL::Identifier* &val, bool do_d
 template void SL::VarVal::clear<SL::Method*>(SL::Method* &val, bool do_delete);
 template void SL::VarVal::clear<HoleVarStore*>(HoleVarStore* &val, bool do_delete);
 template void SL::VarVal::clear<InputVarStore*>(InputVarStore* &val, bool do_delete);
+template void SL::VarVal::clear<SL::PolyFrontier*>(SL::PolyFrontier* &val, bool do_delete);
 
 template<typename T>
 void SL::VarVal::clear(T &val, bool do_delete) {
@@ -2791,5 +2792,12 @@ void SL::LambdaExpression::clear() {
     meta_params->clear();
     delete meta_params;
     code_block->clear();
+    delete this;
+}
+
+void SL::PolyFrontier::clear()
+{
+    Frontier<int, VarValWrapper>::clear();
+    PolyType::soft_clear();
     delete this;
 }

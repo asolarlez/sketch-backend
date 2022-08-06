@@ -117,10 +117,6 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 
 
 void BooleanDAG::clear(){
-//    if(dag_id == 190)
-//    {
-//        cout << "here" <<endl;
-//    }
 	if(ownsNodes){
 	  for(int i=0; i < nodes.size(); ++i){
 		  if (nodes[i] != nullptr) {
