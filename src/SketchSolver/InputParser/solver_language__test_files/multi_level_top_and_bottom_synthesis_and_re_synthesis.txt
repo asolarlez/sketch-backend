@@ -54,23 +54,127 @@ Solver main_baseline()
 }
 
 
-Solver run_one_step_bottom_up(init_timeout)
+Solver run_one_step_bottom_up(int trials_mult)
 {
-    int trials_mult = 32;
+    /*
+
+        //    int trials_mult = 16;
+        //    int init_num_rows = 6;
+        //    int delta_rows = 2;
+        //    int lvl0_hyperparam_steps = 3;
+        //    result 112 seconds; 304 best;
+
+        "print chronological dag scores"
+        "i" 0 "init_timeouts[i]" 0.062500 "count" 304 "/" 429 "%" 70.862473
+        "i" 1 "init_timeouts[i]" 0.125000 "count" 288 "/" 429 "%" 67.132866
+        "i" 2 "init_timeouts[i]" 0.250000 "count" 288 "/" 429 "%" 67.132866
+        "i" 3 "init_timeouts[i]" 0.500000 "count" 302 "/" 429 "%" 70.396271
+        "i" 4 "init_timeouts[i]" 1.000000 "count" 288 "/" 429 "%" 67.132866
+        "i" 5 "init_timeouts[i]" 2.000000 "count" 288 "/" 429 "%" 67.132866
+        "i" 6 "init_timeouts[i]" 4.000000 "count" 292 "/" 429 "%" 68.065269
+        "i" 7 "init_timeouts[i]" 8.000000 "count" 284 "/" 429 "%" 66.200470
+        "best_id" 0
+        "all_best_dags[best_id].first()" 304
+        BENCH[SolverProgramState::eval()]: 111 (s) ~ 111341683 (us)
+    */
+
+    /*
+
+        //    int trials_mult = 16;
+        //    int init_num_rows = 12;
+        //    int delta_rows = 2;
+        //    int lvl0_hyperparam_steps = 3;
+        //    result 232 seconds; 308 best;
+
+        "print chronological dag scores"
+        "i" 0 "init_timeouts[i]" 0.062500 "count" 303 "/" 429 "%" 70.629372
+        "i" 1 "init_timeouts[i]" 0.125000 "count" 290 "/" 429 "%" 67.599068
+        "i" 2 "init_timeouts[i]" 0.250000 "count" 298 "/" 429 "%" 69.463867
+        "i" 3 "init_timeouts[i]" 0.500000 "count" 308 "/" 429 "%" 71.794868
+        "i" 4 "init_timeouts[i]" 1.000000 "count" 296 "/" 429 "%" 68.997665
+        "i" 5 "init_timeouts[i]" 2.000000 "count" 305 "/" 429 "%" 71.095573
+        "i" 6 "init_timeouts[i]" 4.000000 "count" 308 "/" 429 "%" 71.794868
+        "i" 7 "init_timeouts[i]" 8.000000 "count" 292 "/" 429 "%" 68.065269
+        "best_id" 3
+        "all_best_dags[best_id].first()" 308
+        BENCH[SolverProgramState::eval()]: 231 (s) ~ 231490690 (us)
+    */
+
+    /*
+        "print chronological dag scores"
+        "i" 0 "init_timeouts[i]" 0.062500 "count" 319 "/" 429 "%" 74.358971
+        "i" 1 "init_timeouts[i]" 0.125000 "count" 299 "/" 429 "%" 69.696968
+        "i" 2 "init_timeouts[i]" 0.250000 "count" 306 "/" 429 "%" 71.328674
+        "i" 3 "init_timeouts[i]" 0.500000 "count" 303 "/" 429 "%" 70.629372
+        "i" 4 "init_timeouts[i]" 1.000000 "count" 294 "/" 429 "%" 68.531471
+        "i" 5 "init_timeouts[i]" 2.000000 "count" 294 "/" 429 "%" 68.531471
+        "i" 6 "init_timeouts[i]" 4.000000 "count" 300 "/" 429 "%" 69.930069
+        "i" 7 "init_timeouts[i]" 8.000000 "count" 303 "/" 429 "%" 70.629372
+        "best_id" 0
+        "all_best_dags[best_id].first()" 319
+        BENCH[SolverProgramState::eval()]: 475 (s) ~ 475955133 (us)
+
+        int trials_mult = 32;
+        int init_num_rows = 12;
+        int delta_rows = 2;
+        int lvl0_hyperparam_steps = 3;
+        int consider_top_count_mult = 1;
+        int trials_meta_multiple = 2;
+
+
+    int combiner_timeout = timeout; // after the set up loops;
+
+        476s seconds.
+    */
+
+/*
+    float init_timeout = float(1)/float(16);
+    print("trails_mult", trials_mult);
     int init_num_rows = 12;
     int delta_rows = 2;
     int lvl0_hyperparam_steps = 3;
+    int consider_top_count_mult = 1;
+    int trials_meta_multiple = 2;
+
+    "print chronological dag scores"
+    "i" 0 "trial_mults[i]" 16 "count" 303 "/" 429 "%" 70.629372
+    "i" 1 "trial_mults[i]" 32 "count" 306 "/" 429 "%" 71.328674
+    "i" 2 "trial_mults[i]" 64 "count" 313 "/" 429 "%" 72.960373
+    "i" 3 "trial_mults[i]" 128 "count" 317 "/" 429 "%" 73.892776
+    "best_id" 3
+    "all_best_dags[best_id].first()" 317
+    BENCH[SolverProgramState::eval()]: 435 (s) ~ 435043928 (us)
+    */
+
+    /*
+        float init_timeout = float(1)/float(8);
+        print("trails_mult", trials_mult);
+        int init_num_rows = 5;
+        int delta_rows = 5;
+        int lvl0_hyperparam_steps = 4;
+        int consider_top_count_mult = 3;
+        int trials_meta_multiple = 2;
+
+        "i" 0 "trial_mults[i]" 64 "count" 308 "/" 429 "%" 71.794868
+        "i" 1 "trial_mults[i]" 128 "count" 325 "/" 429 "%" 75.757576
+        "i" 2 "trial_mults[i]" 256 "count" 319 "/" 429 "%" 74.358971
+    */
+
+        float init_timeout = float(1)/float(4);
+        print("trails_mult", trials_mult);
+        int init_num_rows = 10;
+        int delta_rows = 5;
+        int lvl0_hyperparam_steps = 3;
+        int consider_top_count_mult = 2;
+        int trials_meta_multiple = 2;
+
     int max_number_of_rows = init_num_rows+delta_rows*lvl0_hyperparam_steps;
     print("max_number_of_rows", max_number_of_rows);
-    
-    int consider_top_count_mult = 1;
 
     int init_num_trials = 1*trials_mult;
-    int big_num_trials = 4*trials_mult;
     int serious_num_trials = init_num_trials;
 
     float timeout = init_timeout; // in seconds
-    int trials_meta_multiple = 2; // as x in # of meta inputs.
     float timeout_mult = float(trials_meta_multiple); // in seconds
 
     _left_branch__Wrapper = sketch_main__Wrapper.produce_replace(
@@ -222,7 +326,7 @@ Solver run_one_step_bottom_up(init_timeout)
             ret_dags = best_effort_programs(
                 resynth_cond, file,
                 local_num_trials, init_num_rows,
-                init_timeout, file.size()-1, ret_dags);
+                timeout, file.size()-1, ret_dags);
 
             if(ret_dags[0].first() > best_score)
             {
@@ -261,26 +365,26 @@ Solver main_plot_initial_timeout_vs_score()
 
     file = File(file_name, sketch_main__Wrapper);
 
-    init_timeouts = [];
-    float init_timeout = float(1)/float(16);
-    float p = float(1);
+    trial_mults = [];
+    int trial_mult = 64;
+    int p = 1;
     for(int i = 0;i<8;i++)
     {
-        init_timeouts.append(init_timeout*p);
-        p = p * float(2);
+        trial_mults.append(trial_mult*p);
+        p = p * 2;
     }
 
-    print("init_timeouts", init_timeouts);
+    print("trial_mults", trial_mults);
     best_score = 0;
     best_id = 0-1;
     all_best_dags = [];
-    for(int i = 0;i<init_timeouts.size();i++)
+    for(int i = 0;i<trial_mults.size();i++)
     {
-        print("running with init_timeouts", init_timeouts[i]);
-        best_score_and_dag = run_one_step_bottom_up(init_timeout);
+        print("running with trial_mults", trial_mults[i]);
+        best_score_and_dag = run_one_step_bottom_up(trial_mults[i]);
         all_best_dags.append(best_score_and_dag);
         print("done running; results:");
-        print(init_timeouts[i], "->", best_score_and_dag);
+        print(trial_mults[i], "->", best_score_and_dag);
         if(best_score < best_score_and_dag.first())
         {
             print("prev_best", best_score);
@@ -293,7 +397,7 @@ Solver main_plot_initial_timeout_vs_score()
         for(int i = 0; i<all_best_dags.size(); i++) {
              print(
                 "i", i,
-                "init_timeouts[i]", init_timeouts[i],
+                "trial_mults[i]", trial_mults[i],
                 "count", all_best_dags[i].first(), "/", file.size(),
                 "%", ((float(100) * float(all_best_dags[i].first())) / float(file.size())));
          }

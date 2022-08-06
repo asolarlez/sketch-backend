@@ -223,8 +223,8 @@ Solver main()
 {
 
     //return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
-    return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
-    //return recursive_function_stun();
+    //return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
+    return recursive_function_stun();
     //return recursive_function_stun_for_benchmarking();
 
 
@@ -319,11 +319,11 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
 
-    big_num_trials = 30;
-    num_rows_per_sample = 8;
-    select_best = 1;
+    big_num_trials = 10;
+    num_rows_per_sample = 3;
+    select_best = 2;
     assert(big_num_trials >= select_best);
-    small_num_trials = 15;
+    small_num_trials = 1;
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
     sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", sketch_main_lvl0_sub);
@@ -671,7 +671,7 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 2;
+    num_trials = 15;
     num_rows_per_sample = 3;
 
     int stun_depth = 3;

@@ -2067,34 +2067,40 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
             auto elapsed_since_start = chrono::duration_cast<chrono::microseconds>(at_time - start_time).count();
             cout << "------------------------------------------------------" << endl;
             cout
-                    << "in < Solver.cpp main loop_count #" << local_loop_count++
+                    << "in < Solver.cpp main loop_count #" << local_loop_count
                     << "> ::: elapsed since_prev " << elapsed_since_prev
                     << " since_start " << elapsed_since_start << endl;
 
+            local_loop_count++;
+
             if (predict_next_elapsed_since_start != 0) {
-                cout << endl;
-                cout << "predict_next_elapsed_since_start " << predict_next_elapsed_since_start << endl;
-                long long runtime_prediction_error = (predict_next_elapsed_since_start - elapsed_since_start);
-                cout << "runtime_prediction_error " << runtime_prediction_error << endl;
-                cout << endl;
-                if (runtime_prediction_error < 0) {
-                    cout << "WARNING: predict_next_elapsed_since_start is underestimate elapsed_since_start." << endl;
-                    cout << "underestimate by  (-): "
-                         << 100.0 * (1.0 - ((double) predict_next_elapsed_since_start / elapsed_since_start)) << "%"
-                         << endl;
-                } else {
-                    cout << "WARNING: predict_next_elapsed_since_start is overestimate elapsed_since_start." << endl;
-                    cout << "overestimate by (+): "
-                         << 100.0 * (((double) predict_next_elapsed_since_start / elapsed_since_start) - 1.0) << "%"
-                         << endl;
+                if(false){
+                    long long runtime_prediction_error = (predict_next_elapsed_since_start - elapsed_since_start);
+                    cout << endl;
+                    cout << "predict_next_elapsed_since_start " << predict_next_elapsed_since_start << endl;
+                    cout << "runtime_prediction_error " << runtime_prediction_error << endl;
+                    cout << endl;
+                    if (runtime_prediction_error < 0) {
+                        cout << "WARNING: predict_next_elapsed_since_start is underestimate elapsed_since_start."
+                             << endl;
+                        cout << "underestimate by  (-): "
+                             << 100.0 * (1.0 - ((double) predict_next_elapsed_since_start / elapsed_since_start)) << "%"
+                             << endl;
+                    } else {
+                        cout << "WARNING: predict_next_elapsed_since_start is overestimate elapsed_since_start."
+                             << endl;
+                        cout << "overestimate by (+): "
+                             << 100.0 * (((double) predict_next_elapsed_since_start / elapsed_since_start) - 1.0) << "%"
+                             << endl;
+                    }
+                    cout << endl;
                 }
-                cout << endl;
             }
 
             double delta_runtime_factor_growth_x = -1;
             if (prev_elapsed != 0) {
                 delta_runtime_factor_growth_x = (double) elapsed_since_prev / prev_elapsed;
-                cout << "delta_runtime_factor_growth_x " << delta_runtime_factor_growth_x << endl;
+//                cout << "delta_runtime_factor_growth_x " << delta_runtime_factor_growth_x << endl;
                 predict_next_elapsed_since_start =
                         elapsed_since_start + elapsed_since_prev * delta_runtime_factor_growth_x;
             }
@@ -2102,19 +2108,18 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
             if (predict_next_elapsed_since_start > max_num_microseconds) {
                 cout << "TIMEOUT in < main solver loop in Solver::solve in Solver.cpp >" << endl;
                 cout << "elapsed_since_start " << elapsed_since_start << endl;
-                cout << "elapsed_since_prev " << elapsed_since_prev << endl;
-                cout << "delta_runtime_factor_growth_x " << delta_runtime_factor_growth_x << endl;
-                cout << "predict_next_elapsed_since_start " << predict_next_elapsed_since_start << endl;
-                cout << "is_greater_than" << endl;
+//                cout << "elapsed_since_prev " << elapsed_since_prev << endl;
+//                cout << "delta_runtime_factor_growth_x " << delta_runtime_factor_growth_x << endl;
+//                cout << "predict_next_elapsed_since_start " << predict_next_elapsed_since_start << endl;
+//                cout << "is_greater_than" << endl;
                 cout << "max_num_microseconds " << max_num_microseconds << endl;
-
-                printf("WARNING: You are running with a timeout, so I am bailing\n");
-                printf("out and assuming the problem is UNDEF; return l_MainLoopTimeout;.\n");
+//
+//                printf("WARNING: You are running with a timeout, so I am bailing\n");
+//                printf("out and assuming the problem is UNDEF; return l_MainLoopTimeout;.\n");
                 status = l_MainLoopTimeout;
-//                break;
-                cout << "HERE pre cancelUntil(0);" << endl;
+//                cout << "HERE pre cancelUntil(0);" << endl;
                 cancelUntil(0);
-                cout << "HERE poset cancelUntil(0);" << endl;
+//                cout << "HERE poset cancelUntil(0);" << endl;
                 return l_MainLoopTimeout;
             }
 
@@ -2129,6 +2134,8 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
     auto elapsed_since_prev = chrono::duration_cast<chrono::microseconds>(at_time - prev_time).count();
     auto elapsed_since_start = chrono::duration_cast<chrono::microseconds>(at_time - prev_time).count();
 
+    cout << "elapsed_since_start " << elapsed_since_start << endl;
+    cout << "local_loop_count " << local_loop_count << endl;
     cout << "out < main solver loop in Solver::solve in Solver.cpp >" << endl;
 	
     if (verbosity >= 1)
@@ -2151,8 +2158,8 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
     }else{
         if(status == l_MainLoopTimeout)
         {
-            cout << "at < if(status == l_MainLoopTimeout) in Solver.cpp >" << endl;
-            cout << "almost at out in lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_microseconds)" << endl;
+//            cout << "at < if(status == l_MainLoopTimeout) in Solver.cpp >" << endl;
+//            cout << "almost at out in lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_microseconds)" << endl;
         }
         else {
             assert(status == l_False);

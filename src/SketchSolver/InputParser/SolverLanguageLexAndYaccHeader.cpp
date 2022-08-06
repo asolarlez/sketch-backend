@@ -694,18 +694,6 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
         {
             assert(params.size() == 2 || params.size() == 3);
 
-            float find_solve_max_timeout_in_seconds = -1;
-
-            if(params.size() == 3)
-            {
-                find_solve_max_timeout_in_seconds = params[2]->eval(state)->get_float(true, false);
-                AssertDebug(find_solve_max_timeout_in_seconds >= 0, "timeout must be positive float >= 0.000001 (in seconds).");
-            }
-            else
-            {
-                assert(false);
-            }
-
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
             SketchFunction* skfunc = param_var_val->get_skfunc();
@@ -750,19 +738,27 @@ SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState
 
 //            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
+            unsigned long long find_solve_max_timeout_in_microseconds = numeric_limits<unsigned long long>::max();
+            {
+                float find_solve_max_timeout_in_seconds = -1;
+                if (params.size() == 3) {
+                    find_solve_max_timeout_in_seconds = params[2]->eval(state)->get_float(true, false);
+                    AssertDebug(find_solve_max_timeout_in_seconds >= 0,
+                                "timeout must be positive float >= 0.000001 (in seconds).");
+                }
+                const double cant_set_timeout_below = 0.000001;
+                if (find_solve_max_timeout_in_seconds >= cant_set_timeout_below) { // if more than a microsecond.
+                    find_solve_max_timeout_in_microseconds = (unsigned long long) (
+                            ((double) find_solve_max_timeout_in_seconds) * 1000000.0);
+                } else if (find_solve_max_timeout_in_seconds >= 0) {
+                    AssertDebug(false, "cant set timeout below " + std::to_string(cant_set_timeout_below));
+                } else {
+                    assert(find_solve_max_timeout_in_seconds == -1);
+                }
+            }
+
             auto* problem = new ProblemAE(harness, file);
 
-            unsigned long long find_solve_max_timeout_in_microseconds = numeric_limits<unsigned long long>::max();
-            const double cant_set_timeout_below = 0.000001;
-            if(find_solve_max_timeout_in_seconds >= cant_set_timeout_below) { // if more than a microsecond.
-                find_solve_max_timeout_in_microseconds = (unsigned long long) (((double) find_solve_max_timeout_in_seconds) * 1000000.0);
-            }
-            else if(find_solve_max_timeout_in_seconds >= 0) {
-                AssertDebug(false,  "cant set timeout below " + std::to_string(cant_set_timeout_below));
-            }
-            else {
-                assert(find_solve_max_timeout_in_seconds == -1);
-            }
             HoleVarStore* sol = (solver)->solve(problem, find_solve_max_timeout_in_microseconds);
             assert(sol->size() == after_holes.size());
             for(const auto& hole_name : after_holes) {
@@ -1021,7 +1017,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
