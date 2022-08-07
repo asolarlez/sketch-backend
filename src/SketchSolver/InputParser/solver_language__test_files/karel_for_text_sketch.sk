@@ -1,6 +1,6 @@
 
-pragma options "--bnd-arr-size 32";
-pragma options "--bnd-unroll-amnt 32";
+pragma options "--bnd-arr-size 26";
+pragma options "--bnd-unroll-amnt 26";
 
 void print_line_num(int line_id){}
 void print_x_y(int x, int y){}
@@ -53,17 +53,22 @@ harness void sketch_main(int n, int width, int[n] input_grid)
 
     bit do_print_trace = false;
 
+
     int num_concretization_steps = 2;
     int per_conc_step = 7;
-    int[num_concretization_steps] prog_len = {per_conc_step, 6};
-/*
-    int max_total_num_primitives = 20;*/
+    int[num_concretization_steps] prog_len = {per_conc_step, per_conc_step-1};
+
+    /*int num_concretization_steps = 3;
+    int per_conc_step = 9;
+    int[num_concretization_steps] prog_len = {per_conc_step, per_conc_step, per_conc_step};*/
+
+    /*int num_concretization_steps = 1;
+    int per_conc_step = 13;
+    int[num_concretization_steps] prog_len = {per_conc_step};*/
+
     int sum_num_primitives = 0;
-    repeat(i : num_concretization_steps)
-    {
-        //prog_len[i] = ??(4);
+    repeat(i : num_concretization_steps) {
         sum_num_primitives += prog_len[i];
-        //assert(sum_num_primitives <= max_total_num_primitives);
     }
     int max_total_num_primitives = sum_num_primitives;
 
@@ -175,16 +180,21 @@ harness void sketch_main(int n, int width, int[n] input_grid)
         }else
         {
             assert(in_f_call == 0);
-        }
-        }
+        }}
 
         assert(in_f_call == 0);
 
-        for(int i = 0;i<width;i++)
-        {
-            assert(output_grid[i+concretization_y*width] == input_grid[i+concretization_y*width]);
+        if(num_concretization_steps >= 2) {
+            for(int i = 0;i<width;i++) {
+                assert(output_grid[i+concretization_y*width] == input_grid[i+concretization_y*width]);
+            }
+            concretization_y ++;
         }
-        concretization_y ++;
+        else{
+            for(int i = 0;i<n;i++) {
+                assert(output_grid[i] == input_grid[i]);
+            }
+        }
 
         print_start_print_program();
         
