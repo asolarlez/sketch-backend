@@ -1,0 +1,238 @@
+
+pragma options "--bnd-arr-size 104";
+pragma options "--bnd-unroll-amnt 104";
+pragma options "--bnd-inbits 7";
+
+
+void print_line_num(int line_id){}
+void print_x_y(int x, int y){}
+void print_step(int n){}
+void print_move(){}
+void print_f_call(int a, int b){}
+void print_f_return(int f_call_line_id){}
+
+void print_move_left();
+void print_int(int _int);
+void print_turn_right();
+void print_move_right();
+void print_done_print_program();
+void print_start_print_program();
+void print_move_down();
+void print_move_up();
+void print_switch_axis();
+void print_set_bit();
+void print_jump_to(int line_id);
+
+void proto_concretization_step()
+{
+    int max_num_primitives = prog_len[conc_step];
+
+    int max_execution_steps = 22;
+
+    int init_hole_id = at_hole_id;
+    repeat(i : max_num_primitives)
+    {
+        karel_program[at_hole_id] = ??(2);
+        at_hole_id++;
+    }
+
+    bit use_fs = 1;
+
+    bit in_f_call = 0;
+    int f_call_line = 0;
+    int global_f_num_lines = 5;
+    int f_num_lines = global_f_num_lines;
+    int global_f_goto_line = 0;
+    int goto_line = 0;
+    int f_at_line = 0;
+
+    repeat(step_id : max_execution_steps){if(at_op_id < at_hole_id) {
+        int global_id = at_op_id;
+        int op = karel_program[at_op_id];
+        if(do_print_trace)
+        {
+            print_step(step_id);
+            print_line_num(at_op_id);
+        }
+        print_x_y(x, y);
+        if(op == 0) {  //move
+            if(do_print_trace) {
+                print_move();
+            }
+            int idx = width*y + x;
+            assert(input_grid[idx] == output_grid[idx]);
+            if(dir_axis == 0) {
+                if(dir_polarity == 0) {
+                    //print_move_left();
+                    x = x-1;
+                } else {
+                    //print_move_right();
+                    x = x+1;
+                }
+            } else {
+                if(dir_polarity == 0) {
+                    //print_move_up();
+                    y = y-1;
+                } else {
+                    //print_move_down();
+                    y = y+1;
+                }
+            }
+            assert(0 <= x && x < width && 0 <= y && y < height);
+            at_op_id = at_op_id+1;
+        } else if(op == 1) {
+            //print_switch_axis();
+            print_turn_right();
+            if(dir_axis == 1) {
+                dir_polarity = 1 - dir_polarity;
+            }
+            dir_axis = 1-dir_axis;
+            at_op_id = at_op_id+1;
+        }
+        else if(op == 2) { //place a bit;
+            print_set_bit();
+            int idx = width*y + x;
+            output_grid[idx] = 1;
+            assert(input_grid[idx] == output_grid[idx]);
+            at_op_id = at_op_id+1;
+        } else if (use_fs && op == 3){ // jump to an f call
+            assert(in_f_call == 0);
+            f_call_line = at_op_id;
+            //goto_line = karel_program[global_id+1];
+            goto_line = global_f_goto_line;
+            //f_num_lines = karel_program[global_id+2];
+            f_num_lines = global_f_num_lines;
+            print_f_call(goto_line, f_num_lines);
+            f_at_line = 0;
+
+            in_f_call = 1;
+
+            at_op_id = goto_line;
+        }
+        else { assert(false); }
+
+        if(use_fs == 1 && in_f_call == 1)
+        {
+            if(op != 3)
+            {
+                f_at_line = f_at_line + 1;
+            }
+            if(f_at_line >= f_num_lines) {
+                at_op_id = f_call_line+1;
+                in_f_call = false;
+                print_f_return(f_call_line);
+            }
+        }
+    } else {
+        assert(in_f_call == 0);
+    }}
+
+    assert(in_f_call == 0);
+
+    if(num_concretization_steps >= 2) {
+        for(int i = 0;i<width;i++) {
+            assert(output_grid[i+concretization_y*width] == input_grid[i+concretization_y*width]);
+        }
+        concretization_y++;
+    }
+    else{
+        for(int i = 0;i<n;i++) {
+            assert(output_grid[i] == input_grid[i]);
+        }
+    }
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/diagonal.data")
+harness void sketch_main(int n, int width, int[n] input_grid)
+{
+
+    /*1: set
+    move
+    2: f 1 2
+    f 1 2
+    f 2 2
+    turn right
+    f 2 3
+
+    // set
+    // move
+    // set
+    // move
+    */
+
+    int x = 0,
+    y = 0,
+    dir_axis = 0, // 0 = x, 1 = y;
+    dir_polarity = 1; // 0 = -1; 1 = 1;
+    // starts at 0, 0 facing right.
+    assert(n % width == 0);
+    int height = n/width;
+
+    int[n] output_grid;
+
+    bit do_print_trace = false;
+
+    /*int num_concretization_steps = 2;
+    int per_conc_step = 7;
+    int[num_concretization_steps] prog_len = {per_conc_step, per_conc_step-1};*/
+
+    int num_concretization_steps = 7;
+    int per_conc_step = 8;
+    int[num_concretization_steps] prog_len =
+        {
+            per_conc_step, // #1
+            per_conc_step, // #2
+            per_conc_step, // #3
+            per_conc_step, // #4
+            per_conc_step, // #5
+            per_conc_step, // #6
+            per_conc_step-1 // #7
+        };
+
+
+    /*int num_concretization_steps = 1;
+    int per_conc_step = 13;
+    int[num_concretization_steps] prog_len = {per_conc_step};*/
+
+    int sum_num_primitives = 0;
+    repeat(i : num_concretization_steps) {
+        sum_num_primitives += prog_len[i];
+    }
+    int max_total_num_primitives = sum_num_primitives;
+
+    int concretization_y = 0;
+    int at_hole_id = 0;
+    int[max_total_num_primitives] karel_program;
+
+    int at_op_id = 0;
+
+    repeat(conc_step : num_concretization_steps)
+    {
+        proto_concretization_step();
+
+        print_start_print_program();
+
+        repeat(j : at_hole_id) {
+            int op = karel_program[j];
+            //print_line_num(j);
+            if(op == 0) { //move
+                print_move();
+            } else if(op == 1) {
+                //print_switch_axis();
+                print_turn_right();
+            } else if(op == 2) { //place a bit;
+                print_set_bit();
+            } else if (use_fs && op == 3){ // jump to an f call
+                print_f_call(global_f_goto_line, global_f_num_lines);
+            } else {
+                assert(use_fs == 1);
+                print_int(op);
+            }
+        }
+        print_done_print_program();
+    }
+
+    int idx = width*y + x;
+    assert(input_grid[idx] == output_grid[idx]);
+}
+

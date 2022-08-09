@@ -1072,16 +1072,16 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 }
 
 void BooleanDAG::smt_exists_print(ostream &out){
-	string asserted = "";
-	string exists = "";
+	string asserted;
+	string exists;
 	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
 	getCTRLasserts(ctrls,asserted,exists,false);
 	out<<exists;
 	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
-	Assert(srcs.size() == 0, "Cannot have SRC nodes here");
+	Assert(srcs.empty(), "Cannot have SRC nodes here");
 	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
-	string assert_str = "";
-	string pre ="";
+	string assert_str;
+	string pre;
 	getAssertStr(assert_nodes, assert_str, asserted,pre);
 
 	//output all asserts after declaring each node
