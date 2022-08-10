@@ -27,7 +27,7 @@ Comment      ("//"[^\n]*)
 %x C_COMMENT
 
 %%
-Solver                      {print_rule("Solver", string(yytext));
+hypersketch                      {print_rule("Solver", string(yytext));
                                 //yylval->identifier_ = new SL::Identifier(string(yytext));
                                 return solver_token;}
 while                       {print_rule("while", string(yytext));
