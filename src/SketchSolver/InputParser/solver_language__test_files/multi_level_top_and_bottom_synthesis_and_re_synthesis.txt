@@ -6,7 +6,7 @@ SEE binary_boolean_predicates_dsl.sk
 
 //----HyperSketch----
 
-Solver main_baseline()
+hypersketch main_baseline()
 {
     int trials_mult = 8;
     int init_num_rows = 5;
@@ -54,7 +54,7 @@ Solver main_baseline()
 }
 
 
-Solver run_one_step_bottom_up(int trials_mult)
+hypersketch run_one_step_bottom_up(int trials_mult)
 {
     /*
 
@@ -360,7 +360,7 @@ Solver run_one_step_bottom_up(int trials_mult)
 
 }
 
-Solver main_plot_initial_timeout_vs_score()
+hypersketch main_plot_initial_timeout_vs_score()
 {
 
     file = File(file_name, sketch_main__Wrapper);
@@ -411,7 +411,7 @@ Solver main_plot_initial_timeout_vs_score()
     return ret_dag;
 }
 
-Solver main()
+hypersketch main()
 {
     return main_plot_initial_timeout_vs_score();
     float timeout = float(1)/float(4); // in seconds
@@ -692,7 +692,7 @@ Solver main()
     return best_dag;
 }
 
-Solver main_em_cond_branches_step(best_score, current_dag, file, num_trials, delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample)
+hypersketch main_em_cond_branches_step(best_score, current_dag, file, num_trials, delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample)
 {
     int local_score = best_score;
     all_dags = [];
@@ -910,7 +910,7 @@ Solver main_em_cond_branches_step(best_score, current_dag, file, num_trials, del
 
 }
 
-Solver best_effort_programs(_harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold, old_ret_dags) {
+hypersketch best_effort_programs(_harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold, old_ret_dags) {
 
     timestamp();
 
@@ -936,7 +936,7 @@ Solver best_effort_programs(_harness, file, num_trials, num_rows, float timeout_
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
-		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch Solver on the harness
+		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch hypersketch on the harness
 		subset_file.clear();
 
 		//--{
