@@ -176,7 +176,7 @@ typedef union YYSTYPE YYSTYPE;
 
 
 
-int yyparse (yyscan_t yyscanner, SolverProgramState* state);
+int yyparse (yyscan_t yyscanner, HyperSketchState* state);
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */
 
@@ -774,7 +774,7 @@ do {                                                                      \
 `----------------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, SolverProgramState* state)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, HyperSketchState* state)
 {
   FILE *yyo = yyoutput;
   YYUSE (yyo);
@@ -795,7 +795,7 @@ yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvalue
 `--------------------------------*/
 
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, SolverProgramState* state)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, HyperSketchState* state)
 {
   YYFPRINTF (yyoutput, "%s %s (",
              yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
@@ -833,7 +833,7 @@ do {                                                            \
 `------------------------------------------------*/
 
 static void
-yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, yyscan_t yyscanner, SolverProgramState* state)
+yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, yyscan_t yyscanner, HyperSketchState* state)
 {
   unsigned long int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
@@ -1113,7 +1113,7 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
 `-----------------------------------------------*/
 
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t yyscanner, SolverProgramState* state)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t yyscanner, HyperSketchState* state)
 {
   YYUSE (yyvaluep);
   YYUSE (yyscanner);
@@ -1135,7 +1135,7 @@ yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t yyscanner
 `----------*/
 
 int
-yyparse (yyscan_t yyscanner, SolverProgramState* state)
+yyparse (yyscan_t yyscanner, HyperSketchState* state)
 {
 /* The lookahead symbol.  */
 int yychar;
@@ -2027,12 +2027,12 @@ yyreturn:
 #line 217 "solver_language_parser.y" /* yacc.c:1906  */
 
 
-void parse_solver_langauge_program(SolverProgramState* state, string solver_program_file)
+void parse_solver_langauge_program(HyperSketchState* state, string hypersketch_file)
 {
 	yyscan_t scanner;
 	yylex_init(&scanner);
 
-	FILE* file_pointer = fopen(solver_program_file.c_str(), "r");
+	FILE* file_pointer = fopen(hypersketch_file.c_str(), "r");
     cout << file_pointer << endl;
 	yyset_in(file_pointer, scanner);
 	int rv = yyparse(scanner, state);

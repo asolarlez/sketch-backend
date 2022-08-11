@@ -11,7 +11,7 @@
 #include "SolverLanguageLexAndYaccHeader.h"
 #include "SketchFunction.h"
 
-class SolverProgramState: public ProgramState
+class HyperSketchState: public ProgramState
 {
 public:
     FloatManager& floats;
@@ -21,7 +21,7 @@ public:
 
     const string& file_name;
 
-    ofstream console_output = ofstream("console_output__n9_m429__gen_8__incremental.out");
+    ofstream console_output = ofstream("hypersketch_console.out");
 
     SL::Methods* init_root = nullptr;
 
@@ -35,7 +35,7 @@ public:
         ProgramState::clear(true);
     }
 
-    SolverProgramState(FunctionMap& _function_map, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
+    HyperSketchState(FunctionMap& _function_map, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
             ProgramState(_function_map), file_name(_file_name),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution) {}
@@ -49,7 +49,7 @@ public:
 };
 
 
-void parse_solver_langauge_program(SolverProgramState* _state, string solver_program_file);
+void parse_solver_langauge_program(HyperSketchState* _state, string hypersketch_file);
 
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H

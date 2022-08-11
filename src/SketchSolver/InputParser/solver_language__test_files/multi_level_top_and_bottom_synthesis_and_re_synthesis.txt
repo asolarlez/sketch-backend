@@ -75,7 +75,7 @@ hypersketch run_one_step_bottom_up(int trials_mult)
         "i" 7 "init_timeouts[i]" 8.000000 "count" 284 "/" 429 "%" 66.200470
         "best_id" 0
         "all_best_dags[best_id].first()" 304
-        BENCH[SolverProgramState::eval()]: 111 (s) ~ 111341683 (us)
+        BENCH[HyperSketchState::eval()]: 111 (s) ~ 111341683 (us)
     */
 
     /*
@@ -97,7 +97,7 @@ hypersketch run_one_step_bottom_up(int trials_mult)
         "i" 7 "init_timeouts[i]" 8.000000 "count" 292 "/" 429 "%" 68.065269
         "best_id" 3
         "all_best_dags[best_id].first()" 308
-        BENCH[SolverProgramState::eval()]: 231 (s) ~ 231490690 (us)
+        BENCH[HyperSketchState::eval()]: 231 (s) ~ 231490690 (us)
     */
 
     /*
@@ -112,7 +112,7 @@ hypersketch run_one_step_bottom_up(int trials_mult)
         "i" 7 "init_timeouts[i]" 8.000000 "count" 303 "/" 429 "%" 70.629372
         "best_id" 0
         "all_best_dags[best_id].first()" 319
-        BENCH[SolverProgramState::eval()]: 475 (s) ~ 475955133 (us)
+        BENCH[HyperSketchState::eval()]: 475 (s) ~ 475955133 (us)
 
         int trials_mult = 32;
         int init_num_rows = 12;
@@ -143,7 +143,7 @@ hypersketch run_one_step_bottom_up(int trials_mult)
     "i" 3 "trial_mults[i]" 128 "count" 317 "/" 429 "%" 73.892776
     "best_id" 3
     "all_best_dags[best_id].first()" 317
-    BENCH[SolverProgramState::eval()]: 435 (s) ~ 435043928 (us)
+    BENCH[HyperSketchState::eval()]: 435 (s) ~ 435043928 (us)
     */
 
     /*

@@ -64,7 +64,7 @@ namespace FMTL{
         map<SketchFunction *, SketchFunction *> *get_meta_map_dp();
     };
 
-    void parse_function_map_transformer_program(FunctionMapTransformerState* _state, string solver_program_file);
+    void parse_function_map_transformer_program(FunctionMapTransformerState* _state, string hypersketch_file);
 }
 
 typedef void* yyscan_t;

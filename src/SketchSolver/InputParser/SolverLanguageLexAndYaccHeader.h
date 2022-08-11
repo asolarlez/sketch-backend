@@ -2199,7 +2199,7 @@ namespace SL {
 };
 
 typedef void* yyscan_t;
-class SolverProgramState;
-void yyerror(yyscan_t scanner, SolverProgramState* state, string s);
+class HyperSketchState;
+void yyerror(yyscan_t scanner, HyperSketchState* state, string s);
 
 #endif //SOLVERLANGUAGEPARSER_LEXANDYACCHEADER_H

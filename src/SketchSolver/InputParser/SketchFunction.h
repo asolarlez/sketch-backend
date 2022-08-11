@@ -11,7 +11,7 @@
 
 
 class BooleanDAG;
-class SolverProgramState;
+class HyperSketchState;
 
 namespace SL
 {

@@ -108,6 +108,6 @@ typedef union YYSTYPE YYSTYPE;
 
 
 
-int yyparse (yyscan_t yyscanner, SolverProgramState* state);
+int yyparse (yyscan_t yyscanner, HyperSketchState* state);
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */

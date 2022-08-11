@@ -145,7 +145,7 @@ harness void sketch_harness(InputType x, OutputType out) {
 
 //----HyperSketch----
 
-HyperSketch simple_solver_program(file_name){
+HyperSketch simple_hypersketch(file_name){
     harness = sketch_harness.clone();
     harness.replace('program', base_program.clone());
     lvl0_programs = best_effort(harness, file_name);

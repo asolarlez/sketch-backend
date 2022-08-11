@@ -36,13 +36,13 @@ using namespace std;
 class SolverLanguage {
 public:
     SolverLanguage() = default;
-    map<string, string> eval(string solver_program_file_path, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
+    map<string, string> eval(string hypersketch_file_path, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
                              bool hasGoodEnoughSolution)
     {
 
-        SolverProgramState state_abs =
-                SolverProgramState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
-        SolverProgramState* state = &state_abs;
+        HyperSketchState state_abs =
+                HyperSketchState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+        HyperSketchState* state = &state_abs;
         map<string, string> final_hole_values;
 
         {
@@ -54,9 +54,9 @@ public:
 
             int init_function_map_transformer_size = function_map.transformer_size();
 
-            cout << "READING, LEXING, AND PARSING SOLVER PROGRAM FROM FILE: " << solver_program_file_path << endl;
+            cout << "READING, LEXING, AND PARSING SOLVER PROGRAM FROM FILE: " << hypersketch_file_path << endl;
 
-            parse_solver_langauge_program(state, solver_program_file_path);
+            parse_solver_langauge_program(state, hypersketch_file_path);
 
             cout << "DONE PARSING SOLVER PROGRAM" << endl;
 

@@ -8,7 +8,7 @@
 
 #include "BenchmarkScore.h"
 
-SL::VarVal * SolverProgramState::eval(){
+SL::VarVal * HyperSketchState::eval(){
     assert(init_root != nullptr);
 
     start_of_run = std::chrono::steady_clock::now();
@@ -58,10 +58,10 @@ SL::VarVal * SolverProgramState::eval(){
 
     global.clear(true);
 
-    auto end_eval = timestamp(start_of_run, "solver_program::eval");
+    auto end_eval = timestamp(start_of_run, "hypersketch::eval");
 
     auto elapsed = chrono::duration_cast<chrono::microseconds>(end_eval - start_of_run).count();
-    console_output << "BENCH[SolverProgramState::eval()]: " << elapsed/1000000 << " (s) ~ " << elapsed << " (us)" << endl;
+    console_output << "BENCH[HyperSketchState::eval()]: " << elapsed/1000000 << " (s) ~ " << elapsed << " (us)" << endl;
 
     return var_val_ret;
 }

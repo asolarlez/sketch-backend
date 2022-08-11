@@ -1,0 +1,80 @@
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness void sketch_main(int _n, bit[_n] _inputs, bit out)
+{
+    int n = 9;
+    assert(_n == n);
+
+    int[_n] inputs;
+    for(int i = 0;i<_n;i++)
+    {
+        if(_inputs[i]) {
+            inputs[i] = 1;
+        }
+        else {
+            inputs[i] = -1;
+        }
+    }
+
+    int m = 1; // num outputs;
+    int num_layers = 4;
+    int layer_width =  n;
+
+    bit[num_layers * layer_width] vals;
+    int[num_layers * layer_width] bias = ??;
+
+    int num_input_weights = layer_width * n;
+    int[num_input_weights] input_weights;
+    repeat(i : num_input_weights) {
+        input_weights[i] = {|1 | -1|};
+    }
+
+    int num_mid_weights = (num_layer s - 1) * layer_width * layer_width;
+    int[num_mid_weights] mid_weights;
+    repeat(i : num_mid_weights) {
+        mid_weights[i] = {|1 | -1|};
+    }
+
+    int num_output_weights = layer_width * m;
+    int[num_output_weights] output_weights = {|1 | -1|};
+    repeat(i : num_output_weights) {
+        output_weights[i] = {|1 | -1|};
+    }
+
+    // input and mid layers
+    for(int i = 0;i<num_layers;i++) {
+        for(int j = 0;j<layer_width;j++) {
+            int val_idx = i*layer_width + j;
+            int sum = 0;
+            if(i == 0) {
+                //inputs are input layer
+                for(int k = 0; k < n;k++) {
+                    int weight_idx = j*n + k;
+                    sum += (int)(input_weights[weight_idx] * inputs[k]);
+                }
+            } else {
+                //inputs are previous layer
+                for(int k = 0; k < layer_width;k++) {
+                    int weight_idx = (i-1)*layer_width*layer_width + j*layer_width + k;
+                    int prev_val_k_idx = (i-1)*layer_width + k;
+                    sum += (int)(mid_weights[weight_idx] * vals[prev_val_k_idx]);
+                }
+            }
+            vals[val_idx] = sum > bias[val_idx];
+        }
+    }
+
+    bit[m] output_vals;
+    int[m] output_bias = ??;
+    for(int val_idx = 0; val_idx < m; val_idx++) {
+        int sum = 0;
+        for(int k = 0; k < layer_width;k++) {
+            int weight_idx = val_idx*layer_width + k;
+            int prev_val_k_idx = (num_layers-1)*layer_width + k;
+            sum += (int)(output_weights[weight_idx] * vals[prev_val_k_idx]);
+        }
+        output_vals[val_idx] = sum > output_bias[val_idx];
+    }
+
+    assert(output_vals[0] == out);
+
+}

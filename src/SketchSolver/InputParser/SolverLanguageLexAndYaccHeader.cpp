@@ -387,8 +387,8 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyFrontier*& poly_frontier, StateType* 
 }
 
 
-//template SL::VarVal *SL::FunctionCall::eval<SolverProgramState, GenericFile>(
-//        GenericFile*& file, SolverProgramState *state, const SL::VarVal* const the_var_val);
+//template SL::VarVal *SL::FunctionCall::eval<HyperSketchState, GenericFile>(
+//        GenericFile*& file, HyperSketchState *state, const SL::VarVal* const the_var_val);
 
 template<typename StateType, typename FileType>
 SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::VarVal* const the_var_val) {
@@ -650,7 +650,7 @@ void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness)
 
 
 template<>
-SL::VarVal* SL::FunctionCall::eval_global<SolverProgramState>(SolverProgramState *state)
+SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *state)
 {
     switch (method_id) {
         case _file: {
@@ -1689,7 +1689,7 @@ SL::VarVal* SL::Method::eval(StateType *state, vector<T>& inputs)  {
     return state->get_return_var_val();
 }
 
-template void SL::Method::run<SolverProgramState>(SolverProgramState *state, vector<Param *> &input_params);
+template void SL::Method::run<HyperSketchState>(HyperSketchState *state, vector<Param *> &input_params);
 
 template<typename StateType>
 void SL::Method::run(StateType *state, vector<Param *> &input_params)

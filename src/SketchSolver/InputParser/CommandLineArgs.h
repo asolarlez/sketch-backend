@@ -25,8 +25,12 @@ const string VERSION_INFO = "vlarrays";
 
 class CommandLineArgs{
 	public:
-//    string solver_program_file_name;
-    string solver_program_file_path;
+        // HARDCODE HYPERSKETCH PATH HERE.
+    string hypersketch_file_path = "";
+        // HARDCODE THE PATH TO YOUR HYPERSKETCH HERE IF YOU WANT
+        // TO RUN THE END-TO-END PIPELINE WITH THE FRONTEND.
+        // MAKE SURE YOU ARE USING THE BRANCH
+        // 'HyperSketchIntegration' url: 'https://github.com/asolarlez/sketch-frontend/tree/HyperSketchIntegration'
     int input_idx;
     int seedsize;
     int seed;
@@ -209,7 +213,7 @@ class CommandLineArgs{
 		dumpPeriodically = -1;
 	  for(int ii=0; ii<argc; ++ii){
           if (string(argv[ii]) == "--hypersketch") {
-              solver_program_file_path = argv[ii+1];
+              hypersketch_file_path = argv[ii+1];
               input_idx = ii+2;
               continue;
           }

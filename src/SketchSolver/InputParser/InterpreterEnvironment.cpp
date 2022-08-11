@@ -805,13 +805,11 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_solver_program =
-//                false &&
-                params.solver_program_file_path != "";
+        bool do_run_hypersketch = params.hypersketch_file_path != "";
 
-        if(do_solver_program)
+        if(do_run_hypersketch)
         {
-            cout << "RUNNING SOLVE PROGRAM AT: " << params.solver_program_file_path << endl;
+            cout << "RUNNING SOLVE PROGRAM AT: " << params.hypersketch_file_path << endl;
             BooleanDagLightUtility::new_way = true; // indicates using InlinedAndConcretizer for concretization, rather than inlining ahead of time.
             assert(howmany == 1);
             //TODO: Incorporate: hardcoder.setCurHarness((int)i);
@@ -821,7 +819,7 @@ int InterpreterEnvironment::doallpairs() {
             {
                 assert(str == spskpairs[i].file);
             }
-            result = run_solver_program(inlineAmnt, spskpairs[0].file);
+            result = run_hypersketch(inlineAmnt, spskpairs[0].file);
             assert(result == SAT_SATISFIABLE);
             return 0;
             break;
@@ -993,17 +991,17 @@ SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->
 }
 */
 
-SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const string& file_name)
+SATSolverResult InterpreterEnvironment::run_hypersketch(int inlineAmnt, const string& file_name)
 {
     ProgramEnvironment program_env =
             ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     SolverLanguage solver_language = SolverLanguage();
 
-//    string solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
+//    string hypersketch_file_name = "solver_language_program__multi_harness_stun.txt";
 
     assert(currentControls.empty());
-    currentControls = solver_language.eval(params.solver_program_file_path, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+    currentControls = solver_language.eval(params.hypersketch_file_path, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
 
     for(const auto& it: program_env.function_map) {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.

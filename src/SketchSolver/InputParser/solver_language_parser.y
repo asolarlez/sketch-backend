@@ -15,7 +15,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %}
 
 %pure-parser
-%parse-param {yyscan_t yyscanner} {SolverProgramState* state}
+%parse-param {yyscan_t yyscanner} {HyperSketchState* state}
 %lex-param {yyscan_t yyscanner}
 
 
@@ -216,12 +216,12 @@ root: methods {state->add_root($1);}
 
 %%
 
-void parse_solver_langauge_program(SolverProgramState* state, string solver_program_file)
+void parse_solver_langauge_program(HyperSketchState* state, string hypersketch_file)
 {
 	yyscan_t scanner;
 	yylex_init(&scanner);
 
-	FILE* file_pointer = fopen(solver_program_file.c_str(), "r");
+	FILE* file_pointer = fopen(hypersketch_file.c_str(), "r");
 	yyset_in(file_pointer, scanner);
 	int rv = yyparse(scanner, state);
 	free(scanner);

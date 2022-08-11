@@ -75,7 +75,7 @@ void print_rule(string description, string str)
     cout << "RULE " << description <<" TOKEN " << str << endl;
 }
 
-void yyerror(yyscan_t scanner, SolverProgramState* state, string s)
+void yyerror(yyscan_t scanner, HyperSketchState* state, string s)
 {
     cout << "ERROR " << s << endl;
 }
