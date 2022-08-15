@@ -303,6 +303,7 @@ public:
     const map<string, LightInliningTree*>& get_var_name_to_inlining_subtree() const {
         return var_name_to_inlining_subtree;
     }
+
     void clear(bool clear_root = true, bool sub_clear = false) const {
         assert(!deleted);
 
@@ -312,7 +313,9 @@ public:
             _clear();
         }
     }
+
     int get_dag_id() const {return LightSkFuncSetter::get_dag_id(); };
+
     const string& get_dag_name() const {return LightSkFuncSetter::get_dag_name(); };
 
     void check_rep(const VarStore* to_check, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>(), vector<string>* path = new vector<string>()) const
@@ -495,7 +498,6 @@ public:
         return ret;
     }
 
-
     const vector<string>* find(const string& target_dag) const {
         return _find(target_dag, true);
     }
@@ -661,6 +663,7 @@ class BooleanDagLightUtility
 {
     BooleanDAG* const root_dag = nullptr;
     ProgramEnvironment* _env = nullptr;
+
     mutable int shared_ptr = 0;
     const string& dag_name;
     const long long dag_id;

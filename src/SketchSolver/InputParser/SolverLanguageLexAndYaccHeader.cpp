@@ -1285,6 +1285,9 @@ void SL::init_method_str_to_method_id_map()
 //    add_to_method_str_to_method_id_map("produce_deep_replace", _produce_deep_replace, "SketchFunction");
 //    add_to_method_str_to_method_id_map("inplace_deep_replace", _inplace_deep_replace, "SketchFunction");
 
+    add_to_method_str_to_method_id_map("vectorized_count_passing_inputs", _vectorized_count_passing_inputs, "SketchFunction");
+    add_to_method_str_to_method_id_map("evaluate_inputs", _evaluate_inputs, "SketchFunction");
+
 /*
         _produce_executable,
         _make_executable,
@@ -1306,8 +1309,6 @@ void SL::init_method_str_to_method_id_map()
     //FMTL Primitives:
 
     add_to_method_str_to_method_id_map("declare", _declare, "namespace");
-    add_to_method_str_to_method_id_map("vectorized_count_passing_inputs", _vectorized_count_passing_inputs, "SketchFunction");
-    add_to_method_str_to_method_id_map("evaluate_inputs", _evaluate_inputs, "SketchFunction");
 
 
 method_str_to_method_id_map_is_defined = true;

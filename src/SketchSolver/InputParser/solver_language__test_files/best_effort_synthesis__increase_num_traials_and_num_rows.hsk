@@ -76,15 +76,18 @@ hypersketch main()
 {
     file = File(file_name, sketch_main__Wrapper);
     ret = sketch_main__Wrapper;
-    int mult = 10;
-    for(int num_rows = 0; num_rows < 2*mult; num_rows=num_rows+1) {
-        for(int num_trials = 8*mult; num_trials < (512*mult + 1); num_trials=num_trials*8) {
-            timeout_per_trial = 1;
+    int mult = 1;
+    num_trials_s = [16, 128, 512];
+    num_rows_s = [60, 80, 100, 120];
+    for(int num_rows_s_i = 0; num_rows_s_i < num_rows_s.size(); num_rows_s_i++) {
+        int num_rows = num_rows_s[num_rows_s_i];
+        for(int num_trials_s_i = 0; num_trials_s_i < num_trials_s.size(); num_trials_s_i++) {
+            timeout_per_trial = 3;
             //for(int ; timeout_per_trial < 3; timeout_per_trial++)
             {
                 float_timeout_per_trial = float(timeout_per_trial);
                 ret = best_effort_programs(
-                    sketch_main__Wrapper, file, num_trials, num_rows, float_timeout_per_trial, file.size());
+                    sketch_main__Wrapper, file, num_trials_s[num_trials_s_i], num_rows, float_timeout_per_trial, file.size());
             }
         }
     }
