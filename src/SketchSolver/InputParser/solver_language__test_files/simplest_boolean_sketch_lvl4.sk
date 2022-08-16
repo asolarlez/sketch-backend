@@ -1,6 +1,6 @@
 pragma options "--bnd-arr-size 2";
 
-@FromFile("inputs.txt")
+@FromFile("inputs.data")
 harness void main_sk(int n, bit[n] bits, bit out) {
     assert({| bits[??] | bits[??] || bits[??] |} == out);
 }

@@ -19,7 +19,7 @@ bit composite_program(int n, bit[n] bits)
     //space of composite programs
 }
 
-@FromFile("inputs.txt")
+@FromFile("inputs.data")
 harness void main(int n, bit[n] bits, bit out) {
     assert(program(n, bits) == out);
 }
@@ -75,7 +75,7 @@ bit composite_program(int n, bit[n] bits)
     }
 }
 
-@FromFile("inputs.txt")
+@FromFile("inputs.data")
 harness void sketch_main(int n, bit[n] bits, bit out) {
     assert(program(n, bits) == out);
 }

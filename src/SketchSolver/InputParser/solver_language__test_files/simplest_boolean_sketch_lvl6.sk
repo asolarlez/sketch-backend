@@ -5,7 +5,7 @@ generator bit literal(bit x)
     return {|x|!x|};
 }
 
-@FromFile("inputs.txt")
+@FromFile("inputs.data")
 harness void main_sk(int n, bit[n] bits, bit out) {
     assert({| literal(bits[??]) | literal(bits[??]) || literal(bits[??]) |} == out);
 }

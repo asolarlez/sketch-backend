@@ -1,4 +1,4 @@
-@FromFile("inputs.txt")
+@FromFile("inputs.data")
 void main (int n, bit[n] bits, bit out)
 {
   bit _out_s1 = 0;

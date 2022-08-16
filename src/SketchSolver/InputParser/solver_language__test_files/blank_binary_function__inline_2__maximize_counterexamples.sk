@@ -28,7 +28,7 @@ bit program(int n, bit[n] bits){
 }
 
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.data")
 harness void main_sk(int n, int m, bit[n] bits, bit[m] out) {
 
     int k = n/m;

@@ -220,9 +220,11 @@ With that you have gone though the entire process of running hypersketch: passin
 
 ## Built-In Types, Methods, and Variables
 
-1. built-in types
-2. built-in methods
-3. built-in variables
+[//]: # (1. built-in types)
+
+[//]: # (2. built-in methods)
+
+[//]: # (3. built-in variables)
 
 #### 1. Built-In Types
 
@@ -285,7 +287,7 @@ Types:
 
 [//]: # (```)
 
-#### 2. Built-In Methods
+#### 2. Built-In Namespace Methods
 
 ```
   (method-name : str, method-id : MethodID, class-name : str)
@@ -300,7 +302,7 @@ Types:
   ("not", _not, "namespace");
 ```
 
-#### 3. Built-In Variables
+#### 3. Built-In Namespace Variables
     
     (t : Type, var-name : str, val-cpp : t);
     (bool, "true", true);

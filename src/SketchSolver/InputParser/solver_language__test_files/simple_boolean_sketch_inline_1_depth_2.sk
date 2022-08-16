@@ -32,7 +32,7 @@ bit two_step_program(int n, bit[n] bits){
 }
 
 
-@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.txt")
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.data")
 harness void main_sk(int n, bit[n] bits, bit out) {
     assert(two_step_program(n, bits) == out);
 }
