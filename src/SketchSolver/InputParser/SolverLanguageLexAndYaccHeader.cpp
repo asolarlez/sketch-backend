@@ -325,7 +325,7 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyVec*& poly_vec, StateType* state, con
             return poly_vec->at(idx);
             break;
         }
-        case _append:
+        case _push_back:
         {
             assert(params.size() == 1);
             poly_vec->push_back(params[0]->eval(state));
@@ -554,7 +554,7 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
             return new VarVal(new FileType(file));
             break;
         }
-        case _append:
+        case _push_back:
         {
             assert(params.size() == 1);
             VarVal* var_store_var_val = params[0]->eval(state);
@@ -1238,7 +1238,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("second", _second, "pair");
     add_to_method_str_to_method_id_map("sort", _sort_vec, "vector");
     add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
-    add_to_method_str_to_method_id_map("append", _append, "vector", "File");
+    add_to_method_str_to_method_id_map("push_back", _push_back, "vector", "File");
     add_to_method_str_to_method_id_map("size", _size, "File", "vector", "SketchFunction", "Frontier");
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
     add_to_method_str_to_method_id_map("relabel", _relabel, "File");
@@ -1852,6 +1852,7 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
                 PolyType* type_params = var_type->get_type_params();
                 assert(type_params->size() == 1);
                 auto type_param = *type_params->at(0);
+                assert(var_val->get_poly_vec(false)->get_type_params()->size() == 1);
                 auto var_param = *var_val->get_poly_vec(false)->get_type_params()->at(0);
                 assert(type_param == var_param);
             } else if (var_type_str == "pair") {
@@ -2632,7 +2633,7 @@ SL::VarVal *SL::BinaryExpression::eval(StateType *state)
     assert(false);
 }
 
-SL::SLType::SLType(SL::Identifier *_name, SL::TypeParams *_type_params) : name(_name),
+SL::SLType::SLType(SL::Identifier *_name, SL::TypeParams *_type_params) : name(new SL::Identifier(_name)),
 type_params(new PolyType(_type_params)){}
 
 SL::SLType::SLType(SL::SLType *to_copy) : name(new Identifier(to_copy->name)) {

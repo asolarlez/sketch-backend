@@ -1,4 +1,4 @@
-hypersketch best_effort_programs(harness, file, num_trials, num_rows, timeout) {
+/*hypersketch best_effort_programs(harness, file, num_trials, num_rows, timeout) {
     //timestamp("best_effort");
     timestamp();
 
@@ -28,4 +28,59 @@ hypersketch main() {
     timeout = float(1);
     ret_dags = best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
     return ret_dags[0].second();
+}*/
+
+
+//--
+
+
+vector<pair<int, SketchFunction> > best_effort_programs(
+        SketchFunction harness, File file, int num_trials, int num_rows, float timeout) {
+//      timestamp("best_effort");
+//      timestamp(); //todo
+
+    vector<pair<int, SketchFunction> > ret_dags = vector<pair<int, SketchFunction> >();
+    for(int trial_id = 0; trial_id<num_trials; trial_id++) {
+        File subset_file = file.produce_subset_file(num_rows);
+        SketchFunction clone = harness.deep_clone();
+        Solution solution = SATSolver(clone, subset_file, timeout);
+        clone.clear();
+
+        SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+        int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
+
+        ret_dags.push_back(pair<int, SketchFunction>(score, program));
+    }
+
+    ret_dags.sort();
+    ret_dags.reverse();
+
+//      timestamp("best_effort");
+//      timestamp();
+    return ret_dags;
+}
+/*
+string file_name;
+SketchFunction sketch_main__Wrapper;
+
+public:
+HyperSketchPrograms(string _file_name, SketchFunction _sketch_main__Wrapper):
+file_name(_file_name), sketch_main__Wrapper(_sketch_main__Wrapper) {}*/
+
+SketchFunction main__best_effort_programs() {
+    File file =  File(file_name, sketch_main__Wrapper);
+    int num_trials = 10;
+    int num_rows = 20;
+    float timeout = float(1);
+    vector<pair<int, SketchFunction> > ret_dags =
+            best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
+    for(int i = 1;i<ret_dags.size();i++) {
+        ret_dags[i].second().clear();
+    }
+    return ret_dags[0].second();
+}
+
+
+SketchFunction main() {
+    return main__best_effort_programs();
 }

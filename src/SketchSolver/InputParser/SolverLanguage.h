@@ -73,9 +73,9 @@ class HyperSketchPrograms
         return ret_dags;
     }
 
-
     string file_name;
     SketchFunction* sketch_main__Wrapper;
+
 public:
     HyperSketchPrograms(string _file_name, SketchFunction* _sketch_main__Wrapper):
     file_name(_file_name), sketch_main__Wrapper(_sketch_main__Wrapper) {}
@@ -132,6 +132,7 @@ public:
         map<string, string> final_hole_values;
 
         bool run_hsk_program = true;
+        bool run_hardcoded_synthesis_strategy = false;
         if(run_hsk_program)
         {
 
@@ -229,89 +230,84 @@ public:
                 }
             }
         }
-        else
+        else if(run_hardcoded_synthesis_strategy)
         {
-            bool run_sandbox = true;
-            if(run_sandbox)
+            SketchFunction* _concretized_function =
+                    HyperSketchPrograms(file_name, function_map["sketch_main__Wrapper"]).main__best_effort_programs();
+
             {
-                SketchFunction* _concretized_function =
-                        HyperSketchPrograms(file_name, function_map["sketch_main__Wrapper"]).main__best_effort_programs();
+                File *file = new File(_concretized_function, file_name);
 
-                {
-                    File *file = new File(_concretized_function, file_name);
+                int num_passing_inputs =
+                        _concretized_function->count_passing_inputs(file);
 
-                    int num_passing_inputs =
-                            _concretized_function->count_passing_inputs(file);
+                cout << "HERE " << _concretized_function->get_dag()->get_name() << endl;
+                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                     << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
 
-                    cout << "HERE " << _concretized_function->get_dag()->get_name() << endl;
-                    cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
-                         << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+                file->clear();
+            }
 
-                    file->clear();
+            //print function_map_transformer_program, parse it, and check that it's the same.
+
+            bool save_and_test_fmtl_program = true;
+
+            const string fmtl_program_file_name = "fmtl_program_file.fmtl";
+
+            if(save_and_test_fmtl_program)
+            {
+                assert(final_hole_values.empty());
+                string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map, &final_hole_values);
+                if(false) {
+                    cout << "pretty_print FMTL program:" << endl;
+                    cout << fmtl_program_str << endl;
+                    cout << endl;
                 }
 
-                //print function_map_transformer_program, parse it, and check that it's the same.
+                ofstream fmtl_program_file(fmtl_program_file_name);
 
-                bool save_and_test_fmtl_program = true;
+                fmtl_program_file << fmtl_program_str;
 
-                const string fmtl_program_file_name = "fmtl_program_file.fmtl";
-
-                if(save_and_test_fmtl_program)
-                {
-                    assert(final_hole_values.empty());
-                    string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map, &final_hole_values);
-                    if(false) {
-                        cout << "pretty_print FMTL program:" << endl;
-                        cout << fmtl_program_str << endl;
-                        cout << endl;
-                    }
-
-                    ofstream fmtl_program_file(fmtl_program_file_name);
-
-                    fmtl_program_file << fmtl_program_str;
-
-                    fmtl_program_file.close();
-
-                }
-
-                _concretized_function->clear();
-
-                if(save_and_test_fmtl_program)
-                {
-
-                    function_map.print();
-
-                    FMTL::FunctionMapTransformerState* fmtl_state = nullptr;
-                    fmtl_state = new FMTL::FunctionMapTransformerState(function_map);
-
-                    FMTL::parse_function_map_transformer_program(fmtl_state, fmtl_program_file_name);
-
-                    function_map.clear_erased_root_dag_reps();
-
-                    SL::VarVal* from_fmtl_var_val = fmtl_state->eval();
-
-                    SketchFunction* concretized_function_from_fmtl = from_fmtl_var_val->get_skfunc(false);
-
-                    File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name);
-
-                    int num_passing_inputs =
-                            concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl);
-
-                    cout << "FROM FMTL" << endl;
-                    cout << "HERE " << concretized_function_from_fmtl->get_dag()->get_name() << endl;
-                    cout << "count\t" << num_passing_inputs << " / " << file_from_fmtl->size() << " ("
-                         << 100.0 * (float) num_passing_inputs / file_from_fmtl->size() << " %)" << endl;
-
-                    file_from_fmtl->clear();
-
-                    from_fmtl_var_val->clear_assert_0_shared_ptrs();
-                    fmtl_state->clear();
-                }
+                fmtl_program_file.close();
 
             }
-            else {
-                AssertDebug(false, "Specify dev mode.");
+
+            _concretized_function->clear();
+
+            if(save_and_test_fmtl_program)
+            {
+
+                function_map.print();
+
+                FMTL::FunctionMapTransformerState* fmtl_state = nullptr;
+                fmtl_state = new FMTL::FunctionMapTransformerState(function_map);
+
+                FMTL::parse_function_map_transformer_program(fmtl_state, fmtl_program_file_name);
+
+                function_map.clear_erased_root_dag_reps();
+
+                SL::VarVal* from_fmtl_var_val = fmtl_state->eval();
+
+                SketchFunction* concretized_function_from_fmtl = from_fmtl_var_val->get_skfunc(false);
+
+                File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name);
+
+                int num_passing_inputs =
+                        concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl);
+
+                cout << "FROM FMTL" << endl;
+                cout << "HERE " << concretized_function_from_fmtl->get_dag()->get_name() << endl;
+                cout << "count\t" << num_passing_inputs << " / " << file_from_fmtl->size() << " ("
+                     << 100.0 * (float) num_passing_inputs / file_from_fmtl->size() << " %)" << endl;
+
+                file_from_fmtl->clear();
+
+                from_fmtl_var_val->clear_assert_0_shared_ptrs();
+                fmtl_state->clear();
             }
+        }
+        else {
+            AssertDebug(false, "Specify dev mode.");
         }
         // assert everything has been garbage collected.
         {

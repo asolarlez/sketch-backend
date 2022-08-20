@@ -52,7 +52,7 @@ return                       {print_rule("return", string(yytext)); return retur
 
 {Identifier}                {print_rule("Identifier", string(yytext));
                                 yylval->identifier_ = new SL::Identifier(string(yytext));
-                                return identifier;}
+                                return identifier_y;}
 {String}                    {print_rule("String", string(yytext));
                                 string ret = string(yytext);
                                 ret = ret.substr(1, ret.size()-2);
@@ -75,7 +75,12 @@ void print_rule(string description, string str)
     cout << "RULE " << description <<" TOKEN " << str << endl;
 }
 
-void yyerror(yyscan_t scanner, HyperSketchState* state, string s)
+void yyerror(HyperSketchState* state, string s)
 {
     cout << "ERROR " << s << endl;
+}
+
+void yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, HyperSketchState* state)
+{
+	cout << "IN yydestruct: yymsg = " << yymsg << " | yytype = " << yytype << endl;
 }

@@ -862,7 +862,7 @@ YY_RULE_SETUP
 #line 53 "solver_language_lexer.l"
 {print_rule("Identifier", string(yytext));
                                 yylval->identifier_ = new SL::Identifier(string(yytext));
-                                return identifier;}
+                                return identifier_y;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
@@ -2085,8 +2085,13 @@ void print_rule(string description, string str)
     cout << "RULE " << description <<" TOKEN " << str << endl;
 }
 
-void yyerror(yyscan_t scanner, HyperSketchState* state, string s)
+void yyerror(HyperSketchState* state, string s)
 {
     cout << "ERROR " << s << endl;
+}
+
+void yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, HyperSketchState* state)
+{
+	cout << "IN yydestruct: yymsg = " << yymsg << " | yytype = " << yytype << endl;
 }
 

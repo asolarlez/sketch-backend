@@ -15,7 +15,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %}
 
 %pure-parser
-%parse-param {yyscan_t yyscanner} {HyperSketchState* state}
+%parse-param {yyscan_t yyscanner, HyperSketchState* state}
 %lex-param {yyscan_t yyscanner}
 
 
@@ -46,7 +46,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %type <unit_line> macro_unit
 %type <assignment> assignment
 %type <assignment> parameter_declaration
-%token <identifier_> identifier
+%token <identifier_> identifier_y
 %token <identifier_> solver_token
 %token <identifier_> while_token
 %token <identifier_> for_token
@@ -102,7 +102,7 @@ binary_op:
 //	$$ = new SL::VarVal(a);}
 
 expression:
-	identifier {$$ = new SL::Expression($1);} |
+	identifier_y {$$ = new SL::Expression($1);} |
 	function_call {$$ = new SL::Expression($1);} |
 	binary_expression {$$ = new SL::Expression($1);} |
 	var_val_rule {$$ = new SL::Expression($1);} |
@@ -134,8 +134,8 @@ macro_unit:
 		{$$ = new SL::UnitLine(new SL::For($3, $5, $7, $10));} |
 	'{' code_block '}' {$$ = new SL::UnitLine($2);}
 
-function_call : expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);}
-	     | identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3);}
+function_call : expression '.' identifier_y '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);}
+	     | identifier_y '(' params ')' {$$ = new SL::FunctionCall($1, $3);}
 	     | expression '[' params ']' {$$ = new SL::FunctionCall($1, new SL::Identifier("get"), $3);}
 	     | '[' params ']' {$$ = new SL::FunctionCall(
                				new SL::SLType(new SL::Identifier("vector"),
@@ -155,15 +155,16 @@ constructor_call:
 
 type_params : type_rule {$$ = new SL::TypeParams($1);} | type_rule ',' type_params {$$ = new SL::TypeParams($1, $3);}
 
-type_rule : identifier {$$ = new SL::SLType($1);} |
-		identifier '<' type_params '>' {$$ = new SL::SLType($1, $3);}
+type_rule : identifier_y {$$ = new SL::SLType($1);} |
+		identifier_y '<' type_params '>' {$$ = new SL::SLType($1, $3);}
 
 assignment:
-	type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
-	| type_rule identifier '=' expression {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
-	| type_rule identifier '=' constuctor_call_expression {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
-	| identifier '=' expression {$$ = new SL::Assignment($1, $3);}
-	| identifier op_plus_plus
+	type_rule identifier_y {$$ = new SL::Assignment(new SL::Var($1, $2));}
+	| type_rule identifier_y '=' expression {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+	| type_rule identifier_y '=' constuctor_call_expression {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+	| identifier_y '=' constuctor_call_expression {$$ = new SL::Assignment($1, $3);}
+	| identifier_y '=' expression {$$ = new SL::Assignment($1, $3);}
+	| identifier_y op_plus_plus
 	{$$ = new SL::Assignment(
 		$1,
 		new SL::Expression(
@@ -177,7 +178,7 @@ param : expression {$$ = new SL::Param($1);} | constuctor_call_expression {$$ = 
 params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
 	| param ',' params {$$ = new SL::Params($1, $3);}
 
-key_col_val: '(' identifier ':' identifier ')' {
+key_col_val: '(' identifier_y ':' identifier_y ')' {
              			SL::Params* params =
              				new SL::Params(
              					new SL::Param(new SL::Expression($2)),
@@ -199,16 +200,16 @@ key_col_vals:
 	key_col_val ',' key_col_vals {$$ = new SL::Params($1, $3);}
 
 parameter_declaration:
-	type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
-	| identifier {$$ = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Identifier("any")), $1), nullptr);}
+	type_rule identifier_y {$$ = new SL::Assignment(new SL::Var($1, $2));}
+	| identifier_y {$$ = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Identifier("any")), $1), nullptr);}
 
 signature_params: {$$ = new SL::Params();} | parameter_declaration {$$ = new SL::Params(new SL::Param($1));} |
 	      parameter_declaration ',' signature_params {$$ = new SL::Params(new SL::Param($1), $3);}
 
-method : solver_token type_rule identifier '(' signature_params ')'
-	  '{' code_block '}' {$$ = new SL::Method(new SL::Var($2, $3), $5, $8);}
-	  | solver_token identifier '(' signature_params ')'
-            	  '{' code_block '}' {$$ = new SL::Method(new SL::Var(new SL::SLType(new SL::Identifier("any")), $2), $4, $7);}
+method : type_rule identifier_y '(' signature_params ')'
+	  '{' code_block '}' {$$ = new SL::Method(new SL::Var($1, $2), $4, $7);}
+	  | identifier_y '(' signature_params ')'
+            	  '{' code_block '}' {$$ = new SL::Method(new SL::Var(new SL::SLType(new SL::Identifier("any")), $1), $3, $6);}
 
 methods : method {$$ = new SL::Methods($1);} | method methods {$$ = new SL::Methods($1, $2);}
 
@@ -226,4 +227,3 @@ void parse_solver_langauge_program(HyperSketchState* state, string hypersketch_f
 	int rv = yyparse(scanner, state);
 	free(scanner);
 }
-

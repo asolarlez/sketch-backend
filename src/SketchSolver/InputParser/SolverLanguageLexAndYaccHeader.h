@@ -798,7 +798,7 @@ namespace SL
         Identifier* name = nullptr;
         PolyType* type_params = nullptr;
     public:
-        explicit SLType(Identifier* _name): name(_name) {assert(name != nullptr);}
+        explicit SLType(Identifier* _name): name(new Identifier(_name)) {assert(name != nullptr); cout << "SLType: " << name->to_string() << endl;}
         SLType(Identifier* _name, TypeParams* _type_params);
         explicit SLType(SLType* to_copy);
 
@@ -941,9 +941,7 @@ namespace SL
             _type_params->populate_vector(*type_params);
             _type_params->clear();
         }
-        explicit PolyType(vector<SLType*>* _type_params): type_params(_type_params) {
-            assert(_type_params != nullptr);}
-        explicit PolyType(string any_str): type_params(one_type_param(any_str)) {assert(any_str == "any");}
+        explicit PolyType(const string& any_str): type_params(one_type_param(any_str)) {assert(any_str == "any");}
         explicit PolyType(PolyType* to_copy): type_params(copy_type_params(to_copy->type_params)) {
             assert(to_copy != nullptr);
         };
@@ -1688,7 +1686,7 @@ namespace SL {
         _Frontier,
         _insert,
 
-        _append,
+        _push_back,
         _get,
         _size,
         _join,
@@ -2200,6 +2198,6 @@ namespace SL {
 
 typedef void* yyscan_t;
 class HyperSketchState;
-void yyerror(yyscan_t scanner, HyperSketchState* state, string s);
+void yyerror(HyperSketchState* state, string s);
 
 #endif //SOLVERLANGUAGEPARSER_LEXANDYACCHEADER_H
