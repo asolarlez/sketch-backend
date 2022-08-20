@@ -1294,8 +1294,7 @@ void SL::init_method_str_to_method_id_map()
 
     add_to_method_str_to_method_id_map("declare", _declare, "namespace");
 
-
-method_str_to_method_id_map_is_defined = true;
+    method_str_to_method_id_map_is_defined = true;
 }
 
 SL::MethodId SL::FunctionCall::get_method_id() {
@@ -1639,7 +1638,7 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
             file_var_val->increment_shared_ptr();
             File* file = file_var_val->get_file();
 
-            int ret = skfunc->count_passing_inputs(file, false);
+            int ret = skfunc->count_passing_inputs(file);
             file_var_val->decrement_shared_ptr();
 
             return new VarVal(ret);

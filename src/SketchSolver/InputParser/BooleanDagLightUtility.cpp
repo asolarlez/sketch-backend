@@ -29,13 +29,10 @@ bool BooleanDagLightUtility::get_has_been_concretized() const {
 #include "File.h"
 #include "SolverLanguageLexAndYaccHeader.h"
 
-int BooleanDagLightUtility::count_passing_inputs(const File* file, bool do_assert) {
-    if(do_assert) {
-        assert(false);
-    }
+int BooleanDagLightUtility::count_passing_inputs(const File *file) {
     int ret = 0;
     for(int i = 0;i<file->size();i++) {
-        bool passes = SketchFunctionEvaluator::new_passes(this, file->at(i), do_assert)->get_bool(true, false);
+        bool passes = SketchFunctionEvaluator::new_passes(this, file->at(i))->get_bool(true, false);
         if(passes) {
             ret += 1;
         }

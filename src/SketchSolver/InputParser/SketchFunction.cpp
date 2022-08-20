@@ -377,6 +377,7 @@ void SketchFunction::clear(){
 
 void SketchFunction::clear_assert_num_shared_ptr_is_0() {
     global_clear_id++;
+    local_clear_id = global_clear_id;
 
     string dag_name = get_dag_name();
 
@@ -887,11 +888,7 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 
 #include <chrono>
 
-int SketchFunction::count_passing_inputs(const File* file, bool do_assert) {
-    if(do_assert) {
-        assert(false);
-    }
-
+int SketchFunction::count_passing_inputs(const File *file) {
     SL::PolyVec* passing_inputs_bitvector = evaluate_inputs(file);
     vector<bool> bitvector = passing_inputs_bitvector->to_vector_bool();
     passing_inputs_bitvector->clear();

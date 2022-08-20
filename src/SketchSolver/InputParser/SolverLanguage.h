@@ -32,16 +32,18 @@ class HyperSketchPrograms
         }
     };
 
-    template<typename TF, typename TS>
-    class pair: public std::pair<TF, TS>
+    template<typename FirstType, typename SecondType>
+    class pair: public std::pair<FirstType, SecondType>
     {
     public:
-        pair(TF left, TS right): std::pair<TF, TS>(left, right) {}
-        TF first() {
-            return std::pair<TF, TS>::first;
+        pair(FirstType left, SketchFunction* right): std::pair<FirstType, SecondType>(left, right) {
+            right->increment_shared_ptr();
         }
-        TS second() {
-            return std::pair<TF, TS>::second;
+        FirstType first() {
+            return std::pair<FirstType, SecondType>::first;
+        }
+        SecondType second() {
+            return std::pair<FirstType, SecondType>::second;
         }
     };
 
@@ -53,7 +55,9 @@ class HyperSketchPrograms
         vector<pair<int, SketchFunction*> > ret_dags;
         for(int trial_id = 0; trial_id<num_trials; trial_id++) {
             File* subset_file = file->produce_subset_file(num_rows);
-            HoleVarStore* solution = solve(harness, subset_file, timeout);
+            auto clone = harness->deep_clone();
+            HoleVarStore* solution = solve(clone, subset_file, timeout);
+            clone->clear_assert_num_shared_ptr_is_0();
 
             SketchFunction* program = harness->produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
             int score = program->count_passing_inputs(file); // count how many input-output examples are solved with this solution
@@ -69,15 +73,23 @@ class HyperSketchPrograms
         return ret_dags;
     }
 
+
     string file_name;
     SketchFunction* sketch_main__Wrapper;
+public:
+    HyperSketchPrograms(string _file_name, SketchFunction* _sketch_main__Wrapper):
+    file_name(_file_name), sketch_main__Wrapper(_sketch_main__Wrapper) {}
 
-    SketchFunction* main() {
+    SketchFunction* main__best_effort_programs() {
         File* file = new File(file_name, sketch_main__Wrapper);
         int num_trials = 10;
         int num_rows = 20;
         float timeout = float(1);
-        vector<pair<int, SketchFunction*> > ret_dags = best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
+        vector<pair<int, SketchFunction*> > ret_dags =
+                best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
+        for(int i = 1;i<ret_dags.size();i++) {
+            ret_dags[i].second()->clear();
+        }
         return ret_dags[0].second();
     }
 };
@@ -112,20 +124,22 @@ public:
     map<string, string> eval(string hypersketch_file_path, FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
                              bool hasGoodEnoughSolution)
     {
+        int init_num_global_dags = BooleanDAG::get_allocated().size();
+        int init_num_global_nodes = bool_node::get_allocated().size();
+        int init_function_map_transformer_size = function_map.transformer_size();
 
-        HyperSketchState state_abs =
-                HyperSketchState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
-        HyperSketchState* state = &state_abs;
+
         map<string, string> final_hole_values;
 
+        bool run_hsk_program = true;
+        if(run_hsk_program)
         {
 
+            HyperSketchState state_abs =
+                    HyperSketchState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+            HyperSketchState* state = &state_abs;
+
             assert(!state->function_map.empty());
-
-            int init_num_global_dags = BooleanDAG::get_allocated().size();
-            int init_num_global_nodes = bool_node::get_allocated().size();
-
-            int init_function_map_transformer_size = function_map.transformer_size();
 
             cout << "READING, LEXING, AND PARSING SOLVER PROGRAM FROM FILE: " << hypersketch_file_path << endl;
 
@@ -145,7 +159,7 @@ public:
                     File *file = new File(_concretized_function, file_name);
 
                     int num_passing_inputs =
-                            _concretized_function->count_passing_inputs(file, false);
+                            _concretized_function->count_passing_inputs(file);
 
                     cout << "HERE " << _concretized_function->get_dag()->get_name() << endl;
                     cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
@@ -200,7 +214,7 @@ public:
                     File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name);
 
                     int num_passing_inputs =
-                            concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl, false);
+                            concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl);
 
                     cout << "FROM FMTL" << endl;
                     cout << "HERE " << concretized_function_from_fmtl->get_dag()->get_name() << endl;
@@ -213,32 +227,117 @@ public:
                     fmtl_state->clear();
 
                 }
+            }
+        }
+        else
+        {
+            bool run_sandbox = true;
+            if(run_sandbox)
+            {
+                SketchFunction* _concretized_function =
+                        HyperSketchPrograms(file_name, function_map["sketch_main__Wrapper"]).main__best_effort_programs();
 
-                int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
-                assert(dags_diff == 0);
+                {
+                    File *file = new File(_concretized_function, file_name);
 
-                int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
-                if(all_remaining_inlining_trees != 0) {
-                    cout << "WARNING: THERE ARE REMAINING INLINING TREES DANGLING!!!" << endl;
-//                    assert(all_remaining_inlining_trees == 0);
+                    int num_passing_inputs =
+                            _concretized_function->count_passing_inputs(file);
+
+                    cout << "HERE " << _concretized_function->get_dag()->get_name() << endl;
+                    cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                         << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+
+                    file->clear();
                 }
 
-                assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+                //print function_map_transformer_program, parse it, and check that it's the same.
 
-                int transformer_size_diff = function_map.transformer_size() - init_function_map_transformer_size;
+                bool save_and_test_fmtl_program = true;
 
-                function_map.check_consistency();
-                assert(function_map.contains_only_necessary());
+                const string fmtl_program_file_name = "fmtl_program_file.fmtl";
 
-                cout << "LightSkFuncSetter::max_count: " << LightSkFuncSetter::max_count <<endl;
-                assert(LightSkFuncSetter::max_count <= 3);
+                if(save_and_test_fmtl_program)
+                {
+                    assert(final_hole_values.empty());
+                    string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map, &final_hole_values);
+                    if(false) {
+                        cout << "pretty_print FMTL program:" << endl;
+                        cout << fmtl_program_str << endl;
+                        cout << endl;
+                    }
 
+                    ofstream fmtl_program_file(fmtl_program_file_name);
+
+                    fmtl_program_file << fmtl_program_str;
+
+                    fmtl_program_file.close();
+
+                }
+
+                _concretized_function->clear();
+
+                if(save_and_test_fmtl_program)
+                {
+
+                    function_map.print();
+
+                    FMTL::FunctionMapTransformerState* fmtl_state = nullptr;
+                    fmtl_state = new FMTL::FunctionMapTransformerState(function_map);
+
+                    FMTL::parse_function_map_transformer_program(fmtl_state, fmtl_program_file_name);
+
+                    function_map.clear_erased_root_dag_reps();
+
+                    SL::VarVal* from_fmtl_var_val = fmtl_state->eval();
+
+                    SketchFunction* concretized_function_from_fmtl = from_fmtl_var_val->get_skfunc(false);
+
+                    File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name);
+
+                    int num_passing_inputs =
+                            concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl);
+
+                    cout << "FROM FMTL" << endl;
+                    cout << "HERE " << concretized_function_from_fmtl->get_dag()->get_name() << endl;
+                    cout << "count\t" << num_passing_inputs << " / " << file_from_fmtl->size() << " ("
+                         << 100.0 * (float) num_passing_inputs / file_from_fmtl->size() << " %)" << endl;
+
+                    file_from_fmtl->clear();
+
+                    from_fmtl_var_val->clear_assert_0_shared_ptrs();
+                    fmtl_state->clear();
+                }
+
+            }
+            else {
+                AssertDebug(false, "Specify dev mode.");
+            }
+        }
+        // assert everything has been garbage collected.
+        {
+            int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
+            assert(dags_diff == 0);
+
+            int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
+            if(all_remaining_inlining_trees != 0) {
+                cout << "WARNING: THERE ARE REMAINING INLINING TREES DANGLING!!!" << endl;
+//                    assert(all_remaining_inlining_trees == 0);
+            }
+
+            assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+
+            function_map.check_consistency();
+            assert(function_map.contains_only_necessary());
+
+            cout << "LightSkFuncSetter::max_count: " << LightSkFuncSetter::max_count <<endl;
+            assert(LightSkFuncSetter::max_count <= 3);
+
+//                int transformer_size_diff = function_map.transformer_size() - init_function_map_transformer_size;
 //                if(transformer_size_diff != 0){
 //                    function_map.print_not_erased();
 //                }
 
-                function_map.soft_clear_transformer();
-            }
+            function_map.soft_clear_transformer();
         }
 
         ofstream bench_output(string(std::filesystem::current_path()) + "/benches/bench.out");

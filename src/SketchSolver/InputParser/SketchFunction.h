@@ -229,7 +229,7 @@ public:
 
 //    bool has_unit_self_loop() const;
 
-    int count_passing_inputs(const File* file, bool do_assert = true) override;
+    int count_passing_inputs(const File *file) override;
 
     SL::PolyVec* evaluate_inputs(const File *file, unsigned int repeat = 0);
 
