@@ -29,7 +29,7 @@ bool BooleanDagLightUtility::get_has_been_concretized() const {
 #include "File.h"
 #include "SolverLanguageLexAndYaccHeader.h"
 
-int BooleanDagLightUtility::count_passing_inputs(const File *file, bool do_assert) {
+int BooleanDagLightUtility::count_passing_inputs(const File* file, bool do_assert) {
     if(do_assert) {
         assert(false);
     }

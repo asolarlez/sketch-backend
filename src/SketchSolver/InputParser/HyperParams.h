@@ -7,8 +7,10 @@
 
 #include <cstdint>
 
+typedef uint64_t MetaBaseType;
+
 namespace VectorizedInterpreter {
-    typedef uint16_t BaseType;
+    typedef MetaBaseType BaseType;
 }
 
 #endif //EXAFUNCTIONGRAPHEXECUTOR_HYPERPARAMS_H

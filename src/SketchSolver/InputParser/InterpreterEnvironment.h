@@ -204,7 +204,7 @@ public:
 	    {
 			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
-		solver = new CEGISSolver(cegisfind, hardcoder, params, floats, hardcoder);
+		solver = new CEGISSolver(cegisfind, params, floats, hardcoder);
         //reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 		hasGoodEnoughSolution = false;
@@ -253,7 +253,7 @@ public:
 	    {
 			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
-		solver = new CEGISSolver(cegisfind, hardcoder, params, floats, hardcoder);
+		solver = new CEGISSolver(cegisfind, params, floats, hardcoder);
         //reasSolver = new REASSolver(floats);
 		cout << "ALLRESET" << endl;
 		status = READY;

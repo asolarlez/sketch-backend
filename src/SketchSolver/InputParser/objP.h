@@ -214,10 +214,12 @@ public:
     }
 };
 
+#include "HyperParams.h"
+
 class BitMetaVectorTrait {
 protected:
-    typedef uint16_t WORD_TYPE;
-    static const int max_num_bits = 16;
+    typedef MetaBaseType WORD_TYPE;
+    static const int max_num_bits = 64;
     static_assert(sizeof(WORD_TYPE)*8 == max_num_bits);
 public:
     virtual size_t get_num_vectors() const {

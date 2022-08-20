@@ -69,7 +69,7 @@ public:
         delete this;
     }
 
-    GenericFile *sample_sub_file(int num_rows) {
+    GenericFile *produce_subset_file(int num_rows) {
         if(false) {
             //DEBUG VERSION TO SEE WHICH IDs ARE CHOSEN
             vector<int> ids;

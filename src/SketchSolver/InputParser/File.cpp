@@ -129,81 +129,29 @@ void File::relabel(BooleanDagLightUtility *harness) {
 
 #include "GenericFile.h"
 
-File::File(const BooleanDagLightUtility *harness, const string &file_name, FloatManager &floats, int seed, bool_node::Type var_type)
-
-#define IMPLEMENT_WITH_GENERIC_FILE
-
-#ifdef IMPLEMENT_WITH_GENERIC_FILE
-
+File::File(const BooleanDagLightUtility *harness, const string &file_name, bool_node::Type var_type)
 {
+    int seed = harness->get_env()->params.seed;
     GenericFile generic_file = GenericFile(file_name, seed);
-    init(harness, &generic_file, floats, seed, var_type);
+    init(harness, &generic_file, var_type);
 }
 
-#else
-
+File::File(const string &file_name, const BooleanDagLightUtility *harness, bool_node::Type var_type)
 {
-    generator = std::mt19937(seed);
-    BooleanDAG* problem = harness->get_dag()->clone();
-    harness->get_env()->doInline(*problem);
-    VarStore input_store;
-    redeclareInputsAndAngelics(input_store, problem);
-    auto inputs = problem->getNodesByType(bool_node::SRC);
-
-    File::Result res = parseFile(file_name, floats, inputs, input_store);
-    const int max_num_bits = 64;
-
-    const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
-    while (res == File::MOREBITS) {
-        int at_int_size = problem->getIntSize();
-        AssertDebug(at_int_size < max_num_bits, "TOO MANY BITS, CHECK THE INPUT TYPES OF YOUR HARNESS. OTHERWISE PROBABLY WRONG CODE/INPUT/OUTPUT.");
-        growInputs(input_store, problem);
-        if(true){
-            assert(harness->get_dag()->getIntSize() == at_int_size);
-            bool harness_in_function_map = false;
-            for(auto it: *bool_dag_map) {
-                assert(it.second->getIntSize() == at_int_size);
-                it.second->growInputIntSizes();
-                if(it.second->get_name() == harness->get_dag()->get_name()) {
-                    assert(!harness_in_function_map);
-                    assert(it.second == harness->get_dag());
-                    harness_in_function_map = true;
-                }
-            }
-            if(!harness_in_function_map)
-            {
-                assert(harness->get_dag()->getIntSize() == at_int_size);
-                harness->get_dag()->growInputIntSizes();
-            }
-            else
-            {
-                assert(harness->get_dag()->getIntSize() == at_int_size+1);
-            }
-        }
-
-        res = parseFile(file_name, floats, inputs, input_store);
-    }
-    assert(res == File::DONE);
-#ifdef CHECK_FILE_INVARIANT
-    used = vector<int>(size(), 0);
-#endif
-    delete bool_dag_map;
-    bool_dag_map = nullptr;
-    problem->clear();
+    int seed = harness->get_env()->params.seed;
+    GenericFile generic_file = GenericFile(file_name, seed);
+    init(harness, &generic_file, var_type);
 }
-#endif
 
 #ifdef CHECK_FILE_INVARIANT
 int File::get_used(int i) {
     return used[i];
 }
 
-
 void File::set_used(int i) {
     used[i]++;
     counterexample_ids_over_time.emplace_back(i);
 }
-
 #endif
 
 File *File::produce_filter(std::function< bool(const VarStore*) >& lambda_condition) {
@@ -221,13 +169,15 @@ File *File::produce_filter(std::function< bool(const VarStore*) >& lambda_condit
     return ret;
 }
 
-File::File(const BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
+File::File(const BooleanDagLightUtility *harness, GenericFile *generic_file, bool_node::Type var_type)
 {
-    init(harness, generic_file, floats, seed, var_type);
+    init(harness, generic_file, var_type);
 }
 
-void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file, FloatManager &floats, int seed, bool_node::Type var_type)
+void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file, bool_node::Type var_type)
 {
+    FloatManager floats = harness->get_env()->floats;
+    int seed = harness->get_env()->params.seed;
     generator = std::mt19937(seed);
     BooleanDAG* problem = harness->get_dag()->clone(harness->get_dag_name());
     if(!harness->has_been_inlined()) {
@@ -244,7 +194,7 @@ void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file
     auto inputs = problem->getNodesByType(var_type);
     File::Result res = parseFile(generic_file, floats, inputs, var_store);
 
-    const int max_num_bits = 32;
+    const int max_num_bits = 64;
 
     const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
     while (res == File::MOREBITS) {
@@ -349,15 +299,13 @@ int File::count(function<bool(const VarStore *)> lambda_condition) {
 
 File::File() = default;
 
-
-#include "GenericFile.h"
 #include "SketchFunction.h"
 
 VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type)
 {
     GenericFile generic_file = GenericFile();
     generic_file.push_back(_line);
-    File file = File(skfunc, &generic_file, skfunc->get_env()->get_floats(), skfunc->get_env()->params.seed, var_type);
+    File file = File(skfunc, &generic_file, var_type);
     assert(file.size() == 1);
     return new VarStore(*file[0]); //todo refactor this, no need to copy.
 }

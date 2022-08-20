@@ -146,7 +146,8 @@ public:
 		int pos = floatIdx.size();
 		floatIdx[x] = pos;
 		floats.push_back(x);
-		Assert(floatIdx.size() == floats.size(), "What???");
+//		Assert(floatIdx.size() == floats.size(), "What???");
+        AssertDebug(floatIdx.size() == floats.size(), "What???");
 		if (isNeg) {
 			return -pos;
 		}
@@ -302,6 +303,7 @@ public:
 		if (y == 0) { return 0;  }
 		float xf = fm.getFloat(x);
 		float yf = fm.getFloat(y);
+        assert(yf != 0);
 		return fm.getIdx((xf / yf));
 	}
 };

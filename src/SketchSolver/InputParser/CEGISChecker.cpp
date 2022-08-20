@@ -3,15 +3,15 @@
 #include "File.h"
 
 int CEGISChecker::valueForINode(INTER_node* inode, VarStore& values, int& nbits){
-			int retval = 0;
-			nbits = inode->get_nbits();		
-			if(nbits > 1){
-				retval = values[inode->get_name()];
-			}else{
-				retval = values[inode->get_name()]==1 ? 1 : -1;
-			}
-			if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< retval <<endl; }
-			return retval;
+    int retval = 0;
+    nbits = inode->get_nbits();
+    if(nbits > 1){
+        retval = values[inode->get_name()];
+    }else{
+        retval = values[inode->get_name()]==1 ? 1 : -1;
+    }
+    if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< retval <<endl; }
+    return retval;
 }
 
 // Method for cutting the problem for the synthesizer. It first finds the

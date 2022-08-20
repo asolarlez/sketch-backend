@@ -98,11 +98,11 @@ public:
 	VarStore ctrlStore;
     map<string, string> current_hole_name_to_original_hole_name;
 
-	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
+	CEGISSolver(CEGISFinderSpec* _finder, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
 	finder(_finder),
 	floats(_floats),
 	params(args),
-	checker(new CEGISChecker(args, hc, _floats)),
+	checker(new CEGISChecker(args, _hc, _floats)),
 	hc(_hc)
 	{
 	//	cout << "miter:" << endl;

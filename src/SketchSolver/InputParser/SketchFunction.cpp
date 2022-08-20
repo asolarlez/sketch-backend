@@ -887,7 +887,7 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 
 #include <chrono>
 
-int SketchFunction::count_passing_inputs(const File *file, bool do_assert) {
+int SketchFunction::count_passing_inputs(const File* file, bool do_assert) {
     if(do_assert) {
         assert(false);
     }

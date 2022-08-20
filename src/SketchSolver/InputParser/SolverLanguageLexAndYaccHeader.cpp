@@ -386,10 +386,6 @@ SL::VarVal *SL::FunctionCall::eval(SL::PolyFrontier*& poly_frontier, StateType* 
     assert(false);
 }
 
-
-//template SL::VarVal *SL::FunctionCall::eval<HyperSketchState, GenericFile>(
-//        GenericFile*& file, HyperSketchState *state, const SL::VarVal* const the_var_val);
-
 template<typename StateType, typename FileType>
 SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::VarVal* const the_var_val) {
     if(is_same<FileType, File>::value) {
@@ -423,7 +419,7 @@ SL::VarVal *SL::FunctionCall::eval(FileType*& file, StateType *state, const SL::
         {
             assert(params.size() == 1);
             int num_rows = params[0]->eval(state)->get_int(false);
-            return new SL::VarVal(file->sample_sub_file(num_rows));
+            return new SL::VarVal(file->produce_subset_file(num_rows));
             break;
         }
         case _size:
@@ -637,18 +633,6 @@ SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMT
     assert(false);
 }
 
-void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness)
-{
-    assert(sol->get_inlining_tree() == nullptr);
-
-    VarStore* append_sol = harness->get_inlining_tree(true)->get_solution();
-    LightInliningTree* harness_inlining_tree = new LightInliningTree(harness->get_inlining_tree());
-    harness_inlining_tree->set_var_store(sol);
-    sol->disjoint_join_with(*append_sol);
-    sol->set_inlining_tree(harness_inlining_tree);
-}
-
-
 template<>
 SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *state)
 {
@@ -669,7 +653,7 @@ SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *st
                 string file_name = file_name_var_val->get_string();
                 file_name_var_val->decrement_shared_ptr();
                 SketchFunction *harness = params[1]->eval(state)->get_skfunc();
-                SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
+                SL::VarVal *ret = new SL::VarVal(new File(harness, file_name));
                 return ret;
             }
             else {
@@ -734,7 +718,7 @@ SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *st
             assert(file != nullptr);
 
             using namespace SolverLanguagePrimitives;
-            auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
+            auto* solver = new WrapperAssertDAG(skfunc->get_env());
 
 //            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
@@ -840,7 +824,7 @@ SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *st
             assert(file != nullptr);
 
             using namespace SolverLanguagePrimitives;
-            auto* solver = new WrapperBatchEvaluatorSolver(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
+            auto* solver = new WrapperBatchEvaluatorSolver(state->floats, state->hc, state->args);
 
 //            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
@@ -1285,8 +1269,8 @@ void SL::init_method_str_to_method_id_map()
 //    add_to_method_str_to_method_id_map("produce_deep_replace", _produce_deep_replace, "SketchFunction");
 //    add_to_method_str_to_method_id_map("inplace_deep_replace", _inplace_deep_replace, "SketchFunction");
 
-    add_to_method_str_to_method_id_map("vectorized_count_passing_inputs", _vectorized_count_passing_inputs, "SketchFunction");
     add_to_method_str_to_method_id_map("evaluate_inputs", _evaluate_inputs, "SketchFunction");
+    add_to_method_str_to_method_id_map("vectorized_count_passing_inputs", _vectorized_count_passing_inputs, "SketchFunction");
 
 /*
         _produce_executable,
@@ -1461,13 +1445,11 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 HoleVarStore *var_store = var_val_sol->get_hole_var_store();
                 SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
                 var_val_sol->decrement_shared_ptr();
-                if(params.size() == 2)
-                {
+                if(params.size() == 2) {
                     int dag_id_from_the_user = params[1]->eval(state)->get_int();
                     concretized_function->set_dag_id_from_the_user(dag_id_from_the_user);
                 }
-                else
-                {
+                else {
                     assert(params.size() == 1);
                 }
                 return new SL::VarVal(concretized_function);

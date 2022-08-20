@@ -1725,8 +1725,8 @@ namespace SL {
         _num_holes, //syntax: how many parameters is the model? (in therms of variables);
         _passes, //semantics: SkFunc::passes(VarStore* input);
 
-        _vectorized_count_passing_inputs,
         _evaluate_inputs,
+        _vectorized_count_passing_inputs,
         _get_solution,
         //FMTL primitives:
         _declare,
@@ -1836,7 +1836,7 @@ namespace SL {
         VarVal *eval(int& the_int, StateType *state, const VarVal *const the_var_val);
 
         template<typename StateType>
-        VarVal *eval(bool& the_int, StateType *state, const VarVal *const the_var_val);
+        VarVal *eval(bool& the_bool, StateType *state, const VarVal *const the_var_val);
 
         template<typename StateType>
         VarVal *eval(PolyFrontier *&poly_frontier, StateType *state, const VarVal *const the_var_val);

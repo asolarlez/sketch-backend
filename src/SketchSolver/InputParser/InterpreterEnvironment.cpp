@@ -1028,7 +1028,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
     File* new_file;
     if (!file.empty())
     {
-        new_file = new File(harness, file, floats, params.seed);
+        new_file = new File(harness, file);
     }
     else
     {

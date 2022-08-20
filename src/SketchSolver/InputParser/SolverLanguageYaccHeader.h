@@ -17,7 +17,6 @@ public:
     FloatManager& floats;
     CommandLineArgs& args;
     HoleHardcoder& hc;
-    bool hasGoodEnoughSolution;
 
     const string& file_name;
 
@@ -38,7 +37,7 @@ public:
     HyperSketchState(FunctionMap& _function_map, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
             ProgramState(_function_map), file_name(_file_name),
-            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution) {}
+            floats(_floats), args(_args), hc(_hc) {}
 
     void add_root(SL::Methods* _init_root) {
         init_root = _init_root;

@@ -66,11 +66,9 @@ namespace SolverLanguagePrimitives {
     };
 
     class WrapperAssertDAG : public Solver_AE {
-        CommandLineArgs &params;
-        FloatManager &floats;
-        HoleHardcoder &hardcoder;
+        ProgramEnvironment* env;
+
         SolverHelper *finder;
-        bool hasGoodEnoughSolution;
 
         ::CEGISSolver *solver;
 
@@ -89,20 +87,19 @@ namespace SolverLanguagePrimitives {
             return solver;
         }
 
-        WrapperAssertDAG(FloatManager &_floats, HoleHardcoder &_hardcoder, CommandLineArgs &_params,
-                         bool _hasGoodEnoughSolution) :
-                params(_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution) {
-            _pfind = ::SATSolver::solverCreate(params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
-            if (params.outputSat) {
+        WrapperAssertDAG(ProgramEnvironment* _env) :
+                env(_env){
+            _pfind = ::SATSolver::solverCreate(env->params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
+            if (env->params.outputSat) {
                 _pfind->outputSAT();
             }
             finder = new SolverHelper(*_pfind);
-            finder->setMemo(params.setMemo && params.synthtype == ::SATSolver::MINI);
+            finder->setMemo(env->params.setMemo && env->params.synthtype == ::SATSolver::MINI);
 
 
             CEGISFinderSpec *cegisfind;
-            cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
-            solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats, _hardcoder);
+            cegisfind = new CEGISFinder(env->floats, *finder, finder->getMng(), env->params);
+            solver = new ::CEGISSolver(cegisfind, env->params, env->floats, env->hardcoder);
         }
 
         HoleVarStore *recordSolution() {
@@ -116,7 +113,6 @@ namespace SolverLanguagePrimitives {
         CommandLineArgs &params;
         FloatManager &floats;
         HoleHardcoder &hardcoder;
-        bool hasGoodEnoughSolution;
 
         ::CEGISSolver *solver;
 
@@ -133,12 +129,11 @@ namespace SolverLanguagePrimitives {
         }
 
 
-        WrapperBatchEvaluatorSolver(FloatManager &_floats, HoleHardcoder &_hardcoder, CommandLineArgs &_params,
-        bool _hasGoodEnoughSolution) :
-        params (_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution) {
+        WrapperBatchEvaluatorSolver(FloatManager &_floats, HoleHardcoder &_hardcoder, CommandLineArgs &_params) :
+        params (_params), floats(_floats), hardcoder(_hardcoder) {
             CEGISFinderSpec *cegisfind;
             cegisfind = new CEGISFinderBatchEnumeration(floats, params);
-            solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats, _hardcoder);
+            solver = new ::CEGISSolver(cegisfind, params, floats, hardcoder);
         }
 
         HoleVarStore *recordSolution() {
@@ -148,6 +143,11 @@ namespace SolverLanguagePrimitives {
         HoleVarStore *solve(ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds) override;
     };
 
+    HoleVarStore* solve(SketchFunction* skfunc, File* subset_file, float timeout);
 };
+
+
+void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness);
+
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGEPRIMITIVES_H

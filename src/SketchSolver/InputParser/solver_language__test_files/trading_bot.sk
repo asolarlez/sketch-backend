@@ -1,0 +1,69 @@
+pragma options "--bnd-arr-size 100";
+pragma options "--bnd-unroll-amnt 100";
+pragma options "--bnd-inbits 21";
+
+include "math.skh";
+
+void print_num_trades(int num_trades){}
+void print_num_btc(float num_btc){}
+
+generator bit get_new_trade(bit in_btc)
+{
+    return f > ??;
+}
+
+//@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/prices.data")
+harness void sketch_main(
+        //bit in_btc,
+//        int n,
+  //      float[n] prices
+    )
+{
+
+    int n = 28;
+    float[n] prices = { 1.0, 2.0, 1.0, 4.0, 1.0, 8.0, 1.0, 1.0, 2.0, 1.0, 4.0, 1.0, 8.0, 1.0, 1.0, 2.0, 1.0, 4.0, 1.0, 8.0, 1.0, 1.0, 2.0, 1.0, 4.0, 1.0, 8.0, 1.0 };
+
+    bit in_btc = 1;
+    float fee = 0.006;
+    float log_num_btc = 0.0;
+    float log_num_usd = 0.0;
+    float entry price = -1.0;
+
+    int num_trades = 0;
+
+    int hardcoded_n = 28;
+    assert(hardcoded_n == n);
+
+    repeat(i : hardcoded_n)
+    {
+        bit do_change = get_new_trade((float)prices[i]);
+        if(do_change) {
+            num_trades += 1;
+            if(in_btc) {
+                log_num_usd = log_num_btc + log((float)prices[i]) + log((1.0-fee));
+                in_btc = false;
+            }
+            else {
+                log_num_btc = log_num_usd - log((float)prices[i]);
+                in_btc = true;
+            }
+        }
+    }
+
+    if(!in_btc) {
+        log_num_btc = log_num_usd- log((float)prices[n-1]);
+    }
+
+    float K = 3.0;
+    float M = K+K;
+    float G = K+M;
+    float T = M+M;;
+
+    assert(log_num_btc >= T+K+1.5);
+
+    print_num_trades(num_trades);
+
+    float _log_num_btc = ??;
+    assert(_log_num_btc == log_num_btc);
+    print_num_btc(_log_num_btc);
+}

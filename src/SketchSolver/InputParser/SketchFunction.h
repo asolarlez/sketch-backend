@@ -161,6 +161,17 @@ public:
         return ret;
     }
 
+    SketchFunction *produce_executable(VarStore* var_store) {
+
+        // inline, and then assert that everything has been concretized and inlined.
+        bool_node::Type var_type = bool_node::CTRL;
+        SketchFunction* ret = produce_concretization(var_store, var_type, true);
+
+        AssertDebug(ret->get_dag()->getNodesByType(bool_node::UFUN).empty(), "failed to produce executable, bc there are uninlined ufuns.");
+
+        return ret;
+    }
+
     SketchFunction *make_executable()
     {
         bool_node::Type var_type = bool_node::CTRL;
@@ -218,7 +229,7 @@ public:
 
 //    bool has_unit_self_loop() const;
 
-    int count_passing_inputs(const File *file, bool do_assert = true) override;
+    int count_passing_inputs(const File* file, bool do_assert = true) override;
 
     SL::PolyVec* evaluate_inputs(const File *file, unsigned int repeat = 0);
 

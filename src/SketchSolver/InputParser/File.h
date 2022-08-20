@@ -91,11 +91,12 @@ public:
 
     explicit File(std::mt19937 _generator): generator(_generator){}
 
-    File(const BooleanDagLightUtility *harness, const string& file_name, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
+    File(const BooleanDagLightUtility *harness, const string& file_name, bool_node::Type var_type = bool_node::SRC);
+    File(const string& file_name, const BooleanDagLightUtility *harness, bool_node::Type var_type = bool_node::SRC);
 
-    void init(const BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
+    void init(const BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
 
-    File(const BooleanDagLightUtility *harness, GenericFile* generic_file, FloatManager& floats, int seed, bool_node::Type var_type = bool_node::SRC);
+    File(const BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
 
     void push_back(VarStore* to_insert) {
         vector<VarStore*>::push_back(to_insert);
@@ -337,7 +338,7 @@ public:
         }
     }
 
-    File *sample_sub_file(int num_rows) {
+    File *produce_subset_file(int num_rows) {
         if(false) {
             //DEBUG VERSION TO SEE WHICH IDs ARE CHOSEN
             vector<int> ids;

@@ -5,7 +5,82 @@
 #ifndef SKETCH_SOURCE_SOLVERLANGUAGE_H
 #define SKETCH_SOURCE_SOLVERLANGUAGE_H
 
+#include <iostream>
+#include <string>
+#include <map>
+#include <utility>
+#include <vector>
+#include <cassert>
+#include <fstream>
 
+#include "SketchFunction.h"
+#include "SolverLanguagePrimitives.h"
+#include "File.h"
+
+using namespace SolverLanguagePrimitives;
+class HyperSketchPrograms
+{
+    template<typename T>
+    class vector: public std::vector<T>
+    {
+    public:
+        void sort() {
+            std::sort(std::vector<T>::begin(), std::vector<T>::end());
+        }
+        void reverse() {
+            std::reverse(std::vector<T>::begin(), std::vector<T>::end());
+        }
+    };
+
+    template<typename TF, typename TS>
+    class pair: public std::pair<TF, TS>
+    {
+    public:
+        pair(TF left, TS right): std::pair<TF, TS>(left, right) {}
+        TF first() {
+            return std::pair<TF, TS>::first;
+        }
+        TS second() {
+            return std::pair<TF, TS>::second;
+        }
+    };
+
+    vector<pair<int, SketchFunction*> > best_effort_programs(
+            SketchFunction* harness, File* file, int num_trials, int num_rows, float timeout) {
+//      timestamp("best_effort");
+//      timestamp(); //todo
+
+        vector<pair<int, SketchFunction*> > ret_dags;
+        for(int trial_id = 0; trial_id<num_trials; trial_id++) {
+            File* subset_file = file->produce_subset_file(num_rows);
+            HoleVarStore* solution = solve(harness, subset_file, timeout);
+
+            SketchFunction* program = harness->produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+            int score = program->count_passing_inputs(file); // count how many input-output examples are solved with this solution
+
+            ret_dags.push_back(pair<int, SketchFunction*>(score, program));
+        }
+
+        ret_dags.sort();
+        ret_dags.reverse();
+
+//      timestamp("best_effort");
+//      timestamp();
+        return ret_dags;
+    }
+
+    string file_name;
+    SketchFunction* sketch_main__Wrapper;
+
+    SketchFunction* main() {
+        File* file = new File(file_name, sketch_main__Wrapper);
+        int num_trials = 10;
+        int num_rows = 20;
+        float timeout = float(1);
+        vector<pair<int, SketchFunction*> > ret_dags = best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
+        return ret_dags[0].second();
+    }
+};
 
 #include <iostream>
 #include <string>
@@ -23,15 +98,13 @@
 #include "NodeHardcoder.h"
 #include "CounterexampleFinder.h"
 #include "SolverLanguageYaccHeader.h"
-#include "SketchFunction.h"
 #include "FunctionMapTransformerLanguage.h"
 
-#include "File.h"
-#include "GenericFile.h"
 
 using namespace std;
 
 #include "BenchmarkScore.h"
+
 
 class SolverLanguage {
 public:
@@ -69,7 +142,7 @@ public:
 
                 {
 
-                    File *file = new File(_concretized_function, file_name, state->floats, state->args.seed);
+                    File *file = new File(_concretized_function, file_name);
 
                     int num_passing_inputs =
                             _concretized_function->count_passing_inputs(file, false);
@@ -124,7 +197,7 @@ public:
 
                     SketchFunction* concretized_function_from_fmtl = from_fmtl_var_val->get_skfunc(false);
 
-                    File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name, state->floats, state->args.seed);
+                    File* file_from_fmtl = new File(concretized_function_from_fmtl, file_name);
 
                     int num_passing_inputs =
                             concretized_function_from_fmtl->count_passing_inputs(file_from_fmtl, false);

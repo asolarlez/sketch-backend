@@ -1,0 +1,31 @@
+hypersketch best_effort_programs(harness, file, num_trials, num_rows, timeout) {
+    //timestamp("best_effort");
+    timestamp();
+
+    ret_dags = [];
+    for(int trial_id = 0; trial_id<num_trials; trial_id++) {
+		subset_file = file.produce_subset_file(num_rows);
+		solution = SATSolver(harness, subset_file, timeout);
+
+        program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+        score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
+
+		ret_dags.append(pair<int, SketchFunction>(score, program));
+	}
+
+	ret_dags.sort();
+	ret_dags.reverse();
+
+    //timestamp("best_effort");
+    timestamp();
+    return ret_dags;
+}
+
+hypersketch main() {
+    file = File(file_name, sketch_main__Wrapper);
+    num_trials = 10;
+    num_rows = 20;
+    timeout = float(1);
+    ret_dags = best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
+    return ret_dags[0].second();
+}
