@@ -8,7 +8,11 @@
 #include "DagFunctionInliner.h"
 #include "FunctionMap.h"
 
-class SketchFunction;
+namespace SL{
+    class SketchFunction;
+}
+
+using namespace SL;
 
 void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
 

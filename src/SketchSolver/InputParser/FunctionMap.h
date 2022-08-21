@@ -12,7 +12,11 @@
 
 using namespace std;
 
-class SketchFunction;
+namespace SL {
+    class SketchFunction;
+}
+
+using namespace SL;
 class ProgramEnvironment;
 
 class FunctionMap: public map<string, SketchFunction*>, public FMTL::FunctionMapTransformer

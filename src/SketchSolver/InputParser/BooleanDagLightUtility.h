@@ -593,7 +593,7 @@ public:
 
     bool has_no_holes(set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const;
 
-    void concretize(SketchFunction* skfunc, const VarStore * const var_store, set<int>* visited = new set<int>()) const;
+    void concretize(SL::SketchFunction* skfunc, const VarStore * const var_store, set<int>* visited = new set<int>()) const;
 
     void rename_var_store(VarStore &var_store, const LightInliningTree* var_store_inlining_tree = nullptr, set<const LightInliningTree*> *visited = new set<const LightInliningTree*>(), const TopologyMatcher* topology_matcher = nullptr) const;
 };

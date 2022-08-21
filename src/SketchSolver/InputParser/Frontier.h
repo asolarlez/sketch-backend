@@ -93,7 +93,7 @@ public:
     {
         assert(!is_erased());
 
-        params.clear();
+        params->clear();
 
         is_erased_ = true;
     }
@@ -218,7 +218,6 @@ public:
         sorted = false;
     }
 
-
     size_t size() const {
         return frontier.size();
     }
@@ -228,6 +227,12 @@ public:
         assert(idx >= 0);
         assert(idx < frontier.size());
         return frontier[idx]->get_params();
+    }
+
+    pair<vector<CoordType>, ParamsType> operator [] (int idx) const {
+        assert(idx >= 0);
+        assert(idx < frontier.size());
+        return make_pair(frontier[idx]->get_score_as_vector(), at(idx));
     }
 
     void clear()

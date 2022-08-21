@@ -2780,7 +2780,7 @@ void SL::LambdaExpression::clear() {
 
 void SL::PolyFrontier::clear()
 {
-    Frontier<int, VarValWrapper>::clear();
+    Frontier<int, VarVal*>::clear();
     PolyType::soft_clear();
     delete this;
 }

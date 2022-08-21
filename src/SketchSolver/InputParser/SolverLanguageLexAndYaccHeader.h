@@ -17,7 +17,6 @@
 
 using namespace std;
 
-class SketchFunction;
 class GenericFile;
 class File;
 
@@ -25,6 +24,7 @@ class ProgramState;
 
 namespace SL
 {
+    class SketchFunction;
 
     class VarVal;
 
@@ -599,6 +599,10 @@ namespace SL
             }
         }
 
+        void clear() {
+            decrement_shared_ptr();
+        }
+
     private:
         template<typename T>
         void clear(T& val, bool do_delete = true);
@@ -1111,23 +1115,23 @@ namespace SL
         vector<int> to_vector_int() const;
     };
 
-    class VarValWrapper
-    {
-    public:
-        SL::VarVal* pointer;
-        VarValWrapper(SL::VarVal* _p): pointer(_p){};
-        void clear() {
-            pointer->decrement_shared_ptr();
-        }
-    };
+//    class VarValWrapper
+//    {
+//    public:
+//        SL::VarVal* pointer;
+//        VarValWrapper(SL::VarVal* _p): pointer(_p){};
+//        void clear() {
+//            pointer->decrement_shared_ptr();
+//        }
+//    };
 
-    class PolyFrontier: public PolyType, private Frontier<int, VarValWrapper>
+    class PolyFrontier: public PolyType, private Frontier<int, VarVal*>
     {
 
     public:
 
         explicit PolyFrontier(size_t num_objectives):
-                Frontier<int, VarValWrapper>(num_objectives), PolyType(new PolyType("any")){
+                Frontier<int, VarVal*>(num_objectives), PolyType(new PolyType("any")){
             assert(get_type_params()->size() == 1);
         }
 
@@ -1135,19 +1139,19 @@ namespace SL
 
         bool insert(VarVal* new_solution, PolyVec* scores) {
             new_solution->increment_shared_ptr();
-            bool ret = (nullptr != Frontier<int, VarValWrapper>::insert(VarValWrapper(new_solution), scores->to_vector_int()));
-            Frontier<int, VarValWrapper>::_remove_erased();
+            bool ret = (nullptr != Frontier<int, VarVal*>::insert(new_solution, scores->to_vector_int()));
+            Frontier<int, VarVal*>::_remove_erased();
             return ret;
         }
 
         size_t size() override {
-            return Frontier<int, VarValWrapper>::size();
+            return Frontier<int, VarVal*>::size();
         }
 
         SL::VarVal* at(int idx)
         {
             assert(idx >= 0 && idx < size());
-            return Frontier<int, VarValWrapper>::at(idx).pointer;
+            return Frontier<int, VarVal*>::at(idx);
         }
 
         string to_string()

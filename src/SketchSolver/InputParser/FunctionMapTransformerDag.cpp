@@ -167,12 +167,12 @@ void FunctionMapTransformer::check_consistency() {
     }
 }
 
-SketchFunction *
+SL::SketchFunction *
 FunctionMapTransformer::extract_sketch_function(const string &from_dag, const string &under_this_var,
                                                 const string &to_this_dag) const  {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
-    SketchFunction* ret = it->second->extract_sketch_function(to_this_dag, under_this_var, this);
+    SL::SketchFunction* ret = it->second->extract_sketch_function(to_this_dag, under_this_var, this);
     bool found = ret != nullptr;
     AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag);
     return ret;
@@ -200,7 +200,7 @@ string FunctionMapTransformer::find_subdag_name(const string &from_dag, const st
     return subdag_name;
 }
 
-SketchFunction * FunctionMapTransformer::reconstruct_sketch_function(const string &from_dag, const string &under_this_var, const string &to_this_dag) {
+SL::SketchFunction * FunctionMapTransformer::reconstruct_sketch_function(const string &from_dag, const string &under_this_var, const string &to_this_dag) {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
     auto ret = it->second->reconstruct_sketch_function(to_this_dag, under_this_var, this);
@@ -463,7 +463,7 @@ TransformPrimitive * TransformPrimitive::find_underlying_function(const string &
 }
 
 
-SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_this_dag, const string &under_this_var,
+SL::SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_this_dag, const string &under_this_var,
                                                              const FunctionMapTransformer *root) const  {
     switch (meta_type) {
         case _make_executable: {
@@ -609,7 +609,7 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
 //    return ret_so_far;
 //}
 
-void check_that_all_dependencies_are_there(SketchFunction* almost_ret, ProgramEnvironment* original_env, bool is_root = true) {
+void check_that_all_dependencies_are_there(SL::SketchFunction* almost_ret, ProgramEnvironment* original_env, bool is_root = true) {
     string name = almost_ret->get_dag()->get_name();
     if(!is_root) {
         assert(original_env->function_map.find(name) != original_env->function_map.end());
@@ -624,7 +624,7 @@ void check_that_all_dependencies_are_there(SketchFunction* almost_ret, ProgramEn
     }
 }
 
-void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnvironment* new_env, ProgramEnvironment* original_env, bool is_root = true) {
+void add_dependencies_to_original_env(SL::SketchFunction* almost_ret, ProgramEnvironment* new_env, ProgramEnvironment* original_env, bool is_root = true) {
     cout << "NOW ADDING DEPENDENCIES FOR: " << almost_ret->get_dag()->get_name() <<" : ";
     for(const auto& it: almost_ret->get_replace_map())
     {
@@ -681,7 +681,7 @@ void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnviron
     }
 }
 
-SketchFunction *
+SL::SketchFunction *
 TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var,
                                                 const FunctionMapTransformer *root) const {
 
@@ -775,7 +775,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
     }
 
     if(main_parent != nullptr) {
-        SketchFunction* ret = main_parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
+        SL::SketchFunction* ret = main_parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
         if(ret != nullptr) {
             return ret;
         }
@@ -784,7 +784,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
     return nullptr;
 }
 
-SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMapTransformer  * root,
+SL::SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMapTransformer  * root,
                                                                 ProgramEnvironment *new_env) const {
 
 //    cout << "HERE: " << function_name << endl;
@@ -823,7 +823,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             assert(ret->get_env() == new_env);
             for (const auto &it_parent: parents) {
                 string parent_name = it_parent.first;
-                SketchFunction *parent_skfunc = it_parent.second->reconstruct_sketch_function(root, new_env);
+                SL::SketchFunction *parent_skfunc = it_parent.second->reconstruct_sketch_function(root, new_env);
                 assert(new_env->function_map.find(parent_skfunc->get_dag_name()) != new_env->function_map.end());
             }
             VarStore *var_store = get_var_store();
@@ -877,9 +877,9 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             if(!is_erased) {
                 assert(superseded);
             }
-            SketchFunction* almost_ret = main_parent->reconstruct_sketch_function(root, new_env);
+            SL::SketchFunction* almost_ret = main_parent->reconstruct_sketch_function(root, new_env);
             assert(almost_ret->get_env() == new_env);
-            SketchFunction* ret = almost_ret->unit_clone(function_name);
+            SL::SketchFunction* ret = almost_ret->unit_clone(function_name);
             assert(ret->get_env() == new_env);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) == new_env->function_map.end());
             new_env->function_map.insert(ret->get_dag()->get_name(), ret);

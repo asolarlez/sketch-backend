@@ -9,7 +9,8 @@
 
 const bool rename_holes = true;
 
-SketchFunction *SketchFunction::produce_concretization(
+
+SL::SketchFunction *SL::SketchFunction::produce_concretization(
         const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
 
     assert(do_clone || do_deep_clone_tail);
@@ -20,7 +21,7 @@ SketchFunction *SketchFunction::produce_concretization(
         var_store = new VarStore(*_var_store, true);
     }
 
-    SketchFunction* ret = nullptr;
+    SL::SketchFunction* ret = nullptr;
 
     if(do_clone) {
         assert(do_deep_clone_tail);
@@ -51,7 +52,7 @@ SketchFunction *SketchFunction::produce_concretization(
 
 }
 
-void SketchFunction::_inplace_recursive_concretize(
+void SL::SketchFunction::_inplace_recursive_concretize(
         VarStore* var_store, const bool_node::Type var_type, bool do_recursive_concretize) {
 
     if(get_inlining_tree(false) != nullptr) {
@@ -88,7 +89,7 @@ void SketchFunction::_inplace_recursive_concretize(
             for (const auto &f_name: *subf_names) {
                 auto target = tmp_inlining_tree->get_target(f_name);
                 assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
-                SketchFunction *subf = get_env()->function_map.find(f_name)->second;
+                SL::SketchFunction *subf = get_env()->function_map.find(f_name)->second;
 
                 //for every non-concretized hole in the subfunction
                 for (auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
@@ -147,7 +148,7 @@ void SketchFunction::_inplace_recursive_concretize(
 
 }
 
-SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concretized(
+SL::SketchFunction *SL::SketchFunction::_inplace_concretize__assert_subfuncts_are_concretized(
         const VarStore* var_store, const bool_node::Type var_type)
 {
 //    assert(!get_has_been_concretized());
@@ -259,14 +260,14 @@ SketchFunction *SketchFunction::_inplace_concretize__assert_subfuncts_are_concre
     return this;
 }
 
-SketchFunction *SketchFunction::unit_clone_and_insert_in_function_map() {
-    SketchFunction *ret_clone = unit_clone();
+SL::SketchFunction *SL::SketchFunction::unit_clone_and_insert_in_function_map() {
+    SL::SketchFunction *ret_clone = unit_clone();
     assert(get_env()->function_map.find(ret_clone->get_dag_name()) == get_env()->function_map.end());
     get_env()->function_map.insert(ret_clone->get_dag_name(), ret_clone);
     return ret_clone;
 }
 
-SketchFunction *SketchFunction::unit_clone(const string& explicit_name, const map<string, string>* hole_rename_map) {
+SL::SketchFunction *SL::SketchFunction::unit_clone(const string& explicit_name, const map<string, string>* hole_rename_map) {
 
     assert(rename_holes);
     BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, rename_holes, hole_rename_map);
@@ -286,7 +287,7 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name, const ma
                                                                                    cloned_dag->get_name(),
                                                                                    cloned_dag->get_hole_assignment_map());
 
-    SketchFunction* ret = new SketchFunction(
+    SL::SketchFunction* ret = new SL::SketchFunction(
             cloned_dag, get_env(),
             replaced_labels, original_labels, new_primitive, dependencies, get_inlining_tree(false), get_has_been_concretized());
 
@@ -298,7 +299,7 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name, const ma
     return ret;
 }
 
-void SketchFunction::core_clear(const string& dag_name)
+void SL::SketchFunction::core_clear(const string& dag_name)
 {
     assert(local_clear_id == global_clear_id);
 
@@ -314,9 +315,9 @@ void SketchFunction::core_clear(const string& dag_name)
     delete this;
 }
 
-long long SketchFunction::global_clear_id = 0;
+long long SL::SketchFunction::global_clear_id = 0;
 
-bool SketchFunction::_clear()
+bool SL::SketchFunction::_clear()
 {
     if(local_clear_id != global_clear_id) {
         local_clear_id = global_clear_id;
@@ -345,7 +346,7 @@ bool SketchFunction::_clear()
     }
 }
 
-void SketchFunction::clear(){
+void SL::SketchFunction::clear(){
 
     //assert invariant
     for(const auto& sk_it : get_env()->function_map)
@@ -375,7 +376,7 @@ void SketchFunction::clear(){
     }
 }
 
-void SketchFunction::clear_assert_num_shared_ptr_is_0() {
+void SL::SketchFunction::clear_assert_num_shared_ptr_is_0() {
     global_clear_id++;
     local_clear_id = global_clear_id;
 
@@ -386,7 +387,7 @@ void SketchFunction::clear_assert_num_shared_ptr_is_0() {
     }
 }
 
-void SketchFunction::replace(const string replace_this, const string with_this) {
+void SL::SketchFunction::replace(const string replace_this, const string with_this) {
     assert(new_way);
 
     AssertDebug(!is_inlining_tree_nonnull(), "TODO: when renaming, need to update inlining tree.");
@@ -451,17 +452,17 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
     replaced_labels[replace_this] = with_this;
 }
 
-SketchFunction * SketchFunction::produce_get(const string& get_the_dag_under_this_varname) {
+SL::SketchFunction * SL::SketchFunction::produce_get(const string& get_the_dag_under_this_varname) {
     return get_env()->function_map.produce_get(get_dag_name(), get_the_dag_under_this_varname);
 }
 
-string SketchFunction::get_assignment(const string& key) {
+string SL::SketchFunction::get_assignment(const string& key) {
     auto it = replaced_labels.find(key);
     assert(it != replaced_labels.end());
     return it->second;
 }
 
-void SketchFunction::reset(const string& key) {
+void SL::SketchFunction::reset(const string& key) {
     auto it = replaced_labels.find(key);
     assert(it != replaced_labels.end());
 
@@ -472,11 +473,11 @@ void SketchFunction::reset(const string& key) {
     replace(key, key);
 }
 
-const map<string, string> &SketchFunction::get_replace_map() const {
+const map<string, string> &SL::SketchFunction::get_replace_map() const {
     return replaced_labels;
 }
 
-void SketchFunction::set_rep(const FMTL::TransformPrimitive *new_or_existing_primitive) {
+void SL::SketchFunction::set_rep(const FMTL::TransformPrimitive *new_or_existing_primitive) {
     if(rep == nullptr) {
         rep = new_or_existing_primitive;
     }
@@ -485,24 +486,24 @@ void SketchFunction::set_rep(const FMTL::TransformPrimitive *new_or_existing_pri
     }
 }
 
-const FMTL::TransformPrimitive * SketchFunction::get_rep() {
+const FMTL::TransformPrimitive * SL::SketchFunction::get_rep() {
     return rep;
 }
 
-const FMTL::TransformPrimitive * SketchFunction::get_mirror_rep() const {
+const FMTL::TransformPrimitive * SL::SketchFunction::get_mirror_rep() const {
     return mirror_rep;
 }
 
-void SketchFunction::set_mirror_rep(const FMTL::TransformPrimitive *_mirror_rep) {
+void SL::SketchFunction::set_mirror_rep(const FMTL::TransformPrimitive *_mirror_rep) {
     mirror_rep = _mirror_rep;
 }
 
-SketchFunction * SketchFunction::unit_exact_clone_in_fresh_env(
+SL::SketchFunction * SL::SketchFunction::unit_exact_clone_in_fresh_env(
         Dependencies &new_dependencies, ProgramEnvironment *fresh_env)
 {
     BooleanDAG *cloned_dag = get_dag()->clone(get_dag_name(), false);
 
-    SketchFunction *clone = new SketchFunction(
+    SL::SketchFunction *clone = new SL::SketchFunction(
             cloned_dag, fresh_env,
             replaced_labels, original_labels, nullptr, new_dependencies, get_inlining_tree(false),
             get_has_been_concretized());
@@ -512,8 +513,8 @@ SketchFunction * SketchFunction::unit_exact_clone_in_fresh_env(
     return clone;
 }
 
-SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(
-        ProgramEnvironment *new_environment, map<SketchFunction*, SketchFunction*>* dp)
+SL::SketchFunction* SL::SketchFunction::deep_exact_clone_and_fresh_function_map(
+        ProgramEnvironment *new_environment, map<SL::SketchFunction*, SL::SketchFunction*>* dp)
 {
     assert(dp->find(this) == dp->end());
     (*dp)[this] = nullptr;
@@ -526,7 +527,7 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(
 
     Dependencies new_dependencies = Dependencies();
 
-    SketchFunction *ret = nullptr;
+    SL::SketchFunction *ret = nullptr;
 
     set<string> unit_visited_ufun_names;
 
@@ -553,14 +554,14 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(
 
         assert(get_env()->function_map.find(ufun_name) != get_env()->function_map.end());
 
-        SketchFunction* sub_skfunc = get_env()->function_map[ufun_name];
+        SL::SketchFunction* sub_skfunc = get_env()->function_map[ufun_name];
         assert(sub_skfunc != this);
 
         assert(ufun_name == sub_skfunc->get_dag_name());
 
 //        assert(fresh_function_map.find(ufun_name) == fresh_function_map.end());
 
-        SketchFunction *fresh_deep_exact_copy = nullptr;
+        SL::SketchFunction *fresh_deep_exact_copy = nullptr;
 
         if(dp->find(sub_skfunc) == dp->end()) {
              fresh_deep_exact_copy = sub_skfunc->deep_exact_clone_and_fresh_function_map(new_environment, dp);
@@ -585,9 +586,9 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(
         string _ufun_name = this->get_dag_name();
 //        assert(fresh_function_map.find(_ufun_name) == fresh_function_map.end());
 
-        SketchFunction* _sub_skfunc = this;
+        SL::SketchFunction* _sub_skfunc = this;
 
-        SketchFunction* fresh_unit_clone = nullptr;
+        SL::SketchFunction* fresh_unit_clone = nullptr;
 
         fresh_unit_clone = (*dp)[_sub_skfunc];
         assert(fresh_unit_clone == nullptr);
@@ -609,7 +610,7 @@ SketchFunction* SketchFunction::deep_exact_clone_and_fresh_function_map(
     return ret;
 }
 
-SketchFunction* SketchFunction::deep_clone(bool only_tail)
+SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail)
 {
 
     //first get all inlined functions
@@ -647,11 +648,11 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
         }
     }
 
-    SketchFunction* clone_of_this = nullptr;
+    SL::SketchFunction* clone_of_this = nullptr;
     const bool inlining_tree_invariant_assert = false;
 
     bool entered_recursive_case = false;
-    map<string, SketchFunction *> to_inline_skfuncs;
+    map<string, SL::SketchFunction *> to_inline_skfuncs;
     for (const string &_inlined_function_name: *inlined_functions) {
         assert(get_env()->function_map.find(_inlined_function_name) != get_env()->function_map.end());
         assert(to_inline_skfuncs.find(_inlined_function_name) == to_inline_skfuncs.end());
@@ -757,7 +758,7 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
             if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
                 AssertDebug(false, "this should fail here, it was checked before");
             } else {
-                SketchFunction* skfunc = skfunc_it.second;
+                SL::SketchFunction* skfunc = skfunc_it.second;
                 skfunc->replace(original, to_inline_skfuncs[ufname]->get_dag_name());
             }
         }
@@ -778,11 +779,11 @@ SketchFunction* SketchFunction::deep_clone(bool only_tail)
     return clone_of_this;
 }
 
-void SketchFunction::deep_clone_tail() {
+void SL::SketchFunction::deep_clone_tail() {
     assert(deep_clone(true) == nullptr);
 }
 
-set<string> SketchFunction::ufun_names() {
+set<string> SL::SketchFunction::ufun_names() {
     set<string> ret;
     for(auto it: get_dag()->getNodesByType(bool_node::UFUN))
     {
@@ -791,7 +792,7 @@ set<string> SketchFunction::ufun_names() {
     return ret;
 }
 
-VarStore *SketchFunction::get_solution() {
+VarStore *SL::SketchFunction::get_solution() {
     LightInliningTree* local_inlining_tree = nullptr;
     bool new_inlining_tree = false;
     if(get_has_been_concretized()) {
@@ -812,7 +813,7 @@ VarStore *SketchFunction::get_solution() {
     return ret;
 }
 
-void SketchFunction::set_dependencies(const FunctionMap* fmap) {
+void SL::SketchFunction::set_dependencies(const FunctionMap* fmap) {
     if(!new_way)
     {
         return;
@@ -842,7 +843,7 @@ void SketchFunction::set_dependencies(const FunctionMap* fmap) {
     }
 }
 
-vector<string> SketchFunction::get_unit_holes() {
+vector<string> SL::SketchFunction::get_unit_holes() {
     vector<string> ret = vector<string>();
     for (auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
         if (it->get_name() != "#PC") {
@@ -852,11 +853,11 @@ vector<string> SketchFunction::get_unit_holes() {
     return ret;
 }
 
-const map<string, string> &SketchFunction::get_unit_ufuns_map() {
+const map<string, string> &SL::SketchFunction::get_unit_ufuns_map() {
     return replaced_labels;
 }
 
-//bool SketchFunction::has_unit_self_loop() const {
+//bool SL::SketchFunction::has_unit_self_loop() const {
 //    bool ret = false;
 //    for(auto it: get_dag()->getNodesByType(bool_node::UFUN)) {
 //        if(((UFUN_node*)it)->get_ufun_name() == get_dag_name()) {
@@ -888,7 +889,7 @@ const map<string, string> &SketchFunction::get_unit_ufuns_map() {
 
 #include <chrono>
 
-int SketchFunction::count_passing_inputs(const File *file) {
+int SL::SketchFunction::count_passing_inputs(const File *file) {
     SL::PolyVec* passing_inputs_bitvector = evaluate_inputs(file);
     vector<bool> bitvector = passing_inputs_bitvector->to_vector_bool();
     passing_inputs_bitvector->clear();
@@ -910,7 +911,7 @@ int SketchFunction::count_passing_inputs(const File *file) {
 #include <filesystem>
 using namespace filesystem;
 //
-//SL::PolyVec* SketchFunction::old_evaluate_inputs(const File *file, unsigned int repeat) {
+//SL::PolyVec* SL::SketchFunction::old_evaluate_inputs(const File *file, unsigned int repeat) {
 //    auto start = chrono::steady_clock::now();
 //    for(int i = 0;i<repeat;i++)
 //    {
@@ -921,7 +922,7 @@ using namespace filesystem;
 //        timestamp(start, "repeat_n"+std::to_string(repeat));
 //    }
 //
-//    SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
+//    SL::SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
 //    skfunc->increment_shared_ptr();
 //    skfunc->inline_this_dag(false);
 //
@@ -1020,14 +1021,14 @@ using namespace filesystem;
 //}
 
 
-SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
+SL::PolyVec* SL::SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
     auto start = chrono::steady_clock::now();
     for(int i = 0;i<repeat;i++)
     {
         evaluate_inputs(file, 0);
     }
 
-    SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
+    SL::SketchFunction* skfunc = deep_exact_clone_and_fresh_function_map();
     skfunc->increment_shared_ptr();
     skfunc->inline_this_dag(false);
 
@@ -1103,12 +1104,12 @@ SL::PolyVec* SketchFunction::evaluate_inputs(const File *file, unsigned int repe
     return ret;
 }
 
-void SketchFunction::set_dag_id_from_the_user(int dag_id_from_user_id) {
+void SL::SketchFunction::set_dag_id_from_the_user(int dag_id_from_user_id) {
     get_dag()->set_dag_id_from_the_user(dag_id_from_user_id);
 }
 
 
-SL::VarVal *SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const string& _line)
+SL::VarVal *SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, const string& _line)
 {
     const VarStore* var_store = string_to_var_store(_line, skfunc);
     auto ret = new_passes(skfunc, var_store);
@@ -1117,7 +1118,7 @@ SL::VarVal *SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const st
 }
 
 
-SL::VarVal* SketchFunctionEvaluator::eval(const SketchFunction *skfunc, const VarStore* _the_var_store) {
+SL::VarVal* SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, const VarStore* _the_var_store) {
     BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
 

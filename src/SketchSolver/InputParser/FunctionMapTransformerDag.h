@@ -10,7 +10,9 @@
 
 class FunctionMap;
 class ProgramEnvironment;
-class SketchFunction;
+namespace SL {
+    class SketchFunction;
+}
 
 namespace FMTL {
 
@@ -229,13 +231,13 @@ namespace FMTL {
         find_underlying_function(const string &var_name, const FunctionMapTransformer *root, const bool print = false,
                                  int t = 0) const;
 
-        SketchFunction *extract_sketch_function(const string &to_this_dag, const string &under_this_var,
+        SL::SketchFunction *extract_sketch_function(const string &to_this_dag, const string &under_this_var,
                                                 const FunctionMapTransformer *root) const;
 
-        SketchFunction *
+        SL::SketchFunction *
         reconstruct_sketch_function(const FunctionMapTransformer *root, ProgramEnvironment *new_env) const;
 
-        SketchFunction *reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var,
+        SL::SketchFunction *reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var,
                                                     const FunctionMapTransformer *root) const;
 
         string parents_to_str() const;
@@ -472,10 +474,10 @@ namespace FMTL {
 
         string find_subdag_name(const string &from_dag_name, const string &find_what_dag_this_varname_maps_to) const;
 
-        SketchFunction *
+        SL::SketchFunction *
         extract_sketch_function(const string &from_dag, const string &under_this_var, const string &to_this_dag) const;
 
-        SketchFunction *
+        SL::SketchFunction *
         reconstruct_sketch_function(const string &from_dag, const string &under_this_var, const string &underlying_dag);
 
         size_t transformer_size() {
