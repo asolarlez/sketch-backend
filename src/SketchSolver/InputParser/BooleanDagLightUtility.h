@@ -52,6 +52,7 @@ protected:
         }
         name_to_count[dag_name]+=1;
         max_count = max(max_count, name_to_count[dag_name]);
+        assert(max_count <= 3);
     }
 
     void change_id(int new_id){

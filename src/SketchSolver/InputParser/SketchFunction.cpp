@@ -11,7 +11,8 @@ const bool rename_holes = true;
 
 
 SL::SketchFunction *SL::SketchFunction::produce_concretization(
-        const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
+        const VarStore* _var_store, const bool_node::Type var_type,
+        const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
 
     assert(do_clone || do_deep_clone_tail);
     assert(do_recursive_concretize);
@@ -35,6 +36,7 @@ SL::SketchFunction *SL::SketchFunction::produce_concretization(
         }
     }
 
+    assert(ret != nullptr);
     ret->increment_shared_ptr();
 
     if(ret->get_inlining_tree(false) != nullptr) {

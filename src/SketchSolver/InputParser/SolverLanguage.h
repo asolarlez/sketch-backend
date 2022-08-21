@@ -19,30 +19,34 @@
 #include "File.h"
 
 using namespace SolverLanguagePrimitives;
-class HyperSketchPrograms
-{
+
+class HyperSketchHarness;
+
+class HyperSketchPrograms {
+protected:
     template<typename T>
-    class vector: public std::vector<T>
-    {
+    class vector : public std::vector<T> {
     public:
         void sort() {
             std::sort(std::vector<T>::begin(), std::vector<T>::end());
         }
+
         void reverse() {
             std::reverse(std::vector<T>::begin(), std::vector<T>::end());
         }
     };
 
     template<typename FirstType, typename SecondType>
-    class pair: public std::pair<FirstType, SecondType>
-    {
+    class pair : public std::pair<FirstType, SecondType> {
     public:
-        pair(FirstType left, SL::SketchFunction* right): std::pair<FirstType, SecondType>(left, right) {
+        pair(FirstType left, SL::SketchFunction *right) : std::pair<FirstType, SecondType>(left, right) {
             right->increment_shared_ptr();
         }
+
         FirstType first() {
             return std::pair<FirstType, SecondType>::first;
         }
+
         SecondType second() {
             return std::pair<FirstType, SecondType>::second;
         }
@@ -50,41 +54,39 @@ class HyperSketchPrograms
 
     typedef SL::SketchFunction SketchFunction;
 
-    vector<pair<int, SketchFunction*> > best_effort_programs(
-            SketchFunction* harness, File* file, int num_trials, int num_rows, float timeout) {
-//      timestamp("best_effort");
-//      timestamp(); //todo
+    vector<pair<int, SketchFunction *> > best_effort_programs(
+            SketchFunction *harness, File *file, int num_trials, int num_rows, float timeout) {
+        auto init_timestamp = chrono::steady_clock::now();
 
-        vector<pair<int, SketchFunction*> > ret_dags;
-        for(int trial_id = 0; trial_id<num_trials; trial_id++) {
-            File* subset_file = file->produce_subset_file(num_rows);
-            SketchFunction* program = harness->deep_clone();
-            HoleVarStore* solution = solve(program, subset_file, timeout);
+        vector<pair<int, SketchFunction *> > ret_dags;
+        for (int trial_id = 0; trial_id < num_trials; trial_id++) {
+            File *subset_file = file->produce_subset_file(num_rows);
+            SketchFunction *program = harness->deep_clone();
+            HoleVarStore *solution = solve(program, subset_file, timeout);
             program->concretize(solution);
             int score = program->count_passing_inputs(file);
-            ret_dags.push_back(pair<int, SketchFunction*>(score, program));
+            ret_dags.push_back(pair<int, SketchFunction *>(score, program));
         }
 
         ret_dags.sort();
         ret_dags.reverse();
 
-//      timestamp("best_effort");
-//      timestamp();
+        timestamp(init_timestamp, "best_effort_programs__num_trials" + std::to_string(num_trials) + "__num_rows_" +
+                                  std::to_string(num_rows));
         return ret_dags;
     }
 
-    Frontier<int, SketchFunction*> to_frontier(vector<pair<int, SketchFunction*> > scores_and_programs)
-    {
-        Frontier<int, SketchFunction*> ret = Frontier<int, SketchFunction*>(2); // program size and accuracy
-        for(int i = 0;i<scores_and_programs.size();i++) {
+    Frontier<int, SketchFunction *> to_frontier(vector<pair<int, SketchFunction *> > scores_and_programs) {
+        Frontier<int, SketchFunction *> ret = Frontier<int, SketchFunction *>(2); // program size and accuracy
+        for (int i = 0; i < scores_and_programs.size(); i++) {
             int score = scores_and_programs[i].first();
-            SketchFunction* program = scores_and_programs[i].second();
+            SketchFunction *program = scores_and_programs[i].second();
             vector<int> point = vector<int>();
             point.push_back(-score);
             point.push_back(program->size());
-            cout << "insert: point(" <<  point[0] << ", " << point[1] << ")" << endl;
-            auto was_inserted = ret.insert(program, point);
-            if(was_inserted != nullptr) {
+            cout << "insert: point(" << point[0] << ", " << point[1] << ")" << endl;
+            auto was_inserted = ret.insert(point, program);
+            if (was_inserted != nullptr) {
                 cout << "accepted" << endl;
                 was_inserted->get_params()->increment_shared_ptr();
             } else {
@@ -94,48 +96,31 @@ class HyperSketchPrograms
         return ret;
     }
 
-    string file_name;
-    SketchFunction* sketch_main__Wrapper;
-
-public:
-    HyperSketchPrograms(string _file_name, SketchFunction* _sketch_main__Wrapper):
-    file_name(_file_name), sketch_main__Wrapper(_sketch_main__Wrapper) {}
-
-    SketchFunction* main__best_effort_programs() {
-        File* file = new File(file_name, sketch_main__Wrapper);
-        int num_trials = 10;
-        int num_rows = 5;
-        float timeout = float(1);
-        vector<pair<int, SketchFunction*> > ret_dags =
-                best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
-        for(int i = 1;i<ret_dags.size();i++) {
+    SketchFunction *main__best_effort_programs(SketchFunction* harness, File* file, int num_trials, int num_rows, float timeout) {
+        vector<pair<int, SketchFunction *> > ret_dags =
+                best_effort_programs(harness, file, num_trials, num_rows, timeout);
+        for (int i = 1; i < ret_dags.size(); i++) {
             ret_dags[i].second()->clear();
         }
         return ret_dags[0].second();
     }
 
-    SketchFunction* main__best_effort_frontier()
-    {
-        File* file = new File(file_name, sketch_main__Wrapper);
-        int num_trials = 300;
-        int num_rows = 15;
-        float timeout = float(2);
-        vector<pair<int, SketchFunction*> > ret_dags =
-                best_effort_programs(sketch_main__Wrapper, file, num_trials, num_rows, timeout);
+    SketchFunction *main__best_effort_frontier(SketchFunction* harness, File* file, int num_trials, int num_rows, float timeout) {
+        vector<pair<int, SketchFunction *> > ret_dags =
+                best_effort_programs(harness, file, num_trials, num_rows, timeout);
         cout << "ret_dags" << endl;
-        for(int i = 0;i<ret_dags.size();i++)
-        {
+        for (int i = 0; i < ret_dags.size(); i++) {
             cout << ret_dags[i].first() << " " << ret_dags[i].second() << endl;
         }
-        Frontier<int, SketchFunction*> ret_frontier = to_frontier(ret_dags);
-        for(int i = 0;i<ret_dags.size();i++) {
+        Frontier<int, SketchFunction *> ret_frontier = to_frontier(ret_dags);
+        for (int i = 0; i < ret_dags.size(); i++) {
             ret_dags[i].second()->clear();
         }
-        for(int i = 1;i<ret_frontier.size();i++) {
+        for (int i = 1; i < ret_frontier.size(); i++) {
             std::vector<int> score = ret_frontier[i].first;
             cout << "score: ";
-            for(int j = 0;j<score.size();j++) {
-                cout << score[j] <<" ";
+            for (int j = 0; j < score.size(); j++) {
+                cout << score[j] << " ";
             }
             cout << endl;
             ret_frontier[i].second->clear();
@@ -143,10 +128,64 @@ public:
         return ret_frontier[0].second;
     }
 
+    Frontier<int, SketchFunction *>
+    best_effort_frontier(SketchFunction *harness, File *file, int num_trials, int num_rows, float timeout) {
+        auto init_timestamp = chrono::steady_clock::now();
+
+        Frontier<int, SketchFunction *> ret_frontier = Frontier<int, SketchFunction *>(2);
+        for (int trial_id = 0; trial_id < num_trials; trial_id++) {
+            File *subset_file = file->produce_subset_file(num_rows);
+            SketchFunction *program = harness->deep_clone();
+            program->increment_shared_ptr();
+            HoleVarStore *solution = solve(program, subset_file, timeout);
+            program->concretize(solution);
+            int score = program->count_passing_inputs(file);
+            vector<int> point = vector<int>();
+            point.push_back(-score);
+            point.push_back(program->size());
+            ret_frontier.insert(point, program);
+            program->clear();
+        }
+
+        timestamp(init_timestamp,
+                  "best_effort_frontier__num_trials" + std::to_string(num_trials) + "__num_rows_" + std::to_string(num_rows));
+
+        return ret_frontier;
+    }
+
+    SketchFunction * main__best_effort_frontier__2(SketchFunction *harness, File* file, int num_trials, int num_rows, float timeout) {
+        Frontier<int, SketchFunction *> ret_frontier =
+                best_effort_frontier(
+                        harness, file, num_trials, num_rows, timeout);
+        SketchFunction* ret_dag = ret_frontier[0].second;
+        ret_dag->increment_shared_ptr();
+        ret_frontier.clear();
+        return ret_dag;
+    }
+};
+
+class HyperSketchHarness: private HyperSketchPrograms
+{
+    string file_name;
+    SketchFunction* sketch_main__Wrapper;
+
+public:
+
+    HyperSketchHarness(string _file_name, SketchFunction *_sketch_main__Wrapper) :
+            file_name(std::move(_file_name)), sketch_main__Wrapper(_sketch_main__Wrapper) {}
 
     SketchFunction* main() {
-        return main__best_effort_frontier();
-        return main__best_effort_programs();
+
+        int num_trials = 10;
+        int num_rows = 5;
+        float timeout = float(1);
+
+        SketchFunction* harness = sketch_main__Wrapper;
+        File *file = new File(file_name, harness);
+
+        return main__best_effort_frontier__2(harness, file, num_trials, num_rows, timeout);
+        return main__best_effort_frontier(harness, file, num_trials, num_rows, timeout);
+        return main__best_effort_programs(harness, file, num_trials, num_rows, timeout);
     }
 };
 
@@ -190,6 +229,7 @@ public:
 
         bool run_hsk_program = true;
         bool run_hardcoded_synthesis_strategy = !run_hsk_program;
+
         if(run_hsk_program)
         {
 
@@ -287,20 +327,18 @@ public:
                 }
             }
         }
-        else if(run_hardcoded_synthesis_strategy)
-        {
-            SketchFunction* _concretized_function =
-                    HyperSketchPrograms(file_name, function_map["sketch_main__Wrapper"])
-                    .main();
-
+        else if(run_hardcoded_synthesis_strategy){
+            SketchFunction*_concretized_function =
+                    HyperSketchHarness(file_name, function_map["sketch_main__Wrapper"])
+                            .main();
             {
                 File *file = new File(_concretized_function, file_name);
 
                 int num_passing_inputs =
                         _concretized_function->count_passing_inputs(file);
 
-                cout << "HERE " << _concretized_function->get_dag()->get_name() << endl;
-                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                cout << "FINAL SKETCH\t:\t" << _concretized_function->get_dag()->get_name() << endl;
+                cout << "    ACCURACY\t:\t" << num_passing_inputs << " / " << file->size() << " ("
                      << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
 
                 file->clear();
@@ -367,9 +405,11 @@ public:
         else {
             AssertDebug(false, "Specify dev mode.");
         }
+
         // assert everything has been garbage collected.
         {
-            int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
+            auto all_allocated_dags = BooleanDAG::get_allocated();
+            int dags_diff = all_allocated_dags.size() - init_num_global_dags;
             assert(dags_diff == 0);
 
             int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
@@ -394,16 +434,12 @@ public:
             function_map.soft_clear_transformer();
         }
 
-        ofstream bench_output(string(std::filesystem::current_path()) + "/benches/bench.out");
-        print_performance_summary(bench_output);
-        bench_output.close();
-
-        ofstream fout_by_name("console_PERFORMANCE_SCORE_by_name.bench");
+        ofstream fout_by_name("hypersketch_perf_report__sorted_by_name.bench");
         fout_by_name << performance_summary_to_string() << endl;
         fout_by_name.flush();
         fout_by_name.close();
 
-        ofstream fout_by_min("console_PERFORMANCE_SCORE_by_min.bench");
+        ofstream fout_by_min("hypersketch_perf_report__sorted_by_min.bench");
         fout_by_min << performance_summary_to_string(true) << endl;
         fout_by_min.flush();
         fout_by_min.close();

@@ -802,7 +802,10 @@ namespace SL
         Identifier* name = nullptr;
         PolyType* type_params = nullptr;
     public:
-        explicit SLType(Identifier* _name): name(new Identifier(_name)) {assert(name != nullptr); cout << "SLType: " << name->to_string() << endl;}
+        explicit SLType(Identifier* _name): name(new Identifier(_name)) {
+            assert(name != nullptr);
+//            cout << "SLType: " << name->to_string() << endl;
+        }
         SLType(Identifier* _name, TypeParams* _type_params);
         explicit SLType(SLType* to_copy);
 
@@ -1139,7 +1142,7 @@ namespace SL
 
         bool insert(VarVal* new_solution, PolyVec* scores) {
             new_solution->increment_shared_ptr();
-            bool ret = (nullptr != Frontier<int, VarVal*>::insert(new_solution, scores->to_vector_int()));
+            bool ret = (nullptr != Frontier<int, VarVal*>::insert(scores->to_vector_int(), new_solution));
             Frontier<int, VarVal*>::_remove_erased();
             return ret;
         }

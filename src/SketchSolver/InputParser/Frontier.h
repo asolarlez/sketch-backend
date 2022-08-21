@@ -82,7 +82,9 @@ class FrontierPoint
     vector<CoordType> score;
 public:
     FrontierPoint(ParamsType _params, vector<CoordType> _score): params(_params), score(std::move(_score))
-    {}
+    {
+        params->increment_shared_ptr();
+    }
 
     inline bool is_erased() const
     {
@@ -93,7 +95,9 @@ public:
     {
         assert(!is_erased());
 
+        assert(params != nullptr);
         params->clear();
+        params = nullptr;
 
         is_erased_ = true;
     }
@@ -357,7 +361,7 @@ public:
         for obj in new_point:
             assert obj in self.objectives
 */
-    const FrontierPoint<CoordType, ParamsType>* insert(const ParamsType& params, const vector<CoordType>& score)
+    const FrontierPoint<CoordType, ParamsType>* insert(const vector<CoordType>& score, const ParamsType& params)
     {
         assert(num_objectives == score.size());
 
