@@ -441,7 +441,9 @@ public:
             FrontierPoint<CoordType, ParamsType>* new_point = new FrontierPoint<CoordType, ParamsType>(params, score);
             explicit_insert(new_point);
 
-            if(num_erased*2 >= frontier.size())
+            bool amortized_remove_erased_condition = true || num_erased*2 >= frontier.size();
+
+            if(amortized_remove_erased_condition)
             {
                 _remove_erased();
             }

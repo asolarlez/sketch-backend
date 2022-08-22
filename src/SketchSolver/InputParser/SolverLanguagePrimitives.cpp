@@ -225,8 +225,6 @@ HoleVarStore* SolverLanguagePrimitives::solve(SketchFunction *skfunc, File *file
 
 //            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant()); // debug code
 
-    const bool concretize_after_solving = true;
-
     vector<string> after_holes = harness->get_deep_holes();
     sort(prev_holes.begin(), prev_holes.end());
     sort(after_holes.begin(), after_holes.end());

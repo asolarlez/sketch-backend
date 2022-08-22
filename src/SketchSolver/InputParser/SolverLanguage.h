@@ -187,8 +187,8 @@ public:
 
     SketchFunction* main() {
 
-        int num_trials = 900;
-        int num_rows = 15;
+        int num_trials = 1200;
+        int num_rows = 30;
         float timeout = float(2);
 
         SketchFunction* harness = sketch_main__Wrapper;
