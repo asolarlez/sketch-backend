@@ -36,22 +36,6 @@ protected:
         }
     };
 
-    template<typename FirstType, typename SecondType>
-    class pair : public std::pair<FirstType, SecondType> {
-    public:
-        pair(FirstType left, SL::SketchFunction *right) : std::pair<FirstType, SecondType>(left, right) {
-            right->increment_shared_ptr();
-        }
-
-        FirstType first() {
-            return std::pair<FirstType, SecondType>::first;
-        }
-
-        SecondType second() {
-            return std::pair<FirstType, SecondType>::second;
-        }
-    };
-
     typedef SL::SketchFunction SketchFunction;
 
     vector<pair<int, SketchFunction *> > best_effort_programs(
@@ -62,33 +46,36 @@ protected:
         for (int trial_id = 0; trial_id < num_trials; trial_id++) {
             File *subset_file = file->produce_subset_file(num_rows);
             SketchFunction *program = harness->deep_clone();
+            program->increment_shared_ptr();
             HoleVarStore *solution = solve(program, subset_file, timeout);
-            program->concretize(solution);
+            program->make_executable(solution);
             int score = program->count_passing_inputs(file);
+            program->increment_shared_ptr();
             ret_dags.push_back(pair<int, SketchFunction *>(score, program));
+            program->clear();
+            assert(program->get_num_shared_ptr() == 1);
         }
 
         ret_dags.sort();
         ret_dags.reverse();
 
-        timestamp(init_timestamp, "best_effort_programs__num_trials" + std::to_string(num_trials) + "__num_rows_" +
-                                  std::to_string(num_rows));
+        timestamp(init_timestamp,
+                  "best_effort_programs__num_trials" + std::to_string(num_trials) + "__num_rows_" + std::to_string(num_rows));
         return ret_dags;
     }
 
     Frontier<int, SketchFunction *> to_frontier(vector<pair<int, SketchFunction *> > scores_and_programs) {
         Frontier<int, SketchFunction *> ret = Frontier<int, SketchFunction *>(2); // program size and accuracy
         for (int i = 0; i < scores_and_programs.size(); i++) {
-            int score = scores_and_programs[i].first();
-            SketchFunction *program = scores_and_programs[i].second();
+            int score = scores_and_programs[i].first;
+            SketchFunction *program = scores_and_programs[i].second;
             vector<int> point = vector<int>();
             point.push_back(-score);
             point.push_back(program->size());
-            cout << "insert: point(" << point[0] << ", " << point[1] << ")" << endl;
+            cout << "insert " << "#" << i << " : point(" << point[0] << ", " << point[1] << ")" << endl;
             auto was_inserted = ret.insert(point, program);
             if (was_inserted != nullptr) {
                 cout << "accepted" << endl;
-                was_inserted->get_params()->increment_shared_ptr();
             } else {
                 cout << "rejected" << endl;
             }
@@ -100,9 +87,9 @@ protected:
         vector<pair<int, SketchFunction *> > ret_dags =
                 best_effort_programs(harness, file, num_trials, num_rows, timeout);
         for (int i = 1; i < ret_dags.size(); i++) {
-            ret_dags[i].second()->clear();
+            ret_dags[i].second->clear();
         }
-        return ret_dags[0].second();
+        return ret_dags[0].second;
     }
 
     SketchFunction *main__best_effort_frontier(SketchFunction* harness, File* file, int num_trials, int num_rows, float timeout) {
@@ -110,22 +97,28 @@ protected:
                 best_effort_programs(harness, file, num_trials, num_rows, timeout);
         cout << "ret_dags" << endl;
         for (int i = 0; i < ret_dags.size(); i++) {
-            cout << ret_dags[i].first() << " " << ret_dags[i].second() << endl;
+            cout << ret_dags[i].first << " " << ret_dags[i].second << endl;
         }
         Frontier<int, SketchFunction *> ret_frontier = to_frontier(ret_dags);
-        for (int i = 0; i < ret_dags.size(); i++) {
-            ret_dags[i].second()->clear();
-        }
-        for (int i = 1; i < ret_frontier.size(); i++) {
+        auto ret = ret_frontier[0].second;
+        ret->increment_shared_ptr();
+
+        cout << "frontier" << endl;
+        for (int i = 0; i < ret_frontier.size(); i++) {
             std::vector<int> score = ret_frontier[i].first;
-            cout << "score: ";
             for (int j = 0; j < score.size(); j++) {
                 cout << score[j] << " ";
             }
             cout << endl;
+        }
+
+        for(int i = 0;i<ret_dags.size();i++) {
+            ret_dags[i].second->clear();
+        }
+        for(int i = 0;i<ret_frontier.size();i++) {
             ret_frontier[i].second->clear();
         }
-        return ret_frontier[0].second;
+        return ret;
     }
 
     Frontier<int, SketchFunction *>
@@ -143,7 +136,15 @@ protected:
             vector<int> point = vector<int>();
             point.push_back(-score);
             point.push_back(program->size());
-            ret_frontier.insert(point, program);
+
+            cout << "insert #" << trial_id << ": point(" << point[0] << ", " << point[1] << ")" << endl;
+            auto was_inserted = ret_frontier.insert(point, program);
+            if (was_inserted != nullptr) {
+                cout << "accepted" << endl;
+            } else {
+                cout << "rejected" << endl;
+            }
+
             program->clear();
         }
 
@@ -157,6 +158,16 @@ protected:
         Frontier<int, SketchFunction *> ret_frontier =
                 best_effort_frontier(
                         harness, file, num_trials, num_rows, timeout);
+
+        cout << "frontier: " << endl;
+        for (int i = 0; i < ret_frontier.size(); i++) {
+            std::vector<int> score = ret_frontier[i].first;
+            for (int j = 0; j < score.size(); j++) {
+                cout << score[j] << " ";
+            }
+            cout << endl;
+        }
+
         SketchFunction* ret_dag = ret_frontier[0].second;
         ret_dag->increment_shared_ptr();
         ret_frontier.clear();
@@ -176,9 +187,9 @@ public:
 
     SketchFunction* main() {
 
-        int num_trials = 10;
-        int num_rows = 5;
-        float timeout = float(1);
+        int num_trials = 900;
+        int num_rows = 15;
+        float timeout = float(2);
 
         SketchFunction* harness = sketch_main__Wrapper;
         File *file = new File(file_name, harness);
@@ -227,7 +238,7 @@ public:
 
         map<string, string> final_hole_values;
 
-        bool run_hsk_program = true;
+        bool run_hsk_program = false;
         bool run_hardcoded_synthesis_strategy = !run_hsk_program;
 
         if(run_hsk_program)

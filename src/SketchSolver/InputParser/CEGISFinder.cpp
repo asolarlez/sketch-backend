@@ -57,9 +57,16 @@ SATSolverResult CEGISFinder::find(
 	}
 
 	//Solve
-	cout << "in bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) in CEGISFinder.cpp" << endl;
+    bool do_print = false;
+    string CEGISFINDer_find_spec__as_str =
+            "bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) in CEGISFinder.cpp";
+    if(do_print) {
+        cout << "in " + CEGISFINDer_find_spec__as_str << endl;
+    }
     SATSolverResult result = mngFind.solve(max_finder_solve_timeout_in_microseconds);
-    cout << "out bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged)  in CEGISFinder.cpp " << endl;
+    if(do_print) {
+        cout << "out " + CEGISFINDer_find_spec__as_str << endl;
+    }
 
 	if(PARAMS->outputSat){
 		++CEGISsolveCount;

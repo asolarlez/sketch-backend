@@ -442,9 +442,9 @@ void LightSkFuncSetter::init() {
     if(name_to_count.find(get_dag_name()) == name_to_count.end()) {
         name_to_count[get_dag_name()] = 0;
     }
-    name_to_count[get_dag_name()]+=1;
-    max_count = max(max_count, name_to_count[get_dag_name()]);
-    assert(max_count <= 3);
+    name_to_count[dag_name]+=1;
+    max_count = max(max_count, name_to_count[dag_name]);
+//    assert(max_count <= 3);
 //    if(inlining_tree_id == 470)
 //    {
 //        cout << "HERE" << endl;
