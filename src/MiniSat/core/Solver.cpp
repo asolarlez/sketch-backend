@@ -2040,8 +2040,13 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
     auto prev_time = start_time;
     unsigned long long prev_elapsed = 0;
     unsigned long long predict_next_elapsed_since_start = 0;
-    cout << "in < main solver loop in Solver::solve in Solver.cpp >" << endl;
-    cout << "timeout " << max_num_microseconds << endl;
+
+    bool do_print = false;
+
+    if(do_print) {
+        cout << "in < main solver loop in Solver::solve in Solver.cpp >" << endl;
+        cout << "timeout " << max_num_microseconds << endl;
+    }
     while (status == l_Undef){
         if (verbosity >= 1)
             printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", (int)conflicts, order_heap.size(), nClauses(), (int)clauses_literals, (int)nof_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progress_estimate*100), fflush(stdout);
@@ -2055,43 +2060,39 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
 			return l_Undef;
 		}
 
-
         // TIME KEEPING
-        // KEEPS TRACK OF TIME TO RESPECT THE TIMEOUT.
+        // KEEP TRACK OF TIME TO RESPECT THE TIMEOUT.
 
         {
-
-
             auto at_time = std::chrono::steady_clock::now();
             auto elapsed_since_prev = chrono::duration_cast<chrono::microseconds>(at_time - prev_time).count();
             auto elapsed_since_start = chrono::duration_cast<chrono::microseconds>(at_time - start_time).count();
-            cout << "------------------------------------------------------" << endl;
-            cout
-                    << "in < Solver.cpp main loop_count #" << local_loop_count
-                    << "> ::: elapsed since_prev " << elapsed_since_prev
-                    << " since_start " << elapsed_since_start << endl;
+
+            if(do_print) {
+                cout << "------------------------------------------------------" << endl;
+                cout
+                        << "in < Solver.cpp main loop_count #" << local_loop_count
+                        << "> ::: elapsed since_prev " << elapsed_since_prev
+                        << " since_start " << elapsed_since_start << endl;
+            }
 
             local_loop_count++;
 
             if (predict_next_elapsed_since_start != 0) {
-                if(false){
+                bool do_print_lvl_2 = do_print && false;
+                if(do_print_lvl_2){
                     long long runtime_prediction_error = (predict_next_elapsed_since_start - elapsed_since_start);
                     cout << endl;
                     cout << "predict_next_elapsed_since_start " << predict_next_elapsed_since_start << endl;
                     cout << "runtime_prediction_error " << runtime_prediction_error << endl;
                     cout << endl;
+                    double ratio = (double) predict_next_elapsed_since_start / elapsed_since_start;
                     if (runtime_prediction_error < 0) {
-                        cout << "WARNING: predict_next_elapsed_since_start is underestimate elapsed_since_start."
-                             << endl;
-                        cout << "underestimate by  (-): "
-                             << 100.0 * (1.0 - ((double) predict_next_elapsed_since_start / elapsed_since_start)) << "%"
-                             << endl;
+                        cout << "WARNING: predict_next_elapsed_since_start is underestimate elapsed_since_start." << endl;
+                        cout << "underestimate by  (-): " << 100.0 * (1.0 - ((double) ratio)) << "%" << endl;
                     } else {
-                        cout << "WARNING: predict_next_elapsed_since_start is overestimate elapsed_since_start."
-                             << endl;
-                        cout << "overestimate by (+): "
-                             << 100.0 * (((double) predict_next_elapsed_since_start / elapsed_since_start) - 1.0) << "%"
-                             << endl;
+                        cout << "WARNING: predict_next_elapsed_since_start is overestimate elapsed_since_start."  << endl;
+                        cout << "overestimate by (+): " << 100.0 * (((double) ratio) - 1.0) << "%" << endl;
                     }
                     cout << endl;
                 }
@@ -2106,13 +2107,15 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
             }
 
             if (predict_next_elapsed_since_start > max_num_microseconds) {
-                cout << "TIMEOUT in < main solver loop in Solver::solve in Solver.cpp >" << endl;
-                cout << "elapsed_since_start " << elapsed_since_start << endl;
+                if(do_print) {
+                    cout << "TIMEOUT in < main solver loop in Solver::solve in Solver.cpp >" << endl;
+                    cout << "elapsed_since_start " << elapsed_since_start << endl;
 //                cout << "elapsed_since_prev " << elapsed_since_prev << endl;
 //                cout << "delta_runtime_factor_growth_x " << delta_runtime_factor_growth_x << endl;
 //                cout << "predict_next_elapsed_since_start " << predict_next_elapsed_since_start << endl;
 //                cout << "is_greater_than" << endl;
-                cout << "max_num_microseconds " << max_num_microseconds << endl;
+                    cout << "max_num_microseconds " << max_num_microseconds << endl;
+                }
 //
 //                printf("WARNING: You are running with a timeout, so I am bailing\n");
 //                printf("out and assuming the problem is UNDEF; return l_MainLoopTimeout;.\n");
@@ -2126,7 +2129,9 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
             prev_elapsed = elapsed_since_prev;
             prev_time = at_time;
 
-            cout << "------------------------------------------------------" << endl;
+            if(do_print) {
+                cout << "------------------------------------------------------" << endl;
+            }
         }
     }
 
@@ -2134,9 +2139,11 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
     auto elapsed_since_prev = chrono::duration_cast<chrono::microseconds>(at_time - prev_time).count();
     auto elapsed_since_start = chrono::duration_cast<chrono::microseconds>(at_time - prev_time).count();
 
-    cout << "elapsed_since_start " << elapsed_since_start << endl;
-    cout << "local_loop_count " << local_loop_count << endl;
-    cout << "out < main solver loop in Solver::solve in Solver.cpp >" << endl;
+    if(do_print) {
+        cout << "elapsed_since_start " << elapsed_since_start << endl;
+        cout << "local_loop_count " << local_loop_count << endl;
+        cout << "out < main solver loop in Solver::solve in Solver.cpp >" << endl;
+    }
 	
     if (verbosity >= 1)
         printf("===============================================================================\n");
