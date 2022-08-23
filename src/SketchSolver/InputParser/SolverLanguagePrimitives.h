@@ -16,31 +16,30 @@ class File;
 namespace SolverLanguagePrimitives {
 
     class ProblemAE {
-        GenericFile *generic_file = nullptr;
-        File *file = nullptr;
+        const File *training_file = nullptr;
+        const File *validation_file = nullptr;
         string file_name;
         BooleanDagLightUtility *skfunc = nullptr;
+
     public:
-        explicit ProblemAE(BooleanDagLightUtility *_function, GenericFile *_generic_file = nullptr) :
-                skfunc(_function), generic_file(_generic_file) {}
+        explicit ProblemAE(BooleanDagLightUtility *_function, const File *_training_file = nullptr, const File* _validation_file = nullptr) :
+                skfunc(_function), training_file(_training_file), validation_file(_validation_file) {}
 
-        explicit ProblemAE(BooleanDagLightUtility *_function, File *_file = nullptr) :
-                skfunc(_function), file(_file) {}
-
-        GenericFile *get_generic_file() {
-            assert(generic_file != nullptr);
-            return generic_file;
+        const File *get_file() {
+            assert(training_file != nullptr);
+            return training_file;
         }
 
-        File *get_file() {
-            assert(file != nullptr);
-            return file;
+        const File *get_validation_file(bool assert_isnotnull = true) {
+            if(assert_isnotnull) {
+                assert(validation_file != nullptr);
+            }
+            return validation_file;
         }
 
         auto get_harness() {
             return skfunc;
         }
-
 
         BooleanDAG *get_dag() {
             return skfunc->get_dag();
@@ -59,9 +58,9 @@ namespace SolverLanguagePrimitives {
     class Solver_AE {
     public:
         Solver_AE() = default;
-
-        virtual HoleVarStore *solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) { assert(false); }
-
+        virtual CEGISSolverResult solve(
+                ProblemAE *problem,
+                const unsigned long long find_solve_max_timeout_in_microseconds) { assert(false); }
         virtual string to_string() { assert(false); }
     };
 
@@ -106,7 +105,7 @@ namespace SolverLanguagePrimitives {
             return new HoleVarStore(solver->ctrlStore);
         }
 
-        HoleVarStore *solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) override;
+        CEGISSolverResult solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) override;
     };
 
     class WrapperBatchEvaluatorSolver : public Solver_AE {
@@ -140,10 +139,10 @@ namespace SolverLanguagePrimitives {
             return new HoleVarStore(solver->ctrlStore);
         }
 
-        HoleVarStore *solve(ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds) override;
+        CEGISSolverResult solve(ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds) override;
     };
 
-    HoleVarStore* solve(SketchFunction* skfunc, File* subset_file, float timeout);
+    CEGISSolverResult solve(SketchFunction* skfunc, const File* training_file, float timeout, const File* validation_file = nullptr);
 };
 
 

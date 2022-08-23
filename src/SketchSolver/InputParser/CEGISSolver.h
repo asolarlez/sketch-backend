@@ -39,12 +39,11 @@ public:
 struct CEGISSolverResult
 {
     bool success;
-    int num_counterexample_concretized_dags = -1;
+    HoleVarStore* final_ctrl_var_store;
+    vector<HoleVarStore*> intermediate_solutions;
 };
 
-class CEGISSolver
-
-{
+class CEGISSolver {
 
 	CEGISFinderSpec* finder;
 	CEGISChecker* checker;
@@ -61,17 +60,22 @@ protected:
 	CEGISParams params;
 
 	vector<BooleanDagLightUtility*> problems;
-    vector<File*> files;
+    vector<const File*> files;
 
 	void declareControl(CTRL_node* cnode);
-    CEGISSolverResult solveCore(unsigned long long find_solve_max_timeout_in_microseconds);
+    CEGISSolverResult solveCore(unsigned long long find_solve_max_timeout_in_microseconds, const File* validation_file);
 
 	void normalizeInputStore();
 
 //-- internal wrappers arround the checker methods
-    BooleanDAG* getProblem()
+    BooleanDAG* getProblemDAG()
     {
         return checker->getProblemDag();
+    }
+
+    BooleanDagLightUtility* getProblem()
+    {
+        return checker->getProblem();
     }
 
 	bool problemStack_is_empty()
@@ -110,7 +114,7 @@ public:
 			
 	}
 	~CEGISSolver(void);
-	void addProblem(BooleanDagLightUtility *harness, File *file);
+	void addProblem(BooleanDagLightUtility *harness, const File *file);
 
 
     const ElapsedTime& get_last_elapsed_time()
@@ -118,7 +122,7 @@ public:
         return last_elapsed_time;
     }
 
-	virtual CEGISSolverResult solve(unsigned long long find_solve_max_timeout_in_microseconds);
+	virtual CEGISSolverResult solve(unsigned long long find_solve_max_timeout_in_microseconds, const File* validation_file = nullptr);
 	void print_control_map(ostream& out);
 	
 

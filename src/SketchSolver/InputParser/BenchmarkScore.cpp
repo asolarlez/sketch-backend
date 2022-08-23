@@ -3,7 +3,6 @@
 //
 
 #include "BenchmarkScore.h"
-#include <iostream>
 #include <vector>
 #include <iomanip>
 
@@ -11,8 +10,7 @@ map<string, BenchmarkScore> timestamp_counter = map<string, BenchmarkScore>();
 
 std::chrono::steady_clock::time_point timestamp(std::chrono::steady_clock::time_point  prev_timestamp, const string& name)
 {
-    auto local_end = chrono::steady_clock::now();
-    auto elapsed = chrono::duration_cast<chrono::microseconds>(local_end - prev_timestamp).count();
+    auto elapsed = elapsed_time(prev_timestamp);
 //    cout << "ELAPSED(" << name << "): " << elapsed_tokenize << " (us)" << endl;
     if(timestamp_counter.find(name) == timestamp_counter.end()) {
         timestamp_counter[name] = BenchmarkScore();
@@ -22,6 +20,15 @@ std::chrono::steady_clock::time_point timestamp(std::chrono::steady_clock::time_
     return new_timestamp;
 }
 
+long long elapsed_time(std::chrono::steady_clock::time_point prev_timestamp) {
+    auto _now = chrono::steady_clock::now();
+    return chrono::duration_cast<chrono::microseconds>(_now - prev_timestamp).count();
+}
+
+string elapsed_time_as_str(string label, std::chrono::steady_clock::time_point prev_timestamp) {
+    auto _now = chrono::steady_clock::now();
+    return label + std::to_string(chrono::duration_cast<chrono::microseconds>(_now - prev_timestamp).count()) + " (us)";
+}
 
 //void print_performance_summary() {
 //    print_performance_summary(cout);

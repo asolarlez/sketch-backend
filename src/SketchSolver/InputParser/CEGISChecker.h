@@ -60,7 +60,7 @@ class CEGISChecker
 
 	stack<BooleanDagLightUtility*> problemStack;
 
-	map<int, File*> files;
+	map<int, const File*> files;
 
 	int curProblem; 
 
@@ -115,6 +115,11 @@ public:
         return problemStack.top();
     }
 
+    BooleanDagLightUtility* get_main_problem(){
+        assert(!problems.empty());
+        return problems[0];
+    }
+
     BooleanDagLightUtility* getHarness()
     {
         assert(!problemStack.empty());
@@ -131,7 +136,7 @@ public:
     }
 
 
-	void addProblem(BooleanDagLightUtility *harness, File *file);
+	void addProblem(BooleanDagLightUtility *harness, const File *file);
 
 	bool problemStack_is_empty()
 	{

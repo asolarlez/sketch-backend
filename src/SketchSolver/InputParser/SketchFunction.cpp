@@ -1194,11 +1194,8 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *sk
     return ret;
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const VarStore* _the_var_store, bool do_assert)
+SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const VarStore *_the_var_store)
 {
-    if(do_assert) {
-        assert(false);
-    }
     if(skfunc->get_dag()->get_failed_assert() != nullptr) {
         return new SL::VarVal(false);
     }

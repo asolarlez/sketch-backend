@@ -42,7 +42,7 @@ SATSolverResult CEGISFinder::find(
     else
     {
         //claim: solution is already optimal.
-        AssertDebug(false, "INVESTIGATE");
+        AssertDebug(false, "TODO: INVESTIGATE");
         return SAT_SATISFIABLE;
     }
 

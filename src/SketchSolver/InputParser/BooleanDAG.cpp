@@ -1153,8 +1153,6 @@ void BooleanDAG::resetBackPointers(){
 	}
 }
 
-
-
 void BooleanDAG::andDag(BooleanDAG* bdag){
 	relabel();
 	bdag->relabel();

@@ -47,7 +47,8 @@ protected:
             File *subset_file = file->produce_subset_file(num_rows);
             SketchFunction *program = harness->deep_clone();
             program->increment_shared_ptr();
-            HoleVarStore *solution = solve(program, subset_file, timeout);
+            CEGISSolverResult solver_result = solve(program, subset_file, timeout);
+            HoleVarStore* solution = solver_result.final_ctrl_var_store;
             program->make_executable(solution);
             int score = program->count_passing_inputs(file);
             program->increment_shared_ptr();
@@ -130,7 +131,8 @@ protected:
             File *subset_file = file->produce_subset_file(num_rows);
             SketchFunction *program = harness->deep_clone();
             program->increment_shared_ptr();
-            HoleVarStore *solution = solve(program, subset_file, timeout);
+            CEGISSolverResult solver_result = solve(program, subset_file, timeout, file);
+            HoleVarStore* solution = solver_result.final_ctrl_var_store;
             program->concretize(solution);
             int score = program->count_passing_inputs(file);
             vector<int> point = vector<int>();
@@ -187,8 +189,8 @@ public:
 
     SketchFunction* main() {
 
-        int num_trials = 1200;
-        int num_rows = 30;
+        int num_trials = 20;
+        int num_rows = 60;
         float timeout = float(2);
 
         SketchFunction* harness = sketch_main__Wrapper;
@@ -217,7 +219,6 @@ public:
 #include "CounterexampleFinder.h"
 #include "SolverLanguageYaccHeader.h"
 #include "FunctionMapTransformerLanguage.h"
-
 
 using namespace std;
 using namespace SL;

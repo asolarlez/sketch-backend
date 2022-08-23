@@ -753,7 +753,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	NodesToSolver::createConstraints(*getProblemDag(), dirCheck, node_values, check_node_ids, floats, params.sparseArray);
 }
 
-void CEGISChecker::addProblem(BooleanDagLightUtility *harness, File *file)
+void CEGISChecker::addProblem(BooleanDagLightUtility *harness, const File *file)
 {
     curProblem = (int) problems.size();
     problems.push_back(harness);

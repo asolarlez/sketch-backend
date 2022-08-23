@@ -273,7 +273,7 @@ namespace SketchFunctionEvaluator
 
     SL::VarVal* new_passes(const BooleanDagLightUtility *skfunc, const string& _line);
 
-    SL::VarVal* new_passes(const BooleanDagLightUtility* skfunc, const VarStore *input_var_store, bool do_assert = true);
+    SL::VarVal *new_passes(const BooleanDagLightUtility *skfunc, const VarStore *_the_var_store);
 
 };
 

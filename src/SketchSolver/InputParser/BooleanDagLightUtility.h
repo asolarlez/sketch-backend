@@ -6,10 +6,8 @@
 #define SKETCH_SOURCE_BOOLEANDAGLIGHTUTILITY_H
 
 #include <utility>
-
 #include "ProgramEnvironment.h"
-
-class File;
+#include "File.h"
 
 class BooleanDagUtility;
 
