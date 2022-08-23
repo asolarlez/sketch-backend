@@ -302,7 +302,6 @@ CEGISSolverResult SolverLanguagePrimitives::solve(const SketchFunction *skfunc, 
 
         if(concretize_after_solving) {
             //make sure produce_concretize-s
-
             auto to_test__tmp_harness = skfunc->deep_clone();
             to_test__tmp_harness->increment_shared_ptr();
             SketchFunction *to_test = to_test__tmp_harness->produce_concretization(sol, bool_node::CTRL);

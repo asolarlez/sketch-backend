@@ -202,9 +202,9 @@ public:
 
     SketchFunction* main() {
 
-        int num_trials = 2;
-        int num_rows = 2;
-        float timeout = float(1);
+        int num_trials = 100;
+        int num_rows = 40;
+        float timeout = float(3);
 
         SketchFunction* harness = sketch_main__Wrapper;
         File *file = new File(file_name, harness);
