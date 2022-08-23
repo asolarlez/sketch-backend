@@ -252,7 +252,7 @@ public:
 
         map<string, string> final_hole_values;
 
-        bool run_hsk_program = false;
+        bool run_hsk_program = true;
         bool run_hardcoded_synthesis_strategy = !run_hsk_program;
 
         if(run_hsk_program)
