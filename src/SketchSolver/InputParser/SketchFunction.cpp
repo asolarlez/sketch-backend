@@ -12,7 +12,7 @@ const bool rename_holes = true;
 
 SL::SketchFunction *SL::SketchFunction::produce_concretization(
         const VarStore* _var_store, const bool_node::Type var_type,
-        const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
+        const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) const {
 
     assert(do_clone || do_deep_clone_tail);
     assert(do_recursive_concretize);
@@ -30,10 +30,11 @@ SL::SketchFunction *SL::SketchFunction::produce_concretization(
 
     }
     else {
-        ret = this;
-        if (do_deep_clone_tail) {
-            deep_clone_tail();
-        }
+        AssertDebug(false, "TODO: create a separate function stack for inplace concretization (when you dont clone)");
+//        ret = this;
+//        if (do_deep_clone_tail) {
+//            deep_clone_tail();
+//        }
     }
 
     assert(ret != nullptr);
@@ -120,9 +121,9 @@ void SL::SketchFunction::_inplace_recursive_concretize(
             if (var_store != nullptr) {
                 assert(tmp_inlining_tree->match_topology(var_store->get_inlining_tree()));
                 tmp_inlining_tree->rename_var_store(*var_store);
-//                for (const auto &it: get_deep_holes()) {
-//                    AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
-//                }
+                for (const auto &it: get_deep_holes()) {
+                    AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
+                }
             }
 
             if(get_inlining_tree(false) != nullptr) {
@@ -262,14 +263,14 @@ SL::SketchFunction *SL::SketchFunction::_inplace_concretize__assert_subfuncts_ar
     return this;
 }
 
-SL::SketchFunction *SL::SketchFunction::unit_clone_and_insert_in_function_map() {
+SL::SketchFunction *SL::SketchFunction::unit_clone_and_insert_in_function_map() const {
     SL::SketchFunction *ret_clone = unit_clone();
     assert(get_env()->function_map.find(ret_clone->get_dag_name()) == get_env()->function_map.end());
     get_env()->function_map.insert(ret_clone->get_dag_name(), ret_clone);
     return ret_clone;
 }
 
-SL::SketchFunction *SL::SketchFunction::unit_clone(const string& explicit_name, const map<string, string>* hole_rename_map) {
+SL::SketchFunction *SL::SketchFunction::unit_clone(const string& explicit_name, const map<string, string>* hole_rename_map) const {
 
     assert(rename_holes);
     BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, rename_holes, hole_rename_map);
@@ -412,7 +413,7 @@ void SL::SketchFunction::replace(const string replace_this, const string with_th
         }
 
         rep = get_env()->function_map.replace_label_with_another(get_dag_name(), replace_this, with_this);
-        get_dag()->replace_label_with_another(replaced_labels[replace_this], with_this);
+        get_dag__non_const()->replace_label_with_another(replaced_labels[replace_this], with_this);
 
         assert(replaced_labels.find(replace_this) != replaced_labels.end());
 
@@ -501,7 +502,7 @@ void SL::SketchFunction::set_mirror_rep(const FMTL::TransformPrimitive *_mirror_
 }
 
 SL::SketchFunction * SL::SketchFunction::unit_exact_clone_in_fresh_env(
-        Dependencies &new_dependencies, ProgramEnvironment *fresh_env)
+        Dependencies &new_dependencies, ProgramEnvironment *fresh_env) const
 {
     BooleanDAG *cloned_dag = get_dag()->clone(get_dag_name(), false);
 
@@ -516,7 +517,7 @@ SL::SketchFunction * SL::SketchFunction::unit_exact_clone_in_fresh_env(
 }
 
 SL::SketchFunction* SL::SketchFunction::deep_exact_clone_and_fresh_function_map(
-        ProgramEnvironment *new_environment, map<SL::SketchFunction*, SL::SketchFunction*>* dp)
+        ProgramEnvironment *new_environment, map<const SL::SketchFunction*, SL::SketchFunction*>* dp) const
 {
     assert(dp->find(this) == dp->end());
     (*dp)[this] = nullptr;
@@ -588,7 +589,7 @@ SL::SketchFunction* SL::SketchFunction::deep_exact_clone_and_fresh_function_map(
         string _ufun_name = this->get_dag_name();
 //        assert(fresh_function_map.find(_ufun_name) == fresh_function_map.end());
 
-        SL::SketchFunction* _sub_skfunc = this;
+        const SL::SketchFunction* _sub_skfunc = this;
 
         SL::SketchFunction* fresh_unit_clone = nullptr;
 
@@ -612,7 +613,7 @@ SL::SketchFunction* SL::SketchFunction::deep_exact_clone_and_fresh_function_map(
     return ret;
 }
 
-SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail)
+SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail) const
 {
 
     //first get all inlined functions
@@ -715,7 +716,8 @@ SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail)
         assert(clone_of_this == nullptr);
         if(only_tail)
         {
-            to_inline_skfuncs[get_dag_name()] = this;
+            AssertDebug(false, "HERE YOU ARE MUTATING, BUT FUNCITON MARKED CONST. CREATE A SEPERATE CONST FUNCTION STACK FOR DEEP CLONING ONLY TAIL.");
+//            to_inline_skfuncs[get_dag_name()] = this;
         }
         else {
             const string &to_clone_fname = get_dag_name();
@@ -781,7 +783,7 @@ SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail)
     return clone_of_this;
 }
 
-void SL::SketchFunction::deep_clone_tail() {
+void SL::SketchFunction::deep_clone_tail() const {
     assert(deep_clone(true) == nullptr);
 }
 
@@ -1034,7 +1036,7 @@ SL::PolyVec* SL::SketchFunction::evaluate_inputs(const File *file, unsigned int 
     skfunc->increment_shared_ptr();
     skfunc->inline_this_dag(false);
 
-    BooleanDAG *the_dag = nullptr;
+    const BooleanDAG *the_dag = nullptr;
     {
         if(skfunc->get_dag()->get_failed_assert() != nullptr) {
             SL::PolyVec* ret = new SL::PolyVec(new SL::PolyType("any"), file->size());
@@ -1107,21 +1109,21 @@ SL::PolyVec* SL::SketchFunction::evaluate_inputs(const File *file, unsigned int 
 }
 
 void SL::SketchFunction::set_dag_id_from_the_user(int dag_id_from_user_id) {
-    get_dag()->set_dag_id_from_the_user(dag_id_from_user_id);
+    get_dag__non_const()->set_dag_id_from_the_user(dag_id_from_user_id);
 }
 
 
-SL::VarVal *SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, const string& _line)
-{
-    const VarStore* var_store = string_to_var_store(_line, skfunc);
-    auto ret = new_passes(skfunc, var_store);
-    var_store->clear();
-    return ret;
-}
+//SL::VarVal *SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, const string& _line)
+//{
+//    const VarStore* var_store = string_to_var_store(_line, skfunc);
+//    auto ret = new_passes(skfunc, var_store);
+//    var_store->clear();
+//    return ret;
+//}
 
 
 SL::VarVal* SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, const VarStore* _the_var_store) {
-    BooleanDAG *the_dag = nullptr;
+    const BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
 
     assert(skfunc->get_has_been_concretized());
@@ -1129,14 +1131,7 @@ SL::VarVal* SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, cons
     assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
     assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
 
-    if (skfunc->get_has_been_concretized()) {
-        the_dag = skfunc->get_dag();
-    } else {
-        AssertDebug(false, "You could support this. If the dag wasn't concretized, then inline it and see if it's evaluable.")
-        the_dag = skfunc->get_dag()->clone();
-        new_clone = true;
-        skfunc->get_env()->doInline(*the_dag);
-    }
+    the_dag = skfunc->get_dag();
 
     VarStore *the_var_store = new VarStore(*_the_var_store);
 
@@ -1158,8 +1153,8 @@ SL::VarVal* SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, cons
 
     auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
     assert(after_run_dests.size() == 1);
-    //SHOULD BE THIS BUT ISN'T
-//                      ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
+//  SHOULD BE THIS BUT ISN'T
+//  ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
     int tuple_node_id = node_evaluator.getValue(after_run_dests[0]);
     bool_node *tuple_node = (*the_dag)[tuple_node_id];
     assert(tuple_node->getOtype()->isTuple && tuple_node->type == bool_node::TUPLE_CREATE);
@@ -1175,24 +1170,22 @@ SL::VarVal* SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, cons
         ret = new SL::VarVal((int) val);
     } else {
         AssertDebug(false,
-                    "NEED TO GENERALIZE THIS (^). IN GENERAL out_type can be anything. This was put like this because ::BOOL was the only time that was being used for testing.");
-    }
-
-    if (new_clone) {
-        the_dag->clear();
+                    "NEED TO GENERALIZE THIS (^). "
+                    "IN GENERAL out_type can be anything."
+                    " This was put like this because ::BOOL was the only time that was being used for testing.");
     }
 
     assert(ret != nullptr);
     return ret;
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const string& _line)
-{
-    const VarStore* var_store = string_to_var_store(_line, skfunc);
-    auto ret = new_passes(skfunc, var_store);
-    var_store->clear();
-    return ret;
-}
+//SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const string& _line)
+//{
+//    const VarStore* var_store = string_to_var_store(_line, skfunc);
+//    auto ret = new_passes(skfunc, var_store);
+//    var_store->clear();
+//    return ret;
+//}
 
 SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *skfunc, const VarStore *_the_var_store)
 {
@@ -1205,17 +1198,9 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *sk
     assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
     assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
 
-    BooleanDAG *the_dag = nullptr;
-    bool new_clone = false;
+    const BooleanDAG *the_dag = nullptr;
 
-    if (skfunc->get_has_been_concretized()) {
-        the_dag = skfunc->get_dag();
-    } else {
-        the_dag = skfunc->get_dag()->clone();
-        new_clone = true;
-        skfunc->get_env()->doInline(*the_dag);
-    }
-
+    the_dag = skfunc->get_dag();
     const bool assert_num_remaining_holes_is_0 = true;
     if (assert_num_remaining_holes_is_0) {
         size_t remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
@@ -1224,16 +1209,8 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(const BooleanDagLightUtility *sk
                     std::to_string(remaining_holes) + " remaining_holes.");
     }
 
-//    auto the_var_store = new VarStore(*_the_var_store);
-
     NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
     bool fails = node_evaluator.run(*_the_var_store);
-
-//    the_var_store->clear();
-
-    if(new_clone) {
-        the_dag->clear();
-    }
 
     return new SL::VarVal(!fails);
 }

@@ -15,9 +15,9 @@
 void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
 
 //MODIFIES InputStore
-void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false);
+void redeclareInputs(VarStore & inputStore, const BooleanDAG *dag, bool firstTime= false);
 
-void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
+void redeclareInputsAndAngelics(VarStore & inputStore, const BooleanDAG* dag);
 
 class BooleanDagLightUtility;
 
@@ -91,12 +91,12 @@ public:
 
     explicit File(std::mt19937 _generator): generator(_generator){}
 
-    File(const BooleanDagLightUtility *harness, const string& file_name, bool_node::Type var_type = bool_node::SRC);
-    File(const string& file_name, const BooleanDagLightUtility *harness, bool_node::Type var_type = bool_node::SRC);
+    File(BooleanDagLightUtility *harness, const string& file_name, bool_node::Type var_type = bool_node::SRC);
+    File(const string& file_name, BooleanDagLightUtility *harness, bool_node::Type var_type = bool_node::SRC);
 
-    void init(const BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
+    void init(BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
 
-    File(const BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
+    File(BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
 
     void push_back(VarStore* to_insert) {
         vector<VarStore*>::push_back(to_insert);
@@ -421,6 +421,6 @@ public:
     int count(function<bool(const VarStore *)> function1);
 };
 
-VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type = bool_node::SRC);
+//VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type = bool_node::SRC);
 
 #endif //SKETCH_SOURCE_FILE_H

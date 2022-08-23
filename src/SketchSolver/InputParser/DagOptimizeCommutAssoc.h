@@ -59,7 +59,7 @@ class DagOptimizeCommutAssoc;
 class CAoptimizer{
 
 	vector<pair<int, set<int>* > > interfaces; //positive
-	BooleanDAG* dag;
+	const BooleanDAG* dag;
 	bool_node::Type bnType;
 	DagOptimizeCommutAssoc* parent;
 	map<set<int>*, int ,setComp> setMap; //maps from a set to a nodeID corresponding to that set.
@@ -80,7 +80,7 @@ class CAoptimizer{
 	bool_node*  mergeInputs(int input1, int input2, map<inputId, inputNode >& inputToInterf, map<int, set<int> >& interfToInput, map<pair<int, int>, int>& distances, bool mngDistances = false);
 
 public:
-	void setDag(BooleanDAG* p_dag){ dag = p_dag; }
+	void setDag(const BooleanDAG* p_dag){ dag = p_dag; }
 	
 	void setType(bool_node::Type t){ bnType = t; }
 
@@ -106,11 +106,11 @@ class DagOptimizeCommutAssoc :
 public:
 	typedef map<bool_node::Type, CAoptimizer>::iterator optiterator;
 	map<bool_node::Type, CAoptimizer> optimizers;
-	BooleanDAG* dag;
+	const BooleanDAG* dag;
 	bool_node* getNode(int id);
 public:
 	DagOptimizeCommutAssoc(void);
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 
 	virtual void visitACNode(bool_node& bn);
 	virtual void visit( AND_node& node );

@@ -24,7 +24,7 @@ class SmartConflictGenerator: public ConflictGenerator {
 public:
 	ConflictGenerator(SymbolicEvaluator* eval_, map<int, int>& imap_, BooleanDAG* dag_, set<int>& ignoredBoolNodes_, set<int>& ctrlNodes_): eval(eval_), imap(imap_), dag(dag_), ignoredBoolNodes(ignoredBoolNodes_), ctrlNodes(ctrlNodes_) {
 		// process the dag and collect dependencies
-		for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+		for (auto node_it = dag->begin(); node_it != dag->end(); ++node_it) {
 			bool_node* n = *node_it;
 			set<int> inputs; set<int> ctrls;
 			
@@ -70,7 +70,7 @@ public:
 			
 			// First, find a failing node
 			bool_node* failedNode = NULL;
-			for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+			for (auto node_it = dag->begin(); node_it != dag->end(); ++node_it) {
 				bool_node* n = *node_it;
 				if (n->type == bool_node::ASSERT) {
 					if (!eval->check(n->mother, 1)) {
@@ -108,7 +108,7 @@ public:
 				cout << (*dag)[(*it)]->lprint() << endl;
 			}
 			// Next, collect all boolean nodes that are influenced by the controls that affect the failed node
-			for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+			for (auto node_it = dag->begin(); node_it != dag->end(); ++node_it) {
 				bool_node* n = *node_it;
 				if (n->type == bool_node::ASSERT) {
 					if (isConflict(depCtrls, dependentCtrls[n->id])) {

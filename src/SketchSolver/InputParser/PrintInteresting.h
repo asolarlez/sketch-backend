@@ -26,14 +26,14 @@ public:
 		rvalue = &node;
 	}
 
-	virtual void print(BooleanDAG& bdag, int seed){
+	virtual void print(const BooleanDAG& bdag, int seed){
 		for(int i=0; i<=seed; ++i){
 			if(tovisit[i]){
 				cout<<bdag[i]->lprint()<<endl;
 			}
 		}
 	}
-	void process(BooleanDAG& bdag, int seed){
+	void process(const BooleanDAG& bdag, int seed){
 		tovisit.clear();
 		tovisit.resize(seed+1, 0);
 		tovisit[seed] = true;

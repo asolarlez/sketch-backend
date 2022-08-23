@@ -1005,7 +1005,7 @@ public:
 			// TODO: this should be done in a cegis like loop - otherwise it is not sound
 			vector<int> boolConstraints;
 			const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
-			for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+			for (auto node_it = dag->begin(); node_it != dag->end(); node_it++) {
 				bool_node* node = *node_it;
 				if (boolNodes.find(node->id) != boolNodes.end()) {
 					if (node->type == bool_node::ASSERT) {
@@ -1134,7 +1134,7 @@ public:
 			GradUtil::ALPHA = 1;
 			eval->run(t1, nodeValsMap);
 			double error = 0.0;
-			for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+			for (auto node_it = dag->begin(); node_it != dag->end(); node_it++) {
 				bool_node* node = *node_it;
 				if (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard()) { // TODO: currenlty we are only using the minimizatin objective -- we should probably also use the other constraints
 					if (eval->hasDist(node->mother)) {

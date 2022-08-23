@@ -204,7 +204,7 @@ void IteAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValue
 	}
 	inputValues = inputValues_p;
 
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+	for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 		//cout << (*node_it)->lprint() << endl;
 		(*node_it)->accept(*this);
 	}

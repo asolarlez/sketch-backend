@@ -358,7 +358,7 @@ double RangeDiff::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, g
 	error = 0;
 	assertCtr = 0;//bdag.size();
 	foundFailure = false;
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+	for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 		//cout << (*node_it)->lprint() << endl;
 		(*node_it)->accept(*this);
 	}

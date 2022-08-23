@@ -19,7 +19,7 @@ int Driver::resolveSketches(){
 		  string outname =  params.outputFname;
 		  ofstream out(outname.c_str());
 		
-		  for(map<string, BooleanDAG*>::iterator it = INp::function_map.begin(); it != INp::function_map.end(); ++it){
+		  for(auto it = INp::function_map.begin(); it != INp::function_map.end(); ++it){
 			env.addFunction(it->first, it->second);
 		  }
 

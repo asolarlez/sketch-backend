@@ -14,11 +14,11 @@ namespace SL{
 
 using namespace SL;
 
-void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
+void findPureFuns(const map<string, const BooleanDAG *> &functionMap, set<string> &pureFuns);
 
 class ProgramEnvironment;
 
-FunctionMap* boolean_dag_map_to_function_map(map<string, BooleanDAG*>& boolean_dag_map, ProgramEnvironment* the_env);
+FunctionMap* boolean_dag_map_to_function_map(map<string, const BooleanDAG*>& boolean_dag_map, ProgramEnvironment* the_env);
 
 static int num_program_envs = 0;
 
@@ -80,11 +80,11 @@ public:
 
         set<string> pureFuns;
 
-        map<string, BooleanDAG *> boolean_dag_function_map;
+        map<string, const BooleanDAG *> boolean_dag_function_map;
         function_map.populate_boolean_dag_map(boolean_dag_function_map);
 
         bool enter = false;
-        BooleanDAG* new_dag_to_delete = nullptr;
+        const BooleanDAG* new_dag_to_delete = nullptr;
         for(auto& it: boolean_dag_function_map)
         {
             if(it.second == &dag) {
@@ -140,9 +140,6 @@ public:
 
                     inlined_functions = dfi.get_inlined_functions();
 
-                    if(new_dag_to_delete != nullptr) {
-                        new_dag_to_delete->clear();
-                    }
                     return ;
                 }
                 //
@@ -181,14 +178,6 @@ public:
 
        inlined_functions = dfi.get_inlined_functions();
 
-        if(new_dag_to_delete != nullptr) {
-            new_dag_to_delete->clear();
-        }
-
-//        for(auto it : dag.getNodesByType(bool_node::CTRL)) {
-//            ((CTRL_node*)it)->set_dag_name(dag.get_name());
-//        }
-//
 //        dag.check_ctrl_node_source_dag_naming_invariant();
 
         return ;

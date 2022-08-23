@@ -356,7 +356,7 @@ public:
   
 	BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt);
 
-	void doInline(BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int i, map<string, map<string, string> > replaceMap);
+	void doInline(BooleanDAG& dag, map<string, const BooleanDAG*>& functionMap, int i, map<string, map<string, string> > replaceMap);
 
 	vector<vector<string> > holesToHardcode;
 

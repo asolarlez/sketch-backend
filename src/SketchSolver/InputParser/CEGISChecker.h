@@ -71,7 +71,7 @@ class CEGISChecker
 
 	vector<Tvalue> check_node_ids;
 
-    BooleanDAG* check(VarStore& controls, VarStore& input);
+    BooleanDAG * check(VarStore& controls, VarStore& input);
 
     VarStore input_store;
 
@@ -104,11 +104,15 @@ public:
         return input_store;
     }
 
-    BooleanDAG* getProblemDag(){
+    BooleanDAG* getProblemDag__non_const(){
+        assert(!problemStack.empty());
+        return problemStack.top()->get_dag__non_const();
+    }
+
+    const BooleanDAG* getProblemDag(){
         assert(!problemStack.empty());
         return problemStack.top()->get_dag();
     }
-
 
     BooleanDagLightUtility* getProblem(){
         assert(!problemStack.empty());

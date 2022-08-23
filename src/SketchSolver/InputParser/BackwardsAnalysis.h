@@ -274,7 +274,7 @@ public:
 
 	virtual void visit( ASSERT_node &node);	
 	
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 	
 	CONST_node* getCnode(int val);
 	CONST_node* getCnode(bool c);

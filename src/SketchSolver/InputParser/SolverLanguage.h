@@ -122,8 +122,31 @@ protected:
         return ret;
     }
 
+    void add_to_frontier(
+            Frontier<int, SketchFunction*> frontier, int trial_id, int find_step_id,
+            const SketchFunction *_program, HoleVarStore* solution, File *file)
+    {
+        SketchFunction *concretized_program = _program->produce_concretization(solution, bool_node::CTRL);
+        concretized_program->increment_shared_ptr();
+
+        int score = concretized_program->count_passing_inputs(file);
+        vector<int> point = vector<int>();
+        point.push_back(-score);
+        point.push_back(concretized_program->size());
+
+        auto was_inserted = frontier.insert(point, concretized_program);
+        cout << "insert #" << trial_id << " find_step_id #" << find_step_id << ": point(" << point[0] << ", " << point[1] << ")" << endl;
+        if (was_inserted != nullptr) {
+            cout << "accepted" << endl;
+        } else {
+            cout << "rejected" << endl;
+        }
+
+        concretized_program->clear();
+    }
+
     Frontier<int, SketchFunction *>
-    best_effort_frontier(SketchFunction *harness, File *file, int num_trials, int num_rows, float timeout) {
+    best_effort_frontier(const SketchFunction *harness, File *file, int num_trials, int num_rows, float timeout) {
         auto init_timestamp = chrono::steady_clock::now();
 
         Frontier<int, SketchFunction *> ret_frontier = Frontier<int, SketchFunction *>(2);
@@ -133,20 +156,10 @@ protected:
             program->increment_shared_ptr();
             CEGISSolverResult solver_result = solve(program, subset_file, timeout, file);
             HoleVarStore* solution = solver_result.final_ctrl_var_store;
-            program->concretize(solution);
-            int score = program->count_passing_inputs(file);
-            vector<int> point = vector<int>();
-            point.push_back(-score);
-            point.push_back(program->size());
-
-            cout << "insert #" << trial_id << ": point(" << point[0] << ", " << point[1] << ")" << endl;
-            auto was_inserted = ret_frontier.insert(point, program);
-            if (was_inserted != nullptr) {
-                cout << "accepted" << endl;
-            } else {
-                cout << "rejected" << endl;
+            add_to_frontier(ret_frontier, trial_id, -1, program, solution, file);
+            for(int find_step_id = 0;find_step_id<solver_result.intermediate_solutions.size();find_step_id++) {
+                add_to_frontier(ret_frontier, trial_id, find_step_id, program, solver_result.intermediate_solutions[find_step_id], file);
             }
-
             program->clear();
         }
 
@@ -189,9 +202,9 @@ public:
 
     SketchFunction* main() {
 
-        int num_trials = 20;
-        int num_rows = 60;
-        float timeout = float(2);
+        int num_trials = 10;
+        int num_rows = 10;
+        float timeout = float(1);
 
         SketchFunction* harness = sketch_main__Wrapper;
         File *file = new File(file_name, harness);
@@ -421,12 +434,14 @@ public:
         // assert everything has been garbage collected.
         {
             auto all_allocated_dags = BooleanDAG::get_allocated();
+            cout << "Total num dags DAGs: " << all_allocated_dags.get_num() << endl;
+            cout << "Max observed number of simultaneously allocated DAGs: " << all_allocated_dags.get_max() << endl;
             int dags_diff = all_allocated_dags.size() - init_num_global_dags;
             assert(dags_diff == 0);
 
             int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
             if(all_remaining_inlining_trees != 0) {
-                cout << "WARNING: THERE ARE REMAINING INLINING TREES DANGLING!!!" << endl;
+                cout << "WARNING: THERE ARE " << all_remaining_inlining_trees <<" REMAINING INLINING TREES DANGLING!!!" << endl;
 //                    assert(all_remaining_inlining_trees == 0);
             }
 

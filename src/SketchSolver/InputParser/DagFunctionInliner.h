@@ -88,7 +88,7 @@ public:
 				cout<<cname[it->first]<<" -> "<<cname[it->second[i]]<<endl;
 			}
 		}
-		for(BooleanDAG::iterator it = dag.begin(); it != dag.end(); ++it){
+		for(auto it = dag.begin(); it != dag.end(); ++it){
 			if((*it)->type == bool_node::UFUN){
 				if(cname.count((*it)->globalId)>0){
 				cout<<cname[(*it)->globalId]<<"[shape=record]"<<endl;
@@ -648,7 +648,7 @@ class DagFunctionInliner : public virtual DagOptim
 	
 	BooleanDAG& dag;
 protected:
-	const map<string, BooleanDAG*>& functionMap;
+	const map<string, const BooleanDAG*>& functionMap;
 private:
   map<string, map<string, string> > replaceMap;
   int replaceDepth; // TODO: in general we may need a map for this
@@ -679,11 +679,11 @@ private:
 public:
 	int nfuns(){ return lnfuns; }
 	DagFunctionInliner(
-            BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap,
+            BooleanDAG &p_dag, const map<string, const BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap,
             FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize= false, InlineControl* ict= NULL,
             bool p_onlySpRandomize= false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 	bool process_and_return(BooleanDAG& bdag);
 		
 	virtual void visit( UFUN_node& node );
@@ -718,7 +718,7 @@ public:
             const VarStore &_ctrl_store,
             const bool_node::Type tp,
             BooleanDAG& _dag,
-            const map<string, BooleanDAG*>& p_functionMap,
+            const map<string, const BooleanDAG*>& p_functionMap,
             map<string, map<string, string> > p_replaceMap,
             FloatManager& fm,
             HoleHardcoder* p_hcoder,

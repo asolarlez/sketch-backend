@@ -434,6 +434,7 @@ long long int LightSkFuncSetter::get_tree_id() const {
     return inlining_tree_id;
 }
 
+
 void LightSkFuncSetter::init() {
     inlining_tree_id = inlining_tree_global_id++;
 
@@ -444,7 +445,9 @@ void LightSkFuncSetter::init() {
     }
     name_to_count[dag_name]+=1;
     max_count = max(max_count, name_to_count[dag_name]);
-//    assert(max_count <= 3);
+#ifdef assert_max_inlining_tree_count
+    assert(max_count <= 3);
+#endif
 //    if(inlining_tree_id == 470)
 //    {
 //        cout << "HERE" << endl;

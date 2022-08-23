@@ -30,7 +30,6 @@ namespace SL {
 
         class Dependencies : private map<string, SketchFunction *> {
 
-
         public:
             Dependencies() = default;
 
@@ -120,10 +119,6 @@ namespace SL {
 
         }
 
-        int size() const {
-            return get_dag()->size();
-        }
-
         explicit SketchFunction(
                 BooleanDAG *_dag_root,
                 ProgramEnvironment *_env,
@@ -153,10 +148,10 @@ namespace SL {
             }
         }
 
-        SketchFunction *produce_executable() {
+        SketchFunction *produce_executable() const {
             // inline, and then assert that everything has been concretized and inlined.
             bool_node::Type var_type = bool_node::CTRL;
-            SketchFunction *ret = produce_concretization(nullptr, var_type, true);
+            SketchFunction *ret = produce_concretization(nullptr, var_type);
 
             AssertDebug(ret->get_dag()->getNodesByType(bool_node::UFUN).empty(),
                         "failed to produce executable, bc there are uninlined ufuns.");
@@ -165,11 +160,11 @@ namespace SL {
             return ret;
         }
 
-        SketchFunction *produce_executable(VarStore *var_store) {
+        SketchFunction *produce_executable(VarStore *var_store) const {
 
             // inline, and then assert that everything has been concretized and inlined.
             bool_node::Type var_type = bool_node::CTRL;
-            SketchFunction *ret = produce_concretization(var_store, var_type, true);
+            SketchFunction *ret = produce_concretization(var_store, var_type);
 
             AssertDebug(ret->get_dag()->getNodesByType(bool_node::UFUN).empty(),
                         "failed to produce executable, bc there are uninlined ufuns.");
@@ -182,9 +177,10 @@ namespace SL {
             return produce_concretization(var_store, var_type, false);
         }
 
-        SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL, bool do_clone = true,
+        SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL,
+                                               bool do_clone = true,
                                                const bool do_deep_clone = true,
-                                               const bool do_recursive_concretize = true);
+                                               const bool do_recursive_concretize = true) const;
 
         void _inplace_recursive_concretize(VarStore *var_store, const bool_node::Type var_type,
                                            bool do_recursive_concretize);
@@ -192,19 +188,20 @@ namespace SL {
         SketchFunction *_inplace_concretize__assert_subfuncts_are_concretized(const VarStore *var_store,
                                                                               const bool_node::Type var_type);
 
-        SketchFunction *unit_clone_and_insert_in_function_map();
+        SketchFunction *unit_clone_and_insert_in_function_map() const;
 
         SketchFunction *
-        unit_clone(const string &explicit_name = "", const map<string, string> *hole_rename_map = nullptr);
+        unit_clone(const string &explicit_name = "", const map<string, string> *hole_rename_map = nullptr) const;
 
-        SketchFunction *deep_clone(bool only_tail = false);
+        SketchFunction *deep_clone(bool only_tail = false) const;
 
         SketchFunction *deep_exact_clone_and_fresh_function_map(ProgramEnvironment *new_environment = nullptr,
-                                                                map<SketchFunction *, SketchFunction *> *dp = new map<SketchFunction *, SketchFunction *>());
+                                                                map<const SketchFunction *, SketchFunction *> *dp =
+                                                                        new map<const SketchFunction *, SketchFunction *>()) const;
 
-        SketchFunction *unit_exact_clone_in_fresh_env(Dependencies &new_dependencies, ProgramEnvironment *fresh_env);
+        SketchFunction *unit_exact_clone_in_fresh_env(Dependencies &new_dependencies, ProgramEnvironment *fresh_env) const;
 
-        void deep_clone_tail();
+        void deep_clone_tail() const;
 
         void clear() override;
 

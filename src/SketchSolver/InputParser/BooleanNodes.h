@@ -240,7 +240,7 @@ private:
 	virtual void addToParent(bool_node* only_thisone);
   
     
-    virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
+    virtual void redirectParentPointers(const BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
     virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, childset& tchild);
     virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
     virtual string get_tname() const{

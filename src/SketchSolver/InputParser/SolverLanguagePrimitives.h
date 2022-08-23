@@ -15,6 +15,8 @@ class File;
 
 namespace SolverLanguagePrimitives {
 
+    CEGISSolverResult solve(const SketchFunction* skfunc, const File* training_file, float timeout, const File* validation_file = nullptr);
+
     class ProblemAE {
         const File *training_file = nullptr;
         const File *validation_file = nullptr;
@@ -41,7 +43,7 @@ namespace SolverLanguagePrimitives {
             return skfunc;
         }
 
-        BooleanDAG *get_dag() {
+        const BooleanDAG *get_dag() {
             return skfunc->get_dag();
         }
 
@@ -142,11 +144,10 @@ namespace SolverLanguagePrimitives {
         CEGISSolverResult solve(ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds) override;
     };
 
-    CEGISSolverResult solve(SketchFunction* skfunc, const File* training_file, float timeout, const File* validation_file = nullptr);
 };
 
 
-void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness);
+void set_inlining_tree(VarStore* sol, const BooleanDagUtility* harness);
 
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGEPRIMITIVES_H

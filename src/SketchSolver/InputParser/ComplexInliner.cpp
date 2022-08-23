@@ -4,7 +4,7 @@
 
 int FRACTION = 8;
 
-ComplexInliner::ComplexInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int p_inlineAmnt, bool p_mergeFunctions, FloatManager& fm):
+ComplexInliner::ComplexInliner(BooleanDAG& p_dag, map<string, const BooleanDAG *> &p_functionMap, int p_inlineAmnt, bool p_mergeFunctions, FloatManager& fm):
 dag(p_dag), 
 DagOptim(p_dag, fm),
 functionMap(p_functionMap),
@@ -189,8 +189,8 @@ void ComplexInliner::mergeFuncalls(int first, int second){
 }
 
 void ComplexInliner::computeSpecialInputs(){
-	for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
-		BooleanDAG* fun = it->second;
+	for(auto it = functionMap.begin(); it != functionMap.end(); ++it){
+		const BooleanDAG* fun = it->second;
 		auto inputs  = fun->getNodesByType(bool_node::SRC);
 		for(int i=0; i<inputs.size(); ++i){	
 			string fn = inputs[i]->get_name();
@@ -290,7 +290,11 @@ void ComplexInliner::unify(){
 
 void ComplexInliner::immInline(BooleanDAG& dag){
 	map<string, map<string, string> > replaceMap;
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, NULL, set<string>());
+    map<string, const BooleanDAG*> constfunmap;
+    for(const auto& _it : functionMap) {
+        constfunmap[_it.first] = _it.second;
+    }
+	DagFunctionInliner dfi(dag, constfunmap, replaceMap, floats, NULL, set<string>());
 	dfi.process(dag);
 	
 	somethingChanged = dfi.changed();
@@ -324,7 +328,7 @@ void ComplexInliner::immInline(BooleanDAG& dag){
 }
 
 
-void ComplexInliner::process(BooleanDAG& dag){
+void ComplexInliner::process(BooleanDAG &dag){
 	// cout<<" funmap has size " << function_map.size() << endl;
 	somethingChanged = true;
 	{

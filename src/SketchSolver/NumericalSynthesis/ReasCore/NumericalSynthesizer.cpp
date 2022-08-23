@@ -23,7 +23,7 @@ int GradUtil::counter;
 using namespace std;
 
 NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface) : dag(_dag), interf(_interface) {
-	for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+	for (auto node_it = dag->begin(); node_it != dag->end(); ++node_it) {
 		bool_node* n = *node_it;
 		set<int> ctrls;
 		
@@ -112,7 +112,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 
 	MaxOptimizationWrapper* maxOpt = new MaxSolverWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
 
-	for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+	for (auto node_it = dag->begin(); node_it != dag->end(); ++node_it) {
 		bool_node* n = *node_it;
 		set<int> inputs;
 		

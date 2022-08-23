@@ -273,7 +273,7 @@ protected:
 	FloatManager& floats;
 	map<string, vector<pair<int, vector<int> > > > funargs;
 	map<UFUN_node*, NodeEvaluator> recursives;
-	BooleanDAG& bdag;
+	const BooleanDAG& bdag;
 	vector<int> values;
 	vector<cpvec*> vecvalues;
     vector<cptuple*> tuplevalues;
@@ -324,7 +324,7 @@ protected:
 		setbn(bn, c ? 1 : 0);
 	}
 public:
-	NodeEvaluator(BooleanDAG &bdag_p, FloatManager &_floats);
+	NodeEvaluator(const BooleanDAG &bdag_p, FloatManager &_floats);
 	~NodeEvaluator(void);
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );

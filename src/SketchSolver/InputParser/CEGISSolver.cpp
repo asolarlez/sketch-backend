@@ -448,7 +448,7 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
 void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
 	map<string, CTRL_node*> minimizes;
 	for(size_t i=0; i<problems.size(); ++i){
-		BooleanDAG* dag = problems[i]->get_dag();
+		const BooleanDAG* dag = problems[i]->get_dag();
 		vector<bool_node*> nodes = dag->getNodesByType(bool_node::CTRL);
 		for(std::vector<bool_node*>::iterator node_it = nodes.begin(); node_it != nodes.end(); ++node_it) {
 			CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
@@ -486,7 +486,7 @@ void BitSet::print(ostream& os){
 
 }
 
-void CEGISSolver::normalizeInputStore(){
+/*void CEGISSolver::normalizeInputStore(){
 	VarStore tmp = old_join(checker->get_input_store(), ctrlStore);
 	map<string, BooleanDAG*> empty;
 	NodeSlicer slicer(empty, tmp, *getProblemDAG(), floats);
@@ -496,7 +496,7 @@ void CEGISSolver::normalizeInputStore(){
 			it->setVal(last_input[it->get_name()]);
 		}
 	}
-}
+}*/
 
 bool CEGISSolver::solveFromCheckpoint(istream& in){
 	Assert(false, "This functionality is no longer supported.");
@@ -517,25 +517,25 @@ void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
 }
 
 // can remove
-void CEGISSolver::outputEuclid(ostream& fout){
-		cout<<"BEFORE OUTPUTING STATE"<<endl;
-		{
-			NodesToEuclid neuc(fout, "PROBLEM_");
-			neuc.process(*getProblemDAG());
-		}
-	}
+//void CEGISSolver::outputEuclid(ostream& fout){
+//		cout<<"BEFORE OUTPUTING STATE"<<endl;
+//		{
+//			NodesToEuclid neuc(fout, "PROBLEM_");
+//			neuc.process(*getProblemDAG());
+//		}
+//	}
 
 void CEGISSolver::setup2QBF(ofstream& out){
 	MiniSATSolver mngCheck("checker", SATSolver::CHECKER);		
 	SolverHelper dirCheck(mngCheck);
 	dirCheck.setMemo(params.setMemo);
-	BooleanDAG* bd = problems[problems.size()-1]->get_dag();
+	BooleanDAG* bd = problems[problems.size()-1]->get_dag__non_const();
 	out<<"c 2qbf problem of the form. \\forall C \\exists In, temp.  (not Correct(C,in, temp)) "<<endl;
 	out<<"c vars listed as UV are the C vars; vars listed as EV are the In vars; vars not listed are temps."<<endl;
 
 	{
 		auto inter = bd->getNodesByType(bool_node::CTRL);
-		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
+		for(auto node_it = inter.begin(); node_it != inter.end(); ++node_it){
 			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
 			dirCheck.declareControl((CTRL_node*)*node_it);							
 			int base = dirCheck.getVar(srcnode->get_name());
@@ -549,7 +549,7 @@ void CEGISSolver::setup2QBF(ofstream& out){
 	}
 	{
 		auto inter = bd->getNodesByType(bool_node::SRC);
-		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
+		for(auto node_it = inter.begin(); node_it != inter.end(); ++node_it){
 			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
 			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits(), srcnode->getOtype(), bool_node::SRC, srcnode->get_name(), "setup2QBF()");
 			int base = dirCheck.getVar(srcnode->get_name());

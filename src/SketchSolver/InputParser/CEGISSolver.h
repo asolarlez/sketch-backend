@@ -65,10 +65,8 @@ protected:
 	void declareControl(CTRL_node* cnode);
     CEGISSolverResult solveCore(unsigned long long find_solve_max_timeout_in_microseconds, const File* validation_file);
 
-	void normalizeInputStore();
-
 //-- internal wrappers arround the checker methods
-    BooleanDAG* getProblemDAG()
+    const BooleanDAG* getProblemDAG()
     {
         return checker->getProblemDag();
     }
@@ -129,7 +127,7 @@ public:
 	bool solveFromCheckpoint(istream& in);
 
 	void get_control_map_as_map_str_str(map<string, string>& values);
-	void outputEuclid(ostream& fout);
+//	void outputEuclid(ostream& fout);
 	void setup2QBF(ofstream& out);
 
 

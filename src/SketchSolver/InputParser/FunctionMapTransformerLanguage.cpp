@@ -20,6 +20,6 @@ ProgramEnvironment *FMTL::FunctionMapTransformerState::get_env() {
     return env;
 }
 
-map<SketchFunction *, SketchFunction *> *FMTL::FunctionMapTransformerState::get_meta_map_dp() {
+map<const SketchFunction *, SketchFunction *> *FMTL::FunctionMapTransformerState::get_meta_map_dp() {
     return meta_map_dp;
 }

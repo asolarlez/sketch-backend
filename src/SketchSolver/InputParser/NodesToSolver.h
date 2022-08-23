@@ -176,7 +176,7 @@ public:
 	void arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue& inarr);
 
     virtual void visit (ASSERT_node &node);
-	void process(BooleanDAG& bdag);
+	void process(BooleanDAG &bdag);
   template<typename EVAL>
 	void mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, EVAL eval, bool isInt, int idx=-1);
   template<typename EVAL>
@@ -195,7 +195,7 @@ public:
 
  void newSynthesis(const string& name, const string& synthname, vector<Tvalue>& params, vector<Tvalue>& nvars, SolverHelper& dir);
   void preprocessUfun(UFUN_node& node);
-  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray = -1.0);
+  static bool createConstraints(BooleanDAG &dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray = -1.0);
 
 };
 

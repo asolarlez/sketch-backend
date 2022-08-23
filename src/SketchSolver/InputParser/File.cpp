@@ -42,7 +42,7 @@ void declareCtrl(VarStore & inputStore, const string& inname, int bitsize, int a
     }
 }
 
-void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime){
+void redeclareInputs(VarStore & inputStore, const BooleanDAG* dag, bool firstTime){
     {
         auto specIn = dag->getNodesByType(bool_node::SRC);
         for(size_t i=0; i<specIn.size(); ++i){
@@ -75,7 +75,7 @@ void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime){
     }
 }
 
-void redeclareInputsAndAngelics(VarStore & input_store, BooleanDAG* problem)
+void redeclareInputsAndAngelics(VarStore & input_store, const BooleanDAG* problem)
 {
     // code copied from addProblem in CEGISChecker (previously was in CEGISSolver::addProblem).
     // declare inputs and angelics
@@ -112,10 +112,7 @@ void File::growInputs(VarStore & inputStore, BooleanDAG* dag){
 }
 
 void File::relabel(BooleanDagLightUtility *harness) {
-//    BooleanDagLightUtility* cloned_inlined_harness = harness; //->produce_inlined_dag();
-//    cloned_inlined_harness->increment_shared_ptr();
-//    BooleanDAG* problem = cloned_inlined_harness->get_dag();
-    BooleanDAG* problem = harness->get_dag();
+    const BooleanDAG* problem = harness->get_dag();
     VarStore input_store;
     redeclareInputsAndAngelics(input_store, problem);
     const auto& inputs = problem->getNodesByType(bool_node::SRC);
@@ -123,20 +120,18 @@ void File::relabel(BooleanDagLightUtility *harness) {
     for(int i = 0;i<size();i++) {
         at(i)->relabel(inputs);
     }
-
-//    cloned_inlined_harness->clear();
 }
 
 #include "GenericFile.h"
 
-File::File(const BooleanDagLightUtility *harness, const string &file_name, bool_node::Type var_type)
+File::File(BooleanDagLightUtility *harness, const string &file_name, bool_node::Type var_type)
 {
     int seed = harness->get_env()->params.seed;
     GenericFile generic_file = GenericFile(file_name, seed);
     init(harness, &generic_file, var_type);
 }
 
-File::File(const string &file_name, const BooleanDagLightUtility *harness, bool_node::Type var_type)
+File::File(const string &file_name, BooleanDagLightUtility *harness, bool_node::Type var_type)
 {
     int seed = harness->get_env()->params.seed;
     GenericFile generic_file = GenericFile(file_name, seed);
@@ -169,12 +164,11 @@ File *File::produce_filter(std::function< bool(const VarStore*) >& lambda_condit
     return ret;
 }
 
-File::File(const BooleanDagLightUtility *harness, GenericFile *generic_file, bool_node::Type var_type)
-{
+File::File(BooleanDagLightUtility *harness, GenericFile *generic_file, bool_node::Type var_type) {
     init(harness, generic_file, var_type);
 }
 
-void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file, bool_node::Type var_type)
+void File::init(BooleanDagLightUtility *harness, GenericFile *generic_file, bool_node::Type var_type)
 {
     FloatManager floats = harness->get_env()->floats;
     int seed = harness->get_env()->params.seed;
@@ -196,7 +190,7 @@ void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file
 
     const int max_num_bits = 64;
 
-    const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
+    const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map__non_const();
     while (res == File::MOREBITS) {
         int at_int_size = problem->getIntSize();
         AssertDebug(at_int_size <= max_num_bits, "TOO MANY BITS, CHECK THE INPUT TYPES OF YOUR HARNESS. OTHERWISE PROBABLY WRONG CODE/INPUT/OUTPUT.");
@@ -218,13 +212,11 @@ void File::init(const BooleanDagLightUtility *harness, GenericFile *generic_file
                     harness_in_function_map = true;
                 }
             }
-            if(!harness_in_function_map)
-            {
+            if(!harness_in_function_map) {
                 assert(harness->get_dag()->getIntSize() == at_int_size);
-                harness->get_dag()->growInputIntSizes();
+                harness->get_dag__non_const()->growInputIntSizes();
             }
-            else
-            {
+            else {
                 assert(harness->get_dag()->getIntSize() == at_int_size+1);
             }
         }
@@ -301,14 +293,14 @@ File::File() = default;
 
 #include "SketchFunction.h"
 
-VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type)
-{
-    GenericFile generic_file = GenericFile();
-    generic_file.push_back(_line);
-    File file = File(skfunc, &generic_file, var_type);
-    assert(file.size() == 1);
-    return new VarStore(*file[0]); //todo refactor this, no need to copy.
-}
+//VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type)
+//{
+//    GenericFile generic_file = GenericFile();
+//    generic_file.push_back(_line);
+//    File file = File(skfunc, &generic_file, var_type);
+//    assert(file.size() == 1);
+//    return new VarStore(*file[0]); //todo refactor this, no need to copy.
+//}
 
 
 

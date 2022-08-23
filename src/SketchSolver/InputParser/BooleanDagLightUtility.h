@@ -18,6 +18,7 @@ public:
     static long long inlining_tree_global_id;
     static set<const LightSkFuncSetter*> all_inlining_trees;
     static map<string, int> name_to_count;
+    #define assert_max_inlining_tree_count
     static int max_count;
     long long int get_tree_id() const;
 private:
@@ -50,7 +51,9 @@ protected:
         }
         name_to_count[dag_name]+=1;
         max_count = max(max_count, name_to_count[dag_name]);
+#ifdef assert_max_inlining_tree_count
         assert(max_count <= 3);
+#endif
     }
 
     void change_id(int new_id){
@@ -671,6 +674,12 @@ class BooleanDagLightUtility
 
 public:
 
+    int size() const
+    {
+        return get_dag()->size();
+    }
+
+
     void force_set_has_not_been_concretized()
     {
         has_been_concretized = false;
@@ -709,14 +718,18 @@ public:
         assert(root_dag != nullptr);
     }
 
-    explicit BooleanDagLightUtility(BooleanDagLightUtility* to_copy):
+    explicit BooleanDagLightUtility(const BooleanDagLightUtility* to_copy):
         root_dag(to_copy->root_dag->clone()), _env(to_copy->get_env()), dag_name(to_copy->dag_name), dag_id(to_copy->get_dag_id()), has_been_concretized(to_copy->has_been_concretized) {
         assert(root_dag != nullptr);
     }
 
     set<string>* get_inlined_functions(set<string>* ret = new set<string>()) const;
 
-    BooleanDAG* get_dag() const {
+    const BooleanDAG* get_dag() const {
+        return root_dag;
+    }
+
+    BooleanDAG* get_dag__non_const() {
         return root_dag;
     }
 
@@ -776,7 +789,7 @@ public:
 //        return ret;
 //    }
 
-    BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type) {
+    BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type = bool_node::CTRL) {
 //        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(),
 //        "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE;
 //        BUT THERE IS NO DEEP CLONE IN THIS CLASS.

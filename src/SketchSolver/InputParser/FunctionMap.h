@@ -36,9 +36,11 @@ public:
 
     void clear_assert_num_shared_ptr_is_0();
 
-    const map<string, BooleanDAG *> * to_boolean_dag_map() const;
+    const map<string, const BooleanDAG *> * to_boolean_dag_map() const;
 
-    void populate_boolean_dag_map(map<string, BooleanDAG*>& boolean_dag_map) const;
+    const map<string, BooleanDAG *> * to_boolean_dag_map__non_const() const;
+
+    void populate_boolean_dag_map(map<string, const BooleanDAG*>& boolean_dag_map) const;
 
     void check_consistency();
 

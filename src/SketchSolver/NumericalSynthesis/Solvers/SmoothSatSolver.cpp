@@ -335,7 +335,7 @@ vector<tuple<int, int, int>> SmoothSatSolver::collectUnsatSuggestions() {
         
         // Collect influential asserts
         set<bool_node*> influentialNodes;
-        for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+        for (auto node_it = dag->begin(); node_it != dag->end(); node_it++) {
             bool_node* node = *node_it;
             if (node->type == bool_node::ASSERT) {
                 Assert(eval->hasDist(node->mother), "weoqypq");
