@@ -84,15 +84,16 @@ public:
         function_map.populate_boolean_dag_map(boolean_dag_function_map);
 
         bool enter = false;
-        const BooleanDAG* new_dag_to_delete = nullptr;
+        BooleanDAG* new_dag_to_delete = nullptr;
         for(auto& it: boolean_dag_function_map)
         {
             if(it.second == &dag) {
                 assert(!enter);
                 enter = true;
-                it.second = it.second->clone(it.first);
+                auto root_clone = it.second->clone(it.first);
+                it.second = root_clone;
                 assert(it.second != &dag);
-                new_dag_to_delete = it.second;
+                new_dag_to_delete = root_clone;
             }
         }
 
@@ -140,6 +141,10 @@ public:
 
                     inlined_functions = dfi.get_inlined_functions();
 
+                    if(new_dag_to_delete != nullptr) {
+                        new_dag_to_delete->clear();
+                    }
+
                     return ;
                 }
                 //
@@ -179,6 +184,10 @@ public:
        inlined_functions = dfi.get_inlined_functions();
 
 //        dag.check_ctrl_node_source_dag_naming_invariant();
+
+        if(new_dag_to_delete != nullptr) {
+            new_dag_to_delete->clear();
+        }
 
         return ;
     }

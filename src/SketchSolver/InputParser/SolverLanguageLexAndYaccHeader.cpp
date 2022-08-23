@@ -1299,55 +1299,55 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
 
     assert(skfunc == the_var_val->get_function_const(false));
     switch (method_id) {
-//        case _inplace_unit_concretize:
-//        {
-//            assert(params.size() == 1);
-//            VarVal* poly_map_var_val = params[0]->eval(state);
-//            poly_map_var_val->increment_shared_ptr();
-//            map<string, string> hole_assignment = poly_map_var_val->get_poly_map()->get_cpp_map<string>();
-//
-//            auto unit_holes = skfunc->get_unit_holes();
-//            assert(hole_assignment.size() == unit_holes.size());
-//
-//            VarStore* var_store = nullptr;
-//
-//            if(!unit_holes.empty()) {
-//                string line;
-//                for (int i = 0; i < unit_holes.size(); i++) {
-//                    assert(hole_assignment.find(unit_holes[i]) != hole_assignment.end());
-//                    if (i >= 1) {
-//                        line += " ";
-//                    }
-//                    line += hole_assignment[unit_holes[i]];
-//                }
-//
-//                line += "\n";
-//
-//                var_store = string_to_var_store(line, skfunc, bool_node::CTRL);
-//
-//                SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
-//                harness->increment_shared_ptr();
-//                harness->inline_this_dag();
-//
-//                set_inlining_tree(var_store, harness);
-//                harness->clear();
-//            }
-//            else {
-//                //nothing to concretize;
-//            }
-//
-//            if(state->function_map.find(skfunc->get_dag_name()) == state->function_map.end()) {
-//                state->function_map.insert(skfunc->get_dag_name(), skfunc);
-//            }
-//
-//            skfunc->_inplace_recursive_concretize(var_store, bool_node::CTRL, true);
-//
-//            if(var_store != nullptr) {
-//                var_store->clear();
-//            }
-//
-//            return new VarVal();
-//        }
+        case _inplace_unit_concretize:
+        {
+            assert(params.size() == 1);
+            VarVal* poly_map_var_val = params[0]->eval(state);
+            poly_map_var_val->increment_shared_ptr();
+            map<string, string> hole_assignment = poly_map_var_val->get_poly_map()->get_cpp_map<string>();
+
+            auto unit_holes = skfunc->get_unit_holes();
+            assert(hole_assignment.size() == unit_holes.size());
+
+            VarStore* var_store = nullptr;
+
+            if(!unit_holes.empty()) {
+                string line;
+                for (int i = 0; i < unit_holes.size(); i++) {
+                    assert(hole_assignment.find(unit_holes[i]) != hole_assignment.end());
+                    if (i >= 1) {
+                        line += " ";
+                    }
+                    line += hole_assignment[unit_holes[i]];
+                }
+
+                line += "\n";
+
+                var_store = string_to_var_store(line, skfunc, bool_node::CTRL);
+
+                SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
+                harness->increment_shared_ptr();
+                harness->inline_this_dag();
+
+                set_inlining_tree(var_store, harness);
+                harness->clear();
+            }
+            else {
+                //nothing to concretize;
+            }
+
+            if(state->function_map.find(skfunc->get_dag_name()) == state->function_map.end()) {
+                state->function_map.insert(skfunc->get_dag_name(), skfunc);
+            }
+
+            skfunc->_inplace_recursive_concretize(var_store, bool_node::CTRL, true);
+
+            if(var_store != nullptr) {
+                var_store->clear();
+            }
+
+            return new VarVal();
+        }
         case _produce_executable:
         {
             if(params.size() >= 1) {

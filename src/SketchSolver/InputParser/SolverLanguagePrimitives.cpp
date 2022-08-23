@@ -296,6 +296,7 @@ CEGISSolverResult SolverLanguagePrimitives::solve(const SketchFunction *skfunc, 
         auto tmp_harness = skfunc->deep_clone();
         tmp_harness->increment_shared_ptr();
         auto tmp_dag = tmp_harness->produce_executable();
+        tmp_dag->increment_shared_ptr();
         sol->relabel(tmp_dag->get_dag()->get_CTRL_nodes());
         set_inlining_tree(sol, tmp_dag);
 
@@ -307,8 +308,9 @@ CEGISSolverResult SolverLanguagePrimitives::solve(const SketchFunction *skfunc, 
             SketchFunction *to_test = to_test__tmp_harness->produce_concretization(sol, bool_node::CTRL);
             to_test->increment_shared_ptr();
             to_test->clear();
+            to_test__tmp_harness->clear();
         }
-
+        tmp_dag->clear();
         tmp_harness->clear();
     }
 

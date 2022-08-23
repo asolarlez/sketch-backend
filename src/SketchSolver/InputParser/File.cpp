@@ -293,14 +293,11 @@ File::File() = default;
 
 #include "SketchFunction.h"
 
-//VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type)
-//{
-//    GenericFile generic_file = GenericFile();
-//    generic_file.push_back(_line);
-//    File file = File(skfunc, &generic_file, var_type);
-//    assert(file.size() == 1);
-//    return new VarStore(*file[0]); //todo refactor this, no need to copy.
-//}
-
-
-
+VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfunc, bool_node::Type var_type)
+{
+    GenericFile generic_file = GenericFile();
+    generic_file.push_back(_line);
+    File file = File(skfunc, &generic_file, var_type);
+    assert(file.size() == 1);
+    return new VarStore(*file[0]); //todo refactor this, no need to copy.
+}

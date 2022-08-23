@@ -421,6 +421,6 @@ public:
     int count(function<bool(const VarStore *)> function1);
 };
 
-//VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type = bool_node::SRC);
+VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfunc, bool_node::Type var_type = bool_node::SRC);
 
 #endif //SKETCH_SOURCE_FILE_H

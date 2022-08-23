@@ -123,7 +123,7 @@ protected:
     }
 
     void add_to_frontier(
-            Frontier<int, SketchFunction*> frontier, int trial_id, int find_step_id,
+            Frontier<int, SketchFunction*>& frontier, int trial_id, int find_step_id,
             const SketchFunction *_program, HoleVarStore* solution, File *file)
     {
         SketchFunction *concretized_program = _program->produce_concretization(solution, bool_node::CTRL);
@@ -169,7 +169,7 @@ protected:
         return ret_frontier;
     }
 
-    SketchFunction * main__best_effort_frontier__2(SketchFunction *harness, File* file, int num_trials, int num_rows, float timeout) {
+    SketchFunction * main__best_effort_frontier__2(const SketchFunction *harness, File* file, int num_trials, int num_rows, float timeout) {
         Frontier<int, SketchFunction *> ret_frontier =
                 best_effort_frontier(
                         harness, file, num_trials, num_rows, timeout);
@@ -202,8 +202,8 @@ public:
 
     SketchFunction* main() {
 
-        int num_trials = 10;
-        int num_rows = 10;
+        int num_trials = 2;
+        int num_rows = 2;
         float timeout = float(1);
 
         SketchFunction* harness = sketch_main__Wrapper;
