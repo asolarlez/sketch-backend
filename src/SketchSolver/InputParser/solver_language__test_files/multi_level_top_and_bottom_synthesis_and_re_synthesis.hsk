@@ -6,7 +6,7 @@ SEE binary_boolean_predicates_dsl.sk
 
 //----HyperSketch----
 
-hypersketch main_baseline()
+main_baseline()
 {
     int trials_mult = 8;
     int init_num_rows = 5;
@@ -54,7 +54,7 @@ hypersketch main_baseline()
 }
 
 
-hypersketch run_one_step_bottom_up(int trials_mult)
+run_one_step_bottom_up(int trials_mult)
 {
     /*
 
@@ -360,7 +360,7 @@ hypersketch run_one_step_bottom_up(int trials_mult)
 
 }
 
-hypersketch main_plot_initial_timeout_vs_score()
+main_plot_initial_timeout_vs_score()
 {
 
     file = File(file_name, sketch_main__Wrapper);
@@ -370,7 +370,7 @@ hypersketch main_plot_initial_timeout_vs_score()
     int p = 1;
     for(int i = 0;i<8;i++)
     {
-        trial_mults.append(trial_mult*p);
+        trial_mults.push_back(trial_mult*p);
         p = p * 2;
     }
 
@@ -382,7 +382,7 @@ hypersketch main_plot_initial_timeout_vs_score()
     {
         print("running with trial_mults", trial_mults[i]);
         best_score_and_dag = run_one_step_bottom_up(trial_mults[i]);
-        all_best_dags.append(best_score_and_dag);
+        all_best_dags.push_back(best_score_and_dag);
         print("done running; results:");
         print(trial_mults[i], "->", best_score_and_dag);
         if(best_score < best_score_and_dag.first())
@@ -411,7 +411,7 @@ hypersketch main_plot_initial_timeout_vs_score()
     return ret_dag;
 }
 
-hypersketch main()
+main()
 {
     return main_plot_initial_timeout_vs_score();
     float timeout = float(1)/float(4); // in seconds
@@ -692,7 +692,7 @@ hypersketch main()
     return best_dag;
 }
 
-hypersketch main_em_cond_branches_step(best_score, current_dag, file, num_trials, delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample)
+main_em_cond_branches_step(best_score, current_dag, file, num_trials, delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample)
 {
     int local_score = best_score;
     all_dags = [];
@@ -733,7 +733,7 @@ hypersketch main_em_cond_branches_step(best_score, current_dag, file, num_trials
             file.relabel(resynth_cond);
             local_dags = best_effort_programs(resynth_cond, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
-            all_dags.append(local_dags);
+            all_dags.push_back(local_dags);
 
             {
                 if(best_score < local_dags[0].first())
@@ -801,7 +801,7 @@ hypersketch main_em_cond_branches_step(best_score, current_dag, file, num_trials
             file.relabel(resynth_branches);
             local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
-            all_dags.append(local_dags);
+            all_dags.push_back(local_dags);
 
             {
                 if(best_score < local_dags[0].first())
@@ -869,7 +869,7 @@ hypersketch main_em_cond_branches_step(best_score, current_dag, file, num_trials
             file.relabel(resynth_branches);
             local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
-            all_dags.append(local_dags);
+            all_dags.push_back(local_dags);
 
             {
                 if(best_score < local_dags[0].first())
@@ -910,7 +910,7 @@ hypersketch main_em_cond_branches_step(best_score, current_dag, file, num_trials
 
 }
 
-hypersketch best_effort_programs(_harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold, old_ret_dags) {
+best_effort_programs(_harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold, old_ret_dags) {
 
     timestamp();
 
@@ -936,15 +936,15 @@ hypersketch best_effort_programs(_harness, file, num_trials, num_rows, float tim
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
-		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch hypersketch on the harness
+		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch on the harness
 		subset_file.clear();
 
 		//--{
 		    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
             int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
 		//--}
-        ret_dags.append(pair<int, SketchFunction>(score, program));
-        old_ret_dags.append(pair<int, SketchFunction>(score, program));
+        ret_dags.push_back(pair<int, SketchFunction>(score, program));
+        old_ret_dags.push_back(pair<int, SketchFunction>(score, program));
 		print(
 		    "trial", trial_id+1, "/", num_trials,
 		    "score", score, "/", file.size(), "%", ((float(100) * float(score)) / float(file.size())),
