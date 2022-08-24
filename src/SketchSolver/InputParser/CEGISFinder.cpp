@@ -120,7 +120,6 @@ SATSolverResult CEGISFinder::find(
                 it->set_bit(i, (val==1) ? 1 : 0);
             }
             else {
-                assert(false);
                 it->set_bit(i, 0);
             }
 		}

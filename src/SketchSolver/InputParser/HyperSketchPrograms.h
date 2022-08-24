@@ -235,9 +235,11 @@ protected:
     // as a meta-level you want to meta-learn a synthesizer that can find solution within the minimal budget.
 
 
-    string frontier_to_string(const Frontier<int, SketchFunction *>& frontier) {
+    string frontier_to_string(const Frontier<int, SketchFunction *>& frontier, const string& label = "") {
         string ret;
-
+        if(label != "") {
+            ret += label + "\n";
+        }
         for (int i = 0; i < frontier.size(); i++) {
             std::vector<int> score = frontier[i].first;
             for (int j = 0; j < score.size(); j++) {
@@ -351,7 +353,7 @@ protected:
 
         vector<Frontier<int, SketchFunction *> > frontiers;
         Frontier<int, SketchFunction*> global_frontier = Frontier<int, SketchFunction*>(2);
-        for(float timeout_per_example = 2.0; timeout_per_example <= 3.0; timeout_per_example *= 1.5) {
+        for(float timeout_per_example = 0.2; timeout_per_example <= 100.0; timeout_per_example *= sqrt(2.0)) {
             float budget = timeout_per_example * num_examples;
 
             console << "START Running best_effort_frontier__3 with budget = " << budget << endl;
@@ -360,6 +362,8 @@ protected:
                     harness, file, budget, timeout_per_example, seed));
 
             auto& local_frontier = frontiers[frontiers.size()-1];
+
+            console << frontier_to_string(local_frontier, "local_frontier__t_"+std::to_string(timeout_per_example));
 
             console << "DONE Running best_effort_frontier__3 with budget = " << budget << endl;
             for(int i = 0;i<local_frontier.size();i++) {
@@ -371,12 +375,13 @@ protected:
                     console << "rejected" << endl;
                 }
             }
+
+            console << frontier_to_string(global_frontier, "global_frontier__t_"+std::to_string(timeout_per_example));
         }
 
         console << "FINAL OUTPUT" << endl;
 
-        for(int i = 0;i<frontiers.size();i++)
-        {
+        for(int i = 0;i<frontiers.size();i++) {
             console << "frontier_i" << i << endl;
             console << frontier_to_string(frontiers[i]) << endl;
             frontiers[i].clear();
