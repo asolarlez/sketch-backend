@@ -15,7 +15,9 @@ class File;
 
 namespace SolverLanguagePrimitives {
 
-    CEGISSolverResult solve(const SketchFunction* skfunc, const File* training_file, float timeout, const File* validation_file = nullptr);
+    CEGISSolverResult solve(
+            const SketchFunction* skfunc, const File* training_file,
+            float timeout, const File* validation_file = nullptr, const int* seed = nullptr);
 
     class ProblemAE {
         const File *training_file = nullptr;
@@ -88,9 +90,12 @@ namespace SolverLanguagePrimitives {
             return solver;
         }
 
-        WrapperAssertDAG(ProgramEnvironment* _env) :
+        WrapperAssertDAG(ProgramEnvironment* _env, const int* seed = nullptr) :
                 env(_env){
-            _pfind = ::SATSolver::solverCreate(env->params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
+            if(seed != nullptr) {
+                env->params.seed = *seed;
+            }
+            _pfind = ::SATSolver::solverCreate(env->params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG", env->params.seed);
             if (env->params.outputSat) {
                 _pfind->outputSAT();
             }

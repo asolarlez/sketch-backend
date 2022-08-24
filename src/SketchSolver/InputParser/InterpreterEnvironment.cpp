@@ -1009,7 +1009,8 @@ SATSolverResult InterpreterEnvironment::run_hypersketch(int inlineAmnt, const st
 //    string hypersketch_file_name = "solver_language_program__multi_harness_stun.txt";
 
     assert(currentControls.empty());
-    currentControls = solver_language.eval(params.hypersketch_file_path, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+    currentControls = solver_language.eval(params.hypersketch_file_path, program_env.function_map, file_name, floats,
+                                           params, hardcoder);
 
     for(const auto& it: program_env.function_map) {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.

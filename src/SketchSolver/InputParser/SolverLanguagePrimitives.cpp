@@ -219,7 +219,9 @@ CEGISSolverResult SolverLanguagePrimitives::WrapperBatchEvaluatorSolver::solve(S
     return CEGISSolverResult{solveCode, ret, solver_result.intermediate_solutions};
 }
 
-CEGISSolverResult SolverLanguagePrimitives::solve(const SketchFunction *skfunc, const File *training_file, float _timeout, const File *validation_file)
+CEGISSolverResult SolverLanguagePrimitives::solve(
+        const SketchFunction *skfunc, const File *training_file,
+        float _timeout, const File *validation_file, const int* seed)
 {
     vector<string> prev_holes = skfunc->get_deep_holes();
     SketchFunction* harness = skfunc->deep_exact_clone_and_fresh_function_map();
@@ -238,7 +240,7 @@ CEGISSolverResult SolverLanguagePrimitives::solve(const SketchFunction *skfunc, 
     assert(after_holes.size() == harness->get_dag()->getNodesByType(bool_node::CTRL).size());
 
     using namespace SolverLanguagePrimitives;
-    auto* solver = new WrapperAssertDAG(skfunc->get_env());
+    auto* solver = new WrapperAssertDAG(skfunc->get_env(), seed);
 
 //            assert(harness->get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
