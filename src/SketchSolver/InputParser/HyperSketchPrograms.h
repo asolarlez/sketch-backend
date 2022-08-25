@@ -40,7 +40,7 @@ protected:
             File *subset_file = file->produce_subset_file(num_rows);
             SketchFunction *program = harness->deep_clone();
             program->increment_shared_ptr();
-            CEGISSolverResult solver_result = solve(program, subset_file, timeout);
+            CEGISSolverResult solver_result = solve(program, subset_file, 1000000*timeout*num_rows, timeout);
             HoleVarStore* solution = solver_result.final_ctrl_var_store;
             program->make_executable(solution);
             int score = program->count_passing_inputs(file);
@@ -108,7 +108,7 @@ protected:
     }
 
     void add_to_frontier(
-            Frontier<int, SketchFunction*>& frontier, int trial_id, int find_step_id,
+            Frontier<int, SketchFunction*>& frontier, int subset_id, int trial_id, int find_step_id,
             const SketchFunction *_program, HoleVarStore* solution, File *file)
     {
         SketchFunction *concretized_program = _program->produce_concretization(solution, bool_node::CTRL);
@@ -120,7 +120,7 @@ protected:
         point.push_back(concretized_program->size());
 
         auto was_inserted = frontier.insert(point, concretized_program);
-        console << "insert #" << trial_id << " find_step_id #" << find_step_id << ": point(" << point[0] << ", " << point[1] << ")" << endl;
+        console << "insert trial_" << trial_id << " find_step_" << find_step_id << "  subset_" << subset_id << " : point(" << point[0] << ", " << point[1] << ")" << endl;
         if (was_inserted != nullptr) {
             console << "accepted" << endl;
         } else {
@@ -136,14 +136,15 @@ protected:
 
         Frontier<int, SketchFunction *> ret_frontier = Frontier<int, SketchFunction *>(2);
         for (int trial_id = 0; trial_id < num_trials; trial_id++) {
+            const int subset_id = trial_id;
             File *subset_file = file->produce_subset_file(num_rows);
             SketchFunction *program = harness->deep_clone();
             program->increment_shared_ptr();
-            CEGISSolverResult solver_result = solve(program, subset_file, timeout, file);
+            CEGISSolverResult solver_result = solve(program, subset_file, std::numeric_limits<long long>::max(), timeout, file);
             HoleVarStore* solution = solver_result.final_ctrl_var_store;
-            add_to_frontier(ret_frontier, trial_id, -1, program, solution, file);
+            add_to_frontier(ret_frontier, subset_id, trial_id, -1, program, solution, file);
             for(int find_step_id = 0;find_step_id<solver_result.intermediate_solutions.size();find_step_id++) {
-                add_to_frontier(ret_frontier, trial_id, find_step_id, program, solver_result.intermediate_solutions[find_step_id], file);
+                add_to_frontier(ret_frontier, subset_id, trial_id, find_step_id, program, solver_result.intermediate_solutions[find_step_id], file);
             }
             program->clear();
         }
@@ -254,64 +255,86 @@ protected:
         return ret;
     }
 
-    Frontier<int, SketchFunction *>
-    best_effort_frontier__3(const SketchFunction *harness, File *file, float budget, float timeout_per_example_float, int _seed) {
+    Frontier<int, SketchFunction *> best_effort_frontier__3(
+            const SketchFunction *harness, File *file,
+            float budget, float timeout_per_find, int num_examples_per_subset, int num_subsets, int _seed) {
         auto init_timestamp = chrono::steady_clock::now();
 
         Frontier<int, SketchFunction *> global_frontier = Frontier<int, SketchFunction *>(2);
-        vector<vector<int> > subsets;
-        int num_subsets = budget/timeout_per_example_float;
-        for(int i = 0;i<file->size();i+=(int)file->size()/num_subsets)
-        {
-            vector<int> singleton_subset;
-            singleton_subset.push_back(i);
-            subsets.push_back(singleton_subset);
-        }
+//        vector<vector<int> > subsets;
+//        int num_subsets = budget/timeout_per_example_float;
+//        for(int i = 0;i<min(num_subsets, (int)file->size());i++)
+//        {
+//            vector<int> singleton_subset;
+//            singleton_subset.push_back(i);
+//            subsets.push_back(singleton_subset);
+//        }
 
-        float timeout = budget/(float)subsets.size();
+//        int total_num_counterexamples = budget/timeout_per_find; // counterexample ~ attempt at integration
+//        int num_times_example_as_counterexample = total_num_counterexamples/num_examples_per_subset; // example ~ a person; subset ~ a party;
+        assert(num_subsets >= 1);
+
+        const float timeout_per_subset_float = budget/num_subsets;
+        const long long timeout_per_subset = timeout_per_subset_float * 1000000; // in microseconds (us)
 
         int successes = 0;
         int total_num_trials = 0;
 
         vector<Frontier<int, SketchFunction *> > frontier_per_subset =
-                vector<Frontier<int, SketchFunction *> >(subsets.size(), Frontier<int, SketchFunction *>(2));
-        for(int subset_id = 0;subset_id<subsets.size();subset_id++)
+                vector<Frontier<int, SketchFunction *> >(num_subsets, Frontier<int, SketchFunction *>(2));
+        for(int subset_id = 0;subset_id<num_subsets;subset_id++)
         {
+//            File* subset_file = new File();
+//            for(int j = 0; j < subsets[subset_id].size();j++) {
+//                subset_file->push_back(file->at(subsets[subset_id][j]));
+//            }
+            auto init_subset_timestep = chrono::steady_clock::now();
 
-            File* subset_file = new File();
-            for(int j = 0; j < subsets[subset_id].size();j++) {
-                subset_file->push_back(file->at(subsets[subset_id][j]));
+            vector<int> ids;
+            File* subset_file = file->produce_subset_file(num_examples_per_subset, &ids);
+
+            console << "subset_id #" << subset_id << " chosen ids: ";
+            for(int i = 0;i<ids.size();i++){
+                console << ids[i] << " ";
             }
+            console << endl;
+            console << "==================================" << endl;
 
-            long long timeout_per_example = timeout_per_example_float * 1000000; // in miliseconds
-
-            auto init_example_timestep = chrono::steady_clock::now();
-            auto spent_budget = elapsed_time(init_example_timestep);
+            auto spent_budget = elapsed_time(init_subset_timestep);
 
             int local_seed = _seed;
 
             auto& local_frontier = frontier_per_subset[subset_id];
 
-            while(spent_budget < timeout_per_example) {
+            int trial_id = 0;
+
+            while(spent_budget < timeout_per_subset) {
 
                 auto trial_init_timestamp = chrono::steady_clock::now();
                 SketchFunction *program = harness->deep_clone();
                 program->increment_shared_ptr();
 
-                CEGISSolverResult solver_result = solve(program, subset_file, timeout, file, &local_seed);
+                cout << "calling solve" << endl;
+//                cout << "calling solve(" << program->get_dag_name() << ", " << //todo: complete this debug line
+                CEGISSolverResult solver_result = solve(program, subset_file, timeout_per_subset-spent_budget, timeout_per_find, file, &local_seed);
                 local_seed++;
                 successes += solver_result.success;
                 HoleVarStore *solution = solver_result.final_ctrl_var_store;
-                add_to_frontier(local_frontier, subset_id, -1, program, solution, file);
+                console << "success: " << solver_result.success << endl;
+                add_to_frontier(local_frontier, subset_id, trial_id, -1, program, solution, file);
                 program->clear();
                 total_num_trials++;
-                console << "success rate: " << float((float) successes / (float) total_num_trials) << endl;
+                console << "success rate: " << 100.0 * successes / total_num_trials << " %" << endl;
 
-                spent_budget = elapsed_time(init_example_timestep);
-                console << "spent_budget " << spent_budget << " / " << timeout_per_example;
-                console << " (" << 100*((float)spent_budget/timeout_per_example) << " %)" << endl;
+                spent_budget = elapsed_time(init_subset_timestep);
+                console << "spent_budget " << spent_budget/1000 << " / " << timeout_per_subset/1000 << " (ms)";
+                console << " (" << 100*((float)spent_budget/timeout_per_subset) << " %)" << endl;
 
                 timestamp(trial_init_timestamp, "subset_id"+std::to_string(subset_id));
+
+                console <<  endl;
+
+                trial_id++;
             }
 
             console << "---------------------------------" << endl;
@@ -324,19 +347,28 @@ protected:
             }
 
             local_frontier.clear();
+
+            console << "==================================" << endl;
+
+            string subset_run_label = "subset_id_"+std::to_string(subset_id)+"_b"+std::to_string(timeout_per_subset);
+
+            console << elapsed_time_as_str(subset_run_label, init_subset_timestep) << endl;
+            timestamp(init_subset_timestep, subset_run_label);
         }
 
-        timestamp(init_timestamp, "best_effort_frontier__3__budget" + std::to_string((int)budget));
+        timestamp(init_timestamp, "best_effort_frontier__3___b" + std::to_string(budget));
 
         return global_frontier;
 
     }
 
     SketchFunction * main__best_effort_frontier__3(
-            const SketchFunction *harness, File* file, float budget, float timeout_per_example, int seed) {
+            const SketchFunction *harness, File* file,
+            float budget, float timeout_per_find,
+            int examples_per_subset, int num_subsets, int seed) {
         Frontier<int, SketchFunction *> ret_frontier =
                               best_effort_frontier__3(
-                                      harness, file, budget, timeout_per_example, seed);
+                                      harness, file, budget, timeout_per_find, examples_per_subset, num_subsets, seed);
 
         console << "ret_frontier:" << endl << frontier_to_string(ret_frontier) << endl;
 
@@ -348,24 +380,26 @@ protected:
     }
 
     SketchFunction * main__best_effort_frontier__4(
-            const SketchFunction *harness, File* file, int num_examples, int seed)
+            const SketchFunction *harness, File* file, float timeout_per_find, int num_examples_per_subset, int num_subsets, int seed)
     {
 
         vector<Frontier<int, SketchFunction *> > frontiers;
         Frontier<int, SketchFunction*> global_frontier = Frontier<int, SketchFunction*>(2);
-        for(float timeout_per_example = 0.2; timeout_per_example <= 100.0; timeout_per_example *= sqrt(2.0)) {
-            float budget = timeout_per_example * num_examples;
+        float budget_per_iter = 10.0;
+        for(int budget_id = 0; budget_id < 9; budget_id++, budget_per_iter *= 2) {
 
-            console << "START Running best_effort_frontier__3 with budget = " << budget << endl;
+            auto timestamp_init_run = std::chrono::steady_clock::now();
+
+            console << "START Running best_effort_frontier__3 with budget = " << budget_per_iter << endl;
 
             frontiers.push_back(best_effort_frontier__3(
-                    harness, file, budget, timeout_per_example, seed));
+                    harness, file, budget_per_iter, timeout_per_find, num_examples_per_subset, num_subsets, seed));
 
             auto& local_frontier = frontiers[frontiers.size()-1];
 
-            console << frontier_to_string(local_frontier, "local_frontier__t_"+std::to_string(timeout_per_example));
+            console << frontier_to_string(local_frontier, "local_frontier__b_"+std::to_string(budget_per_iter));
 
-            console << "DONE Running best_effort_frontier__3 with budget = " << budget << endl;
+            console << "DONE Running best_effort_frontier__3 with budget = " << budget_per_iter << endl;
             for(int i = 0;i<local_frontier.size();i++) {
                 console << "point(" << local_frontier.get_frontier()[i]->score_to_string() << ")" << endl;
                 auto was_inserted = global_frontier.insert(local_frontier[i].first, local_frontier[i].second);
@@ -376,7 +410,11 @@ protected:
                 }
             }
 
-            console << frontier_to_string(global_frontier, "global_frontier__t_"+std::to_string(timeout_per_example));
+            console << frontier_to_string(global_frontier, "global_frontier__b_"+std::to_string(budget_per_iter));
+
+            string run_label = "main_run_id_"+std::to_string(budget_id)+"_b_"+std::to_string(budget_per_iter);
+            console << elapsed_time_as_str(run_label, timestamp_init_run) << endl;
+            timestamp(timestamp_init_run, run_label);
         }
 
         console << "FINAL OUTPUT" << endl;
@@ -390,7 +428,7 @@ protected:
         console << "global_frontier" << endl;
         console << frontier_to_string(global_frontier) << endl;
 
-        console << performance_summary_to_string() << endl;
+        console << performance_summary_to_string(true) << endl;
 
         SketchFunction* ret_dag = global_frontier[0].second;
         ret_dag->increment_shared_ptr();
@@ -416,17 +454,19 @@ public:
         {
             SketchFunction *harness = sketch_main__Wrapper;
             File *file = new File(file_name, harness);
-            int num_examples = 3;
-            return main__best_effort_frontier__4(harness, file, num_examples, seed);
+            int total_num_subsets = 10;
+            int num_examples_per_subset = 1;
+            float timeout_per_find = 1.0;
+            return main__best_effort_frontier__4(harness, file, timeout_per_find, num_examples_per_subset, total_num_subsets, seed);
         }
         {
+            /// 1 example frontier learning.
             SketchFunction *harness = sketch_main__Wrapper;
             File *file = new File(file_name, harness);
 
             int num_examples = 10;
-            float timeout_per_example = 3.0;
-            float budget = timeout_per_example * num_examples;
-
+            float timeout_per_find = 3.0;
+            float budget = timeout_per_find * num_examples;
 
 //            float budget = float(1800);
 //            frontier:
@@ -449,7 +489,7 @@ public:
             //-231 39
             //-224 19
 
-            return main__best_effort_frontier__3(harness, file, budget, timeout_per_example, seed);
+            return main__best_effort_frontier__3(harness, file, budget, timeout_per_find, 1, num_examples, seed);
         }
 
         {

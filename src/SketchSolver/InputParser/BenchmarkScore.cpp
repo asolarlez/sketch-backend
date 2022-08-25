@@ -27,7 +27,7 @@ long long elapsed_time(std::chrono::steady_clock::time_point prev_timestamp) {
 
 string elapsed_time_as_str(string label, std::chrono::steady_clock::time_point prev_timestamp) {
     auto _now = chrono::steady_clock::now();
-    return label + std::to_string(chrono::duration_cast<chrono::microseconds>(_now - prev_timestamp).count()) + " (us)";
+    return label + " " + std::to_string(chrono::duration_cast<chrono::milliseconds>(_now - prev_timestamp).count()) + " (ms)";
 }
 
 //void print_performance_summary() {

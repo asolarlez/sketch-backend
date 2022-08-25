@@ -895,7 +895,7 @@ int InterpreterEnvironment::doallpairs() {
 				auto tohardcode = holesToHardcode[i];
 				for (auto holes = tohardcode.begin(); holes != tohardcode.end(); ++holes) {
 					Tvalue& tv = finder->getControl(*holes);
-					auto val = solver->ctrlStore[*holes];
+					auto val = solver->ctrl_store[*holes];
 					hardcoder.settleHole(*holes, val);
 					if (tv.isSparse()) {
 						for (int idx = 0; idx < tv.size(); ++idx) {
@@ -1069,12 +1069,12 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
         deductive.symbolicSolve(*this->finder);
 
 
-        solver->ctrlStore.synths.clear();
+        solver->ctrl_store.synths.clear();
         auto end = this->finder->get_sins().end();
         for (auto it = this->finder->get_sins().begin(); it != end; ++it) {
-            solver->ctrlStore.synths[it->first] = it->second;
+            solver->ctrl_store.synths[it->first] = it->second;
         }
-        solver->ctrlStore.finalizeSynthOutputs();
+        solver->ctrl_store.finalizeSynthOutputs();
         recordSolution();
         return SAT_SATISFIABLE;
     }
@@ -1083,7 +1083,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
     int solveCode = 0;
     try {
 
-        solveCode = solver->solve(numeric_limits<unsigned long long>::max()).success;
+        solveCode = solver->solve().success;
         if (solveCode || !hasGoodEnoughSolution) {
             recordSolution();
         }
@@ -1216,12 +1216,12 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
 		deductive.symbolicSolve(*this->finder);	
 		
 
-		solver->ctrlStore.synths.clear();
+		solver->ctrl_store.synths.clear();
 		auto end = this->finder->get_sins().end();
 		for (auto it = this->finder->get_sins().begin(); it != end; ++it) {
-			solver->ctrlStore.synths[it->first] = it->second;
+			solver->ctrl_store.synths[it->first] = it->second;
 		}
-		solver->ctrlStore.finalizeSynthOutputs();
+		solver->ctrl_store.finalizeSynthOutputs();
 		recordSolution();
 		return SAT_SATISFIABLE;
 	}

@@ -743,7 +743,12 @@ SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *st
 
             auto* problem = new ProblemAE(harness, file);
 
-            CEGISSolverResult solver_result = (solver)->solve(problem, find_solve_max_timeout_in_microseconds);
+            CEGISSolverResult solver_result =
+                    (solver)->solve(
+                            problem,
+                            numeric_limits<unsigned long long>::max(),
+                            find_solve_max_timeout_in_microseconds);
+
             HoleVarStore* sol = solver_result.final_ctrl_var_store;
             assert(sol->size() == after_holes.size());
             for(const auto& hole_name : after_holes) {

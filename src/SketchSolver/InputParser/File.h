@@ -104,7 +104,7 @@ public:
 
     explicit File(const VarStore& _controls)
     {
-        const int num_bits = _controls.getBitsize();
+        const int num_bits = _controls.get_bit_size();
 
         assert(num_bits <= 16); // otherwise too many inputs.
         for(int _i = 0; _i < (1<<num_bits); _i++)
@@ -338,18 +338,20 @@ public:
         }
     }
 
-    File *produce_subset_file(int num_rows) {
-        if(false) {
-            //DEBUG VERSION TO SEE WHICH IDs ARE CHOSEN
+    File *produce_subset_file(int num_rows, vector<int>* _sample_ids = nullptr) {
+        if(_sample_ids != nullptr) {
+            assert(_sample_ids->empty());
             vector<int> ids;
             for (int i = 0; i < size(); i++) {
                 ids.push_back(i);
             }
-            vector<int> sample_ids;
+            vector<int>& sample_ids = *_sample_ids;
             sample(ids.begin(), ids.end(), back_inserter(sample_ids),
                    num_rows, generator);
             File *new_file = new File(generator);
-
+            for(int i = 0;i<sample_ids.size();i++) {
+                new_file->push_back((*this)[sample_ids[i]]->clone());
+            }
 #ifdef CHECK_FILE_INVARIANT
             new_file->used = vector<int>(new_file->size(), 0);
 #endif

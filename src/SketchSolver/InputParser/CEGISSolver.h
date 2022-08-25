@@ -63,7 +63,7 @@ protected:
     vector<const File*> files;
 
 	void declareControl(CTRL_node* cnode);
-    CEGISSolverResult solveCore(unsigned long long find_solve_max_timeout_in_microseconds, const File* validation_file);
+
 
 //-- internal wrappers arround the checker methods
     const BooleanDAG* getProblemDAG()
@@ -76,9 +76,9 @@ protected:
         return checker->getProblem();
     }
 
-	bool problemStack_is_empty()
+	bool problem_stack_is_empty()
 	{
-		return checker->problemStack_is_empty();
+		return checker->problem_stack_is_empty();
 	}
 
 	vector<Tvalue>& get_check_node_ids()
@@ -97,7 +97,7 @@ public:
         last_input.clear();
     }
 
-	VarStore ctrlStore;
+	VarStore ctrl_store;
     map<string, string> current_hole_name_to_original_hole_name;
 
 	CEGISSolver(CEGISFinderSpec* _finder, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
@@ -105,24 +105,21 @@ public:
 	floats(_floats),
 	params(args),
 	checker(new CEGISChecker(args, _hc, _floats)),
-	hc(_hc)
-	{
-	//	cout << "miter:" << endl;
-	//	miter->lprint(cout);
-			
-	}
+	hc(_hc) {}
+
 	~CEGISSolver(void);
 	void addProblem(BooleanDagLightUtility *harness, const File *file);
 
-
-    const ElapsedTime& get_last_elapsed_time()
-    {
+    const ElapsedTime& get_last_elapsed_time() {
         return last_elapsed_time;
     }
 
-	virtual CEGISSolverResult solve(unsigned long long find_solve_max_timeout_in_microseconds, const File* validation_file = nullptr);
+	virtual CEGISSolverResult solve(
+            const long long _budget = numeric_limits<unsigned long long>::max(),
+            const long long find_solve_max_timeout_in_microseconds = numeric_limits<unsigned long long>::max(),
+            const File* validation_file = nullptr);
+
 	void print_control_map(ostream& out);
-	
 
 	bool solveFromCheckpoint(istream& in);
 
