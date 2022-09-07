@@ -120,7 +120,7 @@ private:
 	
 
     public:
-    enum Type {NO_TYPE, AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} ;
+    enum Type {NO_TYPE, AND, OR, XOR, SRC, DST, NOT, CTRL, PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} ;
 	typedef bool_node** parent_iter;
 
     const Type type;

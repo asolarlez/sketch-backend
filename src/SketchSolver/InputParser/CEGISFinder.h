@@ -123,6 +123,10 @@ class CEGISFinderNumerical: public CEGISFinderSpec
 
     REASSolver* reasSolver = NULL;
 
+    void clear() override {
+        delete reasSolver;
+    }
+
 	SATSolverResult assertDAGNumerical(
 		BooleanDAG* dag, map<string, string>& currentControls, map<string, int>& currentControlInts, map<string, float>& currentControlFloats) {
 
