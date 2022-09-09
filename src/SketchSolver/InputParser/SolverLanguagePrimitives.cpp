@@ -18,14 +18,14 @@ CEGISSolverResult SolverLanguagePrimitives::WrapperAssertDAG::solve(
 
     const File* file = nullptr;
 
+    if(problem->has_file()) {
 #ifdef USE_GENERIC_FILE
         File *predicted_file = new File(problem->get_harness(), problem->get_generic_file(), floats, params.seed);
         file = predicted_file;
 #else
         file = problem->get_file();
 #endif
-
-    assert(file != nullptr);
+    }
 
     solver->addProblem(problem->get_harness(), file);
 

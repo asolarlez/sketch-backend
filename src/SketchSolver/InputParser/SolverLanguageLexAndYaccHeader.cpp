@@ -676,7 +676,7 @@ SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *st
         }
         case _sat_solver:
         {
-            assert(params.size() == 2 || params.size() == 3);
+            assert(params.size() == 1 || params.size() == 2 || params.size() == 3);
 
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
@@ -709,13 +709,15 @@ SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *st
 
             FILE_TYPE* file = nullptr;
 
+            if(params.size() >= 2) {
 #ifdef USE_GENERIC_FILE
-            file = params[1]->eval(state)->get_generic_file();
+                file = params[1]->eval(state)->get_generic_file();
 #else
-            file = params[1]->eval(state)->get_file();
-            assert(file->like_unused());
+                file = params[1]->eval(state)->get_file();
+                assert(file->like_unused());
 #endif
-            assert(file != nullptr);
+                assert(file != nullptr);
+            }
 
             using namespace SolverLanguagePrimitives;
             auto* solver = new WrapperAssertDAG(skfunc->get_env());
@@ -768,10 +770,13 @@ SL::VarVal* SL::FunctionCall::eval_global<HyperSketchState>(HyperSketchState *st
                 param_var_val->decrement_shared_ptr();
             }
 
+            if(file != nullptr) {
+                assert(params.size() >= 2);
 #ifndef USE_GENERIC_FILE
-            file->reset();
-            assert(file->like_unused());
+                file->reset();
+                assert(file->like_unused());
 #endif
+            }
             harness->clear();
             solver->clear();
             delete problem;
@@ -919,7 +924,7 @@ template<typename StateType>
 SL::VarVal* SL::FunctionCall::eval(StateType *state)
 {
 
-//    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+    cout << "|ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {

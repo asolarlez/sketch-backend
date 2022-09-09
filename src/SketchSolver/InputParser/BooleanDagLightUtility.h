@@ -26,7 +26,7 @@ private:
     mutable bool cleared = false;
     mutable int num_shared_ptr = 1;
 
-    string dag_name;
+    mutable string dag_name;
     int dag_id;
 
     VarStore* var_store = nullptr;
@@ -37,7 +37,7 @@ private:
 
 protected:
 
-    void rename_dag(string new_name)
+    void rename_dag(string new_name) const
     {
         assert(name_to_count.find(dag_name) != name_to_count.end());
         name_to_count[dag_name]--;
@@ -178,9 +178,10 @@ public:
         return unconc_hole_original_name_to_name;
     }
 
-    const VarStore* get_var_store() const {
+    VarStore * get_var_store() const {
         return var_store;
     }
+
 
     explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy):
             dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), unconc_hole_original_name_to_name(to_copy->unconc_hole_original_name_to_name) {
@@ -189,10 +190,6 @@ public:
         init();
         if(to_copy->var_store != nullptr) {
             var_store = to_copy->var_store->clone();
-        }
-        if(inlining_tree_id == 0)
-        {
-            cout << "here" << endl;
         }
     }
 
@@ -209,10 +206,6 @@ public:
     }
 
     void increment_num_shared_ptr() {
-        if(inlining_tree_id == 0)
-        {
-            cout << "here" << endl;
-        }
         num_shared_ptr++;
     }
 };
@@ -823,7 +816,7 @@ public:
             var_store = _var_store;
         }
 
-        assert(get_dag()->check_ctrl_node_source_dag_naming_invariant());
+//        assert(get_dag()->check_ctrl_node_source_dag_naming_invariant());
 
         if (new_way) {
             assert(var_store != nullptr);

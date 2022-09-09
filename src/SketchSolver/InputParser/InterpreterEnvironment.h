@@ -92,19 +92,19 @@ public:
 };
 
 
-struct spskpair {
+struct SpecSketchFile {
 	const string spec;
 	const string sketch;
 	const string file;
 
-	spskpair(const string& _spec, const string& _sketch, const string& _file):
+	SpecSketchFile(const string& _spec, const string& _sketch, const string& _file):
 	spec(_spec),
 	sketch(_sketch),
 	file(_file)
 	{
 
 	}
-	spskpair(const string& _spec, const string& _sketch) :
+	SpecSketchFile(const string& _spec, const string& _sketch) :
 		spec(_spec),
 		sketch(_sketch),
 		file("")
@@ -210,17 +210,17 @@ public:
 		hasGoodEnoughSolution = false;
 	}
 
-	vector<spskpair > spskpairs;
+	vector<SpecSketchFile > spskpairs;
 
-    SATSolverResult run_hypersketch(int inlineAmnt, const string& file_name);
+    SATSolverResult run_hypersketch(int inlineAmnt, const SpecSketchFile&);
 
 	void addspskpair(const string& spec, const string& sketch) {
-		spskpairs.push_back(spskpair(spec, sketch));
+		spskpairs.push_back(SpecSketchFile(spec, sketch));
 	}
 
 
 	void addspskpair(const string& spec, const string& sketch, const string& file) {
-		spskpairs.push_back(spskpair(spec, sketch, file));
+		spskpairs.push_back(SpecSketchFile(spec, sketch, file));
 	}
 
 	int doallpairs();
@@ -363,7 +363,7 @@ public:
 	void fixes(const string& holename);
 
 	BooleanDAG* getCopy(const string& s) {
-		return functionMap[s]->clone();
+		return functionMap[s]->clone(functionMap[s]->get_name(), false);
 	}
 
 	/**

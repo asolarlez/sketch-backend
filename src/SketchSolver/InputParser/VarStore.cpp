@@ -394,10 +394,11 @@ bool VarStore::contains(const objP &obj, vector<string> *path) const
     return true;
 }
 
-map<string, string> VarStore::to_map_str_str(FloatManager& floats) {
-    VarStore& ctrlStore = *this;
+map<string, string> VarStore::to_map_str_str(FloatManager& floats) const {
+    const VarStore& ctrlStore = *this;
     map<string, string> values;
     for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
+
         stringstream str;
         if(it->otype == OutType::FLOAT)
         {
@@ -407,13 +408,19 @@ map<string, string> VarStore::to_map_str_str(FloatManager& floats) {
         {
             str << it->getInt();
         }
+        cout << it->get_name() << endl;
         values[it->get_name()] = str.str();
+    }
+    for(auto it : values)
+    {
+        cout << it.first << " "<< it.second << endl;
     }
     for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
         //stringstream str;
         Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
         //it->second->print(str);
-        values[it->first] = ctrlStore.synthouts[it->first];
+        assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end());
+        values[it->first] = ctrlStore.synthouts.at(it->first);
     }
     return values;
 }

@@ -30,6 +30,10 @@ namespace SolverLanguagePrimitives {
         explicit ProblemAE(BooleanDagLightUtility *_function, const File *_training_file = nullptr, const File* _validation_file = nullptr) :
                 skfunc(_function), training_file(_training_file), validation_file(_validation_file) {}
 
+        bool has_file() {
+            return training_file != nullptr;
+        }
+
         const File *get_file() {
             assert(training_file != nullptr);
             return training_file;

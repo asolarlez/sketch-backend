@@ -1113,6 +1113,7 @@ void SL::SketchFunction::set_dag_id_from_the_user(int dag_id_from_user_id) {
 }
 
 
+
 //SL::VarVal *SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, const string& _line)
 //{
 //    const VarStore* var_store = string_to_var_store(_line, skfunc);
@@ -1126,7 +1127,6 @@ SL::VarVal* SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, cons
     const BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
 
-    assert(skfunc->get_has_been_concretized());
     AssertDebug(skfunc->get_dag()->get_failed_assert() == nullptr, "YOU CAN'T EVALUATE A SKFUNC THAT HAS A FAILING ASSERT BEFORE EVEN PASSING THE INPUT.");
     assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
     assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
@@ -1144,7 +1144,7 @@ SL::VarVal* SketchFunctionEvaluator::eval(const SL::SketchFunction *skfunc, cons
     }
 
     NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
-    bool fails = node_evaluator.run(*the_var_store);
+    bool fails = node_evaluator.run(*the_var_store, true, true);
 
     the_var_store->clear();
     the_var_store = nullptr;

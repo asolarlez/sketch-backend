@@ -12,11 +12,16 @@ class FunctionMap;
 class FloatManager;
 class CommandLineArgs;
 class HoleHardcoder;
+namespace SL {
+    class SketchFunction;
+}
+using namespace SL;
 
 class SolverLanguage {
 public:
     SolverLanguage() = default;
-    map<string, string> eval(string hypersketch_file_path, FunctionMap &function_map, const string &file_name,
+    map<string, string> eval(const string& harness_name,  const string &hypersketch_file_path,
+                             const string& file_name, FunctionMap &function_map,
                              FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc);
 };
 

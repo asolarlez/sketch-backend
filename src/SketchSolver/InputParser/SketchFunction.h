@@ -258,6 +258,7 @@ namespace SL {
             get_dag()->mrprint(ss, true);
             return ss.str();;
         }
+
     };
 }
 #include "NodeEvaluator.h"

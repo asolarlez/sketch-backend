@@ -23,6 +23,9 @@ public:
     const VarStore* get_var_store() const {
         return var_store_used_for_concretization;
     }
+    VarStore* get_var_store_nonconst() const {
+        return var_store_used_for_concretization;
+    }
 
     BooleanDagUtility(BooleanDAG* _root_dag): BooleanDagLightUtility(_root_dag) {}
 

@@ -168,7 +168,9 @@ public:
   bool check_ctrl_node_source_dag_naming_invariant() const
   {
       for(auto it : getNodesByType(bool_node::CTRL)) {
-          assert(((CTRL_node*)it)->get_source_dag_name() == get_name());
+          auto left = ((CTRL_node*)it)->get_source_dag_name();
+          auto right  = get_name();
+          assert(left == right);
       }
       return true;
   }

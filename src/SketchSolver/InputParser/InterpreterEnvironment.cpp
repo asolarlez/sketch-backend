@@ -813,72 +813,89 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_run_hypersketch = params.hypersketch_file_path != "";
-
-        if(do_run_hypersketch)
-        {
-            cout << "RUNNING SOLVE PROGRAM AT: " << params.hypersketch_file_path << endl;
-            BooleanDagLightUtility::new_way = true; // indicates using InlinedAndConcretizer for concretization, rather than inlining ahead of time.
-            assert(howmany == 1);
-            //TODO: Incorporate: hardcoder.setCurHarness((int)i);
-            assert(spskpairs.size() >= 1);
-            string str = spskpairs[0].file;
-            for(int i = 1;i<spskpairs.size();i++)
-            {
-                assert(str == spskpairs[i].file);
-            }
-            result = run_hypersketch(inlineAmnt, spskpairs[0].file);
-            assert(result == SAT_SATISFIABLE);
-            return 0;
-            break;
-        }
-        else
+//        bool do_run_hypersketch = params.hypersketch_file_path != "";
+//
+//        if(do_run_hypersketch)
+//        {
+//            cout << "RUNNING SOLVE PROGRAM AT: " << params.hypersketch_file_path << endl;
+//            BooleanDagLightUtility::new_way = true; // indicates using InlinedAndConcretizer for concretization, rather than inlining ahead of time.
+//            assert(howmany == 1);
+//            //TODO: Incorporate: hardcoder.setCurHarness((int)i);
+//            assert(spskpairs.size() >= 1);
+//            string str = spskpairs[0].file;
+//            for(int i = 1;i<spskpairs.size();i++)
+//            {
+//                assert(str == spskpairs[i].file);
+//            }
+//            result = run_hypersketch(inlineAmnt, spskpairs[0].file);
+//            assert(result == SAT_SATISFIABLE);
+//            return 0;
+//            break;
+//        }
+//        else
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness((int)i);
 			try {
-                BooleanDagLightUtility::new_way = false;
-                ProgramEnvironment *program_env =
-			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
-
-                BooleanDAG* bd = nullptr;
-                bool use_prepareMiter = true;
-                if(use_prepareMiter) {
-                    bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-                }
-
-                BooleanDagLightUtility* local_harness = nullptr;
-                if(BooleanDagLightUtility::new_way) {
-                    bool inline_ahead_of_time = true;
-                    if(inline_ahead_of_time) {
-                        if(use_prepareMiter) {
-                            local_harness = new SketchFunction(bd, program_env);
-                        }
-                        else
-                        {
-                            local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
-                            local_harness->inline_this_dag();
-                        }
-                    }
-                    else {
-                        local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
-                    }
+                bool do_run_hypersketch = params.hypersketch_file_path != "";
+                if(do_run_hypersketch)
+                {
+                    cout << "RUNNING SOLVE PROGRAM AT: " << params.hypersketch_file_path << endl;
+                    BooleanDagLightUtility::new_way = true; // indicates using InlinedAndConcretizer for concretization, rather than inlining ahead of time.
+                    assert(spskpairs.size() >= 1);
+//                    string str = spskpairs[0].file;
+//                    for(int i = 1;i<spskpairs.size();i++)
+//                    {
+//                        assert(str == spskpairs[i].file);
+//                    }
+                    result = run_hypersketch(inlineAmnt, spskpairs[i]);
                 }
                 else {
-                    if(use_prepareMiter) {
-                        local_harness = new SketchFunction(bd, program_env);
+
+                    BooleanDagLightUtility::new_way = false;
+                    ProgramEnvironment *program_env =
+                            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
+
+                    BooleanDAG *bd = nullptr;
+                    bool use_prepareMiter = true;
+                    if (use_prepareMiter) {
+                        bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
                     }
-                    else
-                    {
-                        local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
-                        local_harness = local_harness->produce_inlined_dag(true);
+
+                    BooleanDagLightUtility *local_harness = nullptr;
+                    if (BooleanDagLightUtility::new_way) {
+                        bool inline_ahead_of_time = true;
+                        if (inline_ahead_of_time) {
+                            if (use_prepareMiter) {
+                                local_harness = new SketchFunction(bd, program_env);
+                            } else {
+                                local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                                local_harness->inline_this_dag();
+                            }
+                        } else {
+                            local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                        }
+                    } else {
+                        if (use_prepareMiter) {
+                            local_harness = new SketchFunction(bd, program_env);
+                        } else {
+                            local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                            local_harness = local_harness->produce_inlined_dag(true);
+                        }
                     }
-                }
 
 //                local_harness->get_dag()->lprint(cout);
 
-                result = assertHarness(local_harness, cout, spskpairs[i].file);
+                    result = assertHarness(local_harness, cout, spskpairs[i].file);
+                }
+
                 printControls("");
-			}
+
+                cout << "Final Controls:" << endl;
+                for(auto it : currentControls) {
+                    cout << "\t" << it.first <<" "<< it.second << endl;
+                }
+
+            }
 			catch (BadConcretization& bc) {
 				errMsg = bc.msg;
 				hardcoder.dismissedPending();
@@ -999,31 +1016,58 @@ SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->
 }
 */
 
-SATSolverResult InterpreterEnvironment::run_hypersketch(int inlineAmnt, const string& file_name)
+SATSolverResult InterpreterEnvironment::run_hypersketch(int inlineAmnt, const SpecSketchFile& spskpair)
 {
     ProgramEnvironment program_env =
             ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
+//    SL::SketchFunction *local_harness = nullptr;
+//    {
+//        // backwards-compatible cast to sketch harness.
+//        // todo: add @HyperSketch(".hsk") annotation for harnesses in the frontend.
+//        BooleanDagLightUtility::new_way = true;
+//
+//        BooleanDAG *bd = nullptr;
+//        bool use_prepareMiter = false;
+//        if (use_prepareMiter) {
+//            bd = prepareMiter(getCopy(spskpair.spec), getCopy(spskpair.sketch), inlineAmnt);
+//        }
+//
+//        if (BooleanDagLightUtility::new_way) {
+//            bool inline_ahead_of_time = false;
+//            if (inline_ahead_of_time) {
+//                if (use_prepareMiter) {
+//                    local_harness = new SL::SketchFunction(bd, &program_env);
+//                } else {
+//                    local_harness = new SL::SketchFunction(getCopy(spskpair.sketch), &program_env);
+//                    local_harness->inline_this_dag();
+//                }
+//            } else {
+//                local_harness = new SL::SketchFunction(getCopy(spskpair.sketch), &program_env);
+//            }
+//        } else {
+//            if (use_prepareMiter) {
+//                local_harness = new SL::SketchFunction(bd, &program_env);
+//            } else {
+//                local_harness = new SL::SketchFunction(getCopy(spskpair.sketch), &program_env);
+//                assert(false);// todo
+////                local_harness = local_harness->produce_inlined_dag(true);
+//            }
+//        }
+//    }
+
     SolverLanguage solver_language = SolverLanguage();
 
-//    string hypersketch_file_name = "solver_language_program__multi_harness_stun.txt";
-
     assert(currentControls.empty());
-    currentControls = solver_language.eval(params.hypersketch_file_path, program_env.function_map, file_name, floats,
-                                           params, hardcoder);
+    currentControls = solver_language.eval(
+            spskpair.sketch, params.hypersketch_file_path, spskpair.file,
+            program_env.function_map, floats,
+            params, hardcoder);
 
     for(const auto& it: program_env.function_map) {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.
     }
     delete &program_env.function_map; //.clear_assert_num_shared_ptr_is_0(); // at this point all dags are cleared.
-
-    printControls("");
-
-    cout << "Final Controls:" << endl;
-    for(auto it : currentControls)
-    {
-        cout << "\t" << it.first <<" "<< it.second << endl;
-    }
 
     return SAT_SATISFIABLE;
 }

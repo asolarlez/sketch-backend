@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.23)
 project(sketch)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS -O3)
 
 add_definitions(-D_NOGSL -D_NOSNOPT)
 

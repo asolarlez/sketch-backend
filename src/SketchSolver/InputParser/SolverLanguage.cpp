@@ -25,23 +25,21 @@ using namespace std;
 using namespace SL;
 
 map<string, string>
-SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, const string &file_name,
-                     FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc)
-{
+SolverLanguage::eval(const string& harness_name, const string &hypersketch_file_path, const string& file_name, FunctionMap &function_map,
+                     FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc) {
+
     int init_num_global_dags = BooleanDAG::get_allocated().size();
     int init_num_global_nodes = bool_node::get_allocated().size();
     int init_function_map_transformer_size = function_map.transformer_size();
 
     map<string, string> final_hole_values;
 
-    bool run_hsk_program = false;
+    bool run_hsk_program = true;
     bool run_hardcoded_synthesis_strategy = true;
 
-    if(run_hsk_program)
-    {
+    if(run_hsk_program) {
 
-        HyperSketchState state_abs =
-                HyperSketchState(function_map, file_name, floats, _args, _hc);
+        HyperSketchState state_abs = HyperSketchState(function_map, harness_name, file_name, floats, _args, _hc);
         HyperSketchState* state = &state_abs;
 
         assert(!state->function_map.empty());
@@ -59,8 +57,40 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
 
             SketchFunction *_concretized_function = var_val_ret->get_skfunc(false);
 
-            {
+            SketchFunction* local_harness = function_map[harness_name];
+//            local_harness->inline_this_dag();
 
+//            if(_concretized_function->get_var_store()->get_inlining_tree() == nullptr) {
+//                _concretized_function->get_inlining_tree()->get_var_store()->set_inlining_tree(
+//                        _concretized_function->get_inlining_tree_non_const());
+//            }
+
+//            auto var_store = _concretized_function->get_inlining_tree_non_const()->get_var_store();
+            auto sol = _concretized_function->get_solution();
+
+            auto local_harness_clone = new BooleanDagUtility(
+                    ((BooleanDagUtility*)local_harness)->_clone(true)->get_dag__non_const(),
+                    local_harness->get_env(), nullptr, false);
+            local_harness_clone->inline_this_dag();
+
+//            local_harness->inline_this_dag(true);
+            local_harness_clone->get_inlining_tree()->rename_var_store(*sol);
+            local_harness->inline_this_dag();
+            local_harness->get_inlining_tree()->rename_var_store(*sol);
+            local_harness->concretize_this_dag(sol, bool_node::CTRL);
+            local_harness->get_inlining_tree()->rename_var_store(*sol);
+
+            auto ret = local_harness->get_var_store()->to_map_str_str(floats);
+
+            cout << "PREDICT final hole->val map" << endl;
+            for(const auto& it: ret) {
+                cout << it.first << " "<< it.second<< endl;
+            }
+            cout << "done with hole->val map" << endl;
+
+            return ret;
+
+            {
                 File *file = new File(_concretized_function, file_name);
 
                 int num_passing_inputs =
@@ -256,6 +286,13 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
     fout_by_min << performance_summary_to_string(true) << endl;
     fout_by_min.flush();
     fout_by_min.close();
+
+    cout << "STATUSQUO final hole->val map" << endl;
+    for(const auto& it: final_hole_values) {
+        cout << it.first << " "<< it.second<< endl;
+    }
+    cout << "done with hole->val map" << endl;
+
 
     return final_hole_values;
 }

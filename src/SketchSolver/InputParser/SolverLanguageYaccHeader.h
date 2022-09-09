@@ -19,6 +19,7 @@ public:
     HoleHardcoder& hc;
 
     const string& file_name;
+    const string& harness_name;
 
     ofstream console_output = ofstream("hypersketch_console.out");
 
@@ -34,10 +35,15 @@ public:
         ProgramState::clear(true);
     }
 
-    HyperSketchState(FunctionMap &_function_map, const string &_file_name, FloatManager &_floats,
+//    HyperSketchState(FunctionMap &_function_map, const string &_file_name, FloatManager &_floats,
+//                     CommandLineArgs &_args, HoleHardcoder &_hc) :
+//            ProgramState(_function_map), file_name(_file_name),
+//            floats(_floats), args(_args), hc(_hc) {}
+
+    HyperSketchState(FunctionMap &_function_map, const string& _harness_name, const string &_file_name, FloatManager &_floats,
                      CommandLineArgs &_args, HoleHardcoder &_hc) :
             ProgramState(_function_map), file_name(_file_name),
-            floats(_floats), args(_args), hc(_hc) {}
+            floats(_floats), args(_args), hc(_hc), harness_name(_harness_name) {}
 
     void add_root(SL::Methods* _init_root) {
         init_root = _init_root;

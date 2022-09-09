@@ -1,0 +1,35 @@
+main()
+{
+    root = harness.deep_clone();
+    file = File(file_name, root);
+    t = float(4);
+    ret = root;
+
+    while(t < float(10250))
+    {
+        file.relabel(root);
+        solution = SATSolver(root, file, t);
+        tmp_root = root.produce_executable(solution);
+        ret = tmp_root;
+
+        program = tmp_root["sketch_main"]["get_error"];
+
+        file.relabel(program);
+        if(program.passes(file[0])) {
+            print(t, "err:", program(file[0]));
+        } else {
+            print(t, "get error fails");
+        }
+
+        file.relabel(tmp_root);
+        if(tmp_root.passes(file[0])) {
+            print("return");
+            return harness.produce_executable(solution);
+        }
+        else {
+            print(t, "root fails.");
+        }
+        t = t * float(2);
+    }
+    return ret;
+}

@@ -1,29 +1,74 @@
-pragma options "--fe-fpencoding TO_BACKEND";
-pragma options "--bnd-arr-size 4";
-pragma options "--bnd-unroll-amnt 4";
-// pragma options "--be:numericalsolver";
+pragma options "--bnd-arr-size 24";
+pragma options "--bnd-unroll-amnt 24";
+pragma options "--bnd-inbits 10";
+pragma options "--bnd-inline-amnt 9";
 
+generator int line_generator(int x) {
+    int num = (??(4)+-??(4));
+    int denum = (??(4));
+    assert(denum != 0);
+    assert(num % denum != 0);
 
-int predict(int x) {
-    return 2;
-    //return (float)x*?? + ??;
+    return (x*num)/denum + (??(6)+-??(6));
 }
 
-harness void sketch_main() {
-    int n = 4;
-    int[n] close = { 1, 1, 1, 1 };
-    int[n] _diffs = { ??, ??, ??, ?? };
+generator bit predicate_generator(int x)
+{
+    return x < ??(6);
+}
+
+generator int composite_program(int x, int depth) {
+    assert(depth >= 1);
+    if(predicate_generator(x)) {
+        return line_generator(x);
+    }
+    else {
+        return composite_program(x, depth-1);
+    }
+}
+
+int predict(int x)
+{
+    return composite_program(x, 9);
+}
+
+int get_error(int _n, int[_n] close)
+{
+
+    int n = 24;
+    assert(_n == n);
+
+    int[n] _predict = ??(7);
+    int[n] _diffs = ??(7);
+    int[n] _close = ??(7);
+
     int err = 0;
-    bit print_diff = 1;
-    int train_n = 4;
+    int train_n = n;
     for(int i = 0; i<train_n; i++) {
+        assert(_close[i] == close[i]);
+        assert(_predict[i] == predict(i));
         int diff = close[i] - predict(i);
-        //if(print_diff) {
-        //    assert(_diffs[i] == diff);
-        // }
+        if(diff < 0) {
+            diff *= -1;
+        }
+        assert(_diffs[i] == diff);
+        assert(diff < 10);
         err += diff;
     }
-    //int _err = ??;
-    //assert(_err == err);
-    assert(err < 10);
+    return err;
+}
+
+bit my_bool(int err)
+{
+    int err_bound = 200;
+    int _err = ??(10);
+    assert(_err == err);
+    return (err <= err_bound);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/trading_bot/timeseries.data")
+harness void sketch_main(int n, int[n] close) {
+    int err = get_error(n, close);
+    bit ret = my_bool(err);
+    //assert(ret);
 }

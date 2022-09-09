@@ -108,7 +108,7 @@ public:
         append_join(*this, v2);
     }
 
-    map<string, string> to_map_str_str(FloatManager& floats);
+    map<string, string> to_map_str_str(FloatManager& floats) const;
 
     const VarStore *produce_restrict(const vector<string>& subdomain) const;
 

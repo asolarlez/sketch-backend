@@ -2041,7 +2041,7 @@ lbool Solver::solve(const vec<Lit>& assumps, const unsigned long long max_num_mi
     unsigned long long prev_elapsed = 0;
     unsigned long long predict_next_elapsed_since_start = 0;
 
-    bool do_print = false;
+    bool do_print = PARAMS->verbosity >= 5;
 
     if(do_print) {
         cout << "in < main solver loop in Solver::solve in Solver.cpp >" << endl;

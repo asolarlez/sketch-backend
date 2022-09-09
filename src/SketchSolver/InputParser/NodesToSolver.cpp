@@ -878,7 +878,7 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 
 template<class COMPARE_KEY, typename THEOP> void
 NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
-{    
+{
 	bool_node* mother = node.mother();
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 
@@ -3104,10 +3104,9 @@ void NodesToSolver::process(BooleanDAG &bdag){
   
 	for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
-		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
+//		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
-		
 		//cout << (*node_it)->lprint() << "  ";
 		//const Tvalue& tv = node_ids[(*node_it)->id];
   //    if ((*node_it)->getOtype() == OutType::FLOAT && !tv.isBvect()) {
@@ -3148,6 +3147,8 @@ void NodesToSolver::process(BooleanDAG &bdag){
 		if(stopAddingClauses){
 			break;
 		}
+
 	}
+
 }
 

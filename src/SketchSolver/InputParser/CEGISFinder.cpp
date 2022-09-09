@@ -57,7 +57,7 @@ SATSolverResult CEGISFinder::find(
 	}
 
 	//Solve
-    bool do_print = false;
+    bool do_print = PARAMS->verbosity > 5;
     string CEGISFINDer_find_spec__as_str =
             "bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) in CEGISFinder.cpp";
     if(do_print) {
