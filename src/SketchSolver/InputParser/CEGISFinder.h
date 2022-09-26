@@ -251,7 +251,6 @@ public:
 	void declareControl(CTRL_node* cnode) override
 	{
 		//do nothing
-		return false;
 	}
 
 	void updateCtrlVarStore(VarStore& ctrlStore) override
