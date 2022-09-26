@@ -1,6 +1,6 @@
 #pragma once
 
-class CEGISparams{
+class CEGISParams{
 public:	
 	int iterlimit;
 	bool printDiag;
@@ -15,7 +15,7 @@ public:
 	bool superChecks;
 	bool lightVerif;
 	float sparseArray;	
-	CEGISparams(CommandLineArgs& args):
+	CEGISParams(CommandLineArgs& args):
 		printDiag(false),
 		nseeds(1),
 		NINPUTS(3),

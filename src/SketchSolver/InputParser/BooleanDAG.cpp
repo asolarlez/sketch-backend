@@ -10,7 +10,7 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
-
+#include "DagLikeProgramInterpreter.h"
 
 using namespace std;
 
@@ -19,10 +19,39 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 #ifdef SCHECKMEM
+size_t prev_num_dags = 0;
 set<BooleanDAG*> BooleanDAG::allocated;
-#endif 
+long long BooleanDAG::global_boolean_dag_id = 0;
+#endif
 
-BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(isModel_)
+string BooleanDAG::create_suffix(bool modify_name, long long int dag_id)
+{
+    if(modify_name) {
+//        if(dag_id == 698)
+//        {
+//            cout << "HERE" << endl;
+//        }
+        return "__id"+std::to_string(dag_id);
+    }
+    else {
+        return "";
+    }
+}
+
+string construct_name(const string& name_, const string& explicit_name, bool _is_clone, long long global_boolean_dag_id)
+{
+    if(explicit_name.empty())
+    {
+        return name_ + BooleanDAG::create_suffix(_is_clone, global_boolean_dag_id);
+    }
+    else
+    {
+        return explicit_name;
+    }
+}
+
+BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explicit_name, bool _is_clone):
+    name(construct_name(name_, explicit_name, _is_clone, global_boolean_dag_id)), isModel(isModel_), is_clone(_is_clone)
 {  
   is_layered=false;
   is_sorted=false;
@@ -34,15 +63,32 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(
   intSize = 2;
   useSymbolicSolver = false;
 #ifdef SCHECKMEM
-  cout<<"Checking allocation"<<endl;
   allocated.insert(this);
+  dag_id = global_boolean_dag_id++;
+  if(false) {
+    if(prev_num_dags != allocated.size()) {
+      cout << "---------------------" << endl;
+      cout << "NEW_DAG" << endl;
+      cout << "DAG_ID " << dag_id << endl;
+      cout << "DAG_NAME " << name << endl;
+      cout << "NUM_DAGS " << allocated.size() << endl;
+      cout << "NUM_NODES " << bool_node::get_allocated().size() << endl;
+      cout << "---------------------" << endl;
+      prev_num_dags = allocated.size();
+    }
+  }
 #endif
+
+//  if(dag_id == 362) {
+//     cout << "HERE" << endl;
+//  }
+
 }
 
 
 void BooleanDAG::growInputIntSizes(){
 	{
-		vector<bool_node*>& specIn = getNodesByType(bool_node::SRC);
+		auto specIn = getNodesByType(bool_node::SRC);
 		++intSize;
 		for(int i=0; i<specIn.size(); ++i){	
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
@@ -70,17 +116,18 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 
 
 
-void BooleanDAG::clear(){	
+void BooleanDAG::clear(){
 	if(ownsNodes){
 	  for(int i=0; i < nodes.size(); ++i){
-		  if (nodes[i] != NULL) {			  
+		  if (nodes[i] != nullptr) {
 			  delete nodes[i];
-			  nodes[i] = NULL;
+			  nodes[i] = nullptr;
 		  }
 	  }
 	}
   nodes.clear();
   named_nodes.clear();
+  delete this;
 }
 
 
@@ -207,7 +254,9 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 			named_nodes.erase(it);
 		}
 	}
-
+//    for (auto ctrl_it: this->getNodesByType(bool_node::CTRL)) {
+//        assert(ctrl_it->type == bool_node::CTRL);
+//    }
 	
 	//The assert list in nodesByType is left intentionally out of date, because it is rebuilt by cleanup later anyway.
 	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL ||  onode->type == bool_node::UFUN){
@@ -221,6 +270,9 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 			}
 		}			
 	}
+//    for (auto ctrl_it: this->getNodesByType(bool_node::CTRL)) {
+//        assert(ctrl_it->type == bool_node::CTRL);
+//    }
 	
 	nodes[i]->id = -22;
 	delete nodes[i];
@@ -455,7 +507,7 @@ void BooleanDAG::cleanUnshared(){
 				named_nodes.erase(it);
 			}
 		}
-  		onode->id = -22;	
+  		onode->id = -22;
   		delete onode;
 		nodes[i] = NULL;
 	}
@@ -543,7 +595,7 @@ void BooleanDAG::cleanup(){
 				nvec.erase(it);
 			}
 		}
-  		onode->id = -22;	
+  		onode->id = -22;
   		delete onode;		
   	}else{
 		tmpv[onode->id] = onode;
@@ -633,7 +685,7 @@ void BooleanDAG::change_mother(const string& mother, const string& son){
 
 void BooleanDAG::addNewNode(bool_node* node){
 	Assert( node != NULL, "null node can't be added.");
-	Assert( node->id != -22, "This node should not exist anymore");	
+	Assert( node->id != -22, "This node should not exist anymore");
 	node->id = nodes.size() + offset;
 	nodes.push_back(node);	
 	if(node->isInter()){
@@ -710,9 +762,29 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
   return tmp;
 }
 
+const vector<bool_node*> dummy_vec;
 
-vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t){
-	return 	nodesByType[t];
+const vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t) const{
+    if(nodesByType.find(t) != nodesByType.end()) {
+        return nodesByType.at(t);
+    }
+    else
+    {
+        return dummy_vec;
+    }
+}
+
+vector<CTRL_node*> BooleanDAG::get_CTRL_nodes() const {
+    vector<CTRL_node*> ret;
+    for(auto _it : getNodesByType(bool_node::CTRL))
+    {
+        ret.push_back((CTRL_node*)_it);
+    }
+    return ret;
+}
+
+vector<bool_node*>& BooleanDAG::getNodesByType_NonConst(bool_node::Type t){
+    return nodesByType[t];
 }
 
 
@@ -816,24 +888,26 @@ void BooleanDAG::print(ostream& out)const{
   out<<"}"<<endl;
 }
 
-void BooleanDAG::mrprint(ostream& out){
-  
-  out<<"dag "<< this->get_name()<<" :"<<endl;
-    for(map<string,OutType*>::iterator itr = OutType::tupleMap.begin(); itr != OutType::tupleMap.end(); ++itr){
-        out<<"TUPLE_DEF "<<itr->first;
-        vector<OutType*> entries = dynamic_cast<Tuple*>(itr->second)->entries;
-        for(int i=0;i< entries.size();i++){
-            out<<" "<<entries[i]->str();
+void BooleanDAG::mrprint(ostream& out, bool print_only_nodes){
+
+    if(!print_only_nodes) {
+        out << "dag " << this->get_name() << " :" << endl;
+        for (map<string, OutType *>::iterator itr = OutType::tupleMap.begin(); itr != OutType::tupleMap.end(); ++itr) {
+            out << "TUPLE_DEF " << itr->first;
+            vector<OutType *> entries = dynamic_cast<Tuple *>(itr->second)->entries;
+            for (int i = 0; i < entries.size(); i++) {
+                out << " " << entries[i]->str();
+            }
+            out << endl;
+            out.flush();
         }
-        out<<endl;
-        out.flush();
     }
-  for(int i=0; i<nodes.size(); ++i){
-  	if(nodes[i] != NULL){
-  		out<<nodes[i]->mrprint()<<endl;
-  	}    
-  }
-  out.flush();
+    for(int i=0; i<nodes.size(); ++i) {
+        if (nodes[i] != NULL) {
+            out << nodes[i]->mrprint() << endl;
+        }
+    }
+    out.flush();
 }
 
 string smt_op(bool_node::Type t){
@@ -998,16 +1072,16 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 }
 
 void BooleanDAG::smt_exists_print(ostream &out){
-	string asserted = "";
-	string exists = "";
+	string asserted;
+	string exists;
 	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
 	getCTRLasserts(ctrls,asserted,exists,false);
 	out<<exists;
 	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
-	Assert(srcs.size() == 0, "Cannot have SRC nodes here");
+	Assert(srcs.empty(), "Cannot have SRC nodes here");
 	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
-	string assert_str = "";
-	string pre ="";
+	string assert_str;
+	string pre;
 	getAssertStr(assert_nodes, assert_str, asserted,pre);
 
 	//output all asserts after declaring each node
@@ -1029,7 +1103,7 @@ void BooleanDAG::smt_exists_print(ostream &out){
 
 
 void BooleanDAG::lprint(ostream& out){    
-	out<<"dag"<< this->get_name() <<"{"<<endl;
+	out<<"dag "<< this->get_name() <<"{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
   	if(nodes[i] != NULL){
   		out<<nodes[i]->lprint()<<endl;
@@ -1087,7 +1161,7 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 	if(this->intSize != bdag->intSize){
 		// give priority to intsize of new dag.
 		intSize = bdag->intSize;
-		vector<bool_node*>& sn = getNodesByType(bool_node::SRC);
+		auto sn = getNodesByType(bool_node::SRC);
 		for(int i=0; i<sn.size(); ++i){
 			INTER_node* inter = dynamic_cast<INTER_node*>((sn[i]));
 			if(inter->get_nbits()>1 && inter->get_nbits() < bdag->intSize){
@@ -1290,8 +1364,11 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 	int nnodes = 0;
 	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
 		if( (*node_it) != NULL ){		
-			Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
-			bool_node* bn = (*node_it)->clone(false);
+			AssertDebug( (*node_it)->id != -22 , "This node has already been deleted " + (*node_it)->get_name() );
+            Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
+            bool_node* bn = (*node_it)->clone(false);
+            assert(bn->type == (*node_it)->type);
+            assert(bn->id == (*node_it)->id);
 			
 			if( dl != NULL && isDllnode(bn) ){
 				dl->append(getDllnode(bn));
@@ -1299,7 +1376,8 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 			Dout( cout<<" node "<<(*node_it)->get_name()<<" clones into "<<bn->get_name()<<endl );
 			nstore[nnodes] = bn;
-			nnodes++;
+			assert(bn->id == nnodes);
+            nnodes++;
 		}else{
 			Assert( false, "The graph you are cloning should not have any null nodes.");
 		}
@@ -1315,10 +1393,43 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 
 
-BooleanDAG* BooleanDAG::clone(){
+BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_holes, const map<string, string>* _hole_renaming_map){
+
+    if(!rename_holes) {
+        AssertDebug(_hole_renaming_map == nullptr, "IF YOU ARE NOT RENAME HOLES, YOU MUSTN'T PASS A _hole_renaming_map");
+    }
+    if(_hole_renaming_map != nullptr) {
+        AssertDebug(rename_holes, "IF YOU ARE PASSING A _hole_renaming_map, YOU MUST rename_holes");
+        set<string> all_hole_names;
+        for (const auto& it: *_hole_renaming_map) {
+            AssertDebug(all_hole_names.find(it.second) == all_hole_names.end(), "ALL NEW HOLE NAMES MUST BE UNIQUE.");
+            all_hole_names.insert(it.second);
+        }
+    }
+
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
+        it != nodesByType.end(); ++it){
+        for(int i=0; i<it->second.size(); ++i){
+            assert(nodes[it->second[i]->id] == it->second[i]);
+        }
+    }
 	Dout( cout<<" begin clone "<<endl );
-	BooleanDAG* bdag = new BooleanDAG(name, isModel);
+
+	BooleanDAG* bdag = new BooleanDAG(name, isModel, explict_name, true);
 	relabel();
+
+    if(dag_id_from_the_user != -1)
+    {
+        bdag->set_dag_id_from_the_user(dag_id_from_the_user);
+    }
+
+
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
+        it != nodesByType.end(); ++it){
+        for(int i=0; i<it->second.size(); ++i){
+            assert(nodes[it->second[i]->id] == it->second[i]);
+        }
+    }
 
 	clone_nodes(bdag->nodes, &bdag->assertions);
 
@@ -1329,40 +1440,465 @@ BooleanDAG* BooleanDAG::clone(){
 	bdag->intSize = intSize;
 	bdag->useSymbolicSolver = useSymbolicSolver;
 
-	for(map<string, INTER_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
-		Assert( it->second->id != -22 , "This node has already been deleted "<<it->first<<endl );
-		Assert( bdag->nodes.size() > it->second->id, " Bad node  "<<it->first<<endl );
-		bdag->named_nodes[it->first] = dynamic_cast<INTER_node*>(bdag->nodes[it->second->id]);	
-	}
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
+        it != nodesByType.end(); ++it){
+        for(int i=0; i<it->second.size(); ++i){
+            assert(nodes[it->second[i]->id] == it->second[i]);
+        }
+    }
 	
-	for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin(); 
+	for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
 					it != nodesByType.end(); ++it){
 		vector<bool_node*>& tmp = bdag->nodesByType[it->first];
 		Assert( tmp.size() == 0, "This can't happen. This is an invariant.");
 		for(int i=0; i<it->second.size(); ++i){
-			Assert( it->second[i]->id != -22 , "This node has already been deleted "<<it->second[i]->get_name()<<endl );			
-			tmp.push_back( bdag->nodes[ it->second[i]->id ] );	
+            AssertDebug( it->second[i]->id != -22 , "This node has already been deleted " + it->second[i]->get_name() + "\n");
+			Assert( it->second[i]->id != -22 , "This node has already been deleted "<<it->second[i]->get_name()<<endl );
+            assert(bdag->nodes[ it->second[i]->id ]->type == it->first);
+            tmp.push_back( bdag->nodes[ it->second[i]->id ] );
 		}							
 	}
-	return bdag;
+
+    map<string, string> prev_name_to_new_name;
+    {
+
+        auto ctrls = bdag->getNodesByType(bool_node::CTRL);
+
+        map<string, string> hole_renaming_map;
+
+        if(rename_holes) {
+
+            if(_hole_renaming_map == nullptr) {
+                //_hole_renaming_map not specified, so use default.
+                for (auto &node: ctrls) {
+                    CTRL_node *ctrl = (CTRL_node *) node;
+                    string original_name = ctrl->get_original_name();
+                    if(original_name != "#PC") {
+                        assert(hole_renaming_map.find(original_name) == hole_renaming_map.end());
+                        hole_renaming_map[original_name] = ctrl->get_name() + create_suffix(true, bdag->dag_id);
+                    }
+                }
+            }
+            else {
+                //_hole_renaming_map specified, so use that.
+                hole_renaming_map = *_hole_renaming_map;
+            }
+        }
+        else {
+            assert(_hole_renaming_map == nullptr);
+        }
+
+        for (auto &node: ctrls) {
+            CTRL_node* ctrl = (CTRL_node*)node;
+            assert(ctrl->type == bool_node::CTRL);
+            string ctrl_name = ctrl->get_name();
+            if (ctrl->get_Pcond()) {
+                assert(ctrl_name == "#PC");
+                ctrl->set_dag_name(bdag->get_name());
+            } else {
+                assert(ctrl_name != "#PC");
+                if (ctrl_name.size() >= 3) {
+                    assert(ctrl_name.substr(0, 3) != "#PC");
+                }
+                if (rename_holes) {
+                    string prev_name = ctrl->get_name();
+                    string original_name = ctrl->get_original_name();
+                    string new_name = hole_renaming_map[original_name];
+
+                    assert(hole_renaming_map.find(original_name) != hole_renaming_map.end());
+                    if(_hole_renaming_map == nullptr) {
+                        assert(new_name == prev_name + create_suffix(true, bdag->dag_id));
+                    }
+
+                    ctrl->save_dag_name_and_update_ctrl_name(
+                            bdag->get_name(), new_name);
+                    assert(new_name == ctrl->get_name());
+                    assert(prev_name_to_new_name.find(prev_name) == prev_name_to_new_name.end());
+                    prev_name_to_new_name[prev_name] = new_name;
+
+                } else {
+                    string prev_name = ctrl->get_name();
+                    ctrl->save_dag_name_and_update_ctrl_name(
+                            bdag->get_name(), prev_name);
+                }
+            }
+        }
+    }
+
+    if(rename_holes) {
+        for(auto it : bdag->getNodesByType(bool_node::CTRL)) {
+            string actual_name = ((CTRL_node*)it)->get_name();
+            if(actual_name != "#PC") {
+                string var_name = ((CTRL_node *) it)->get_original_name();
+                string sub_dag_name = ((CTRL_node *) it)->get_source_dag_name();
+
+                assert(sub_dag_name == bdag->get_name());
+            }
+        }
+
+        for (map<string, INTER_node *>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it) {
+            AssertDebug(it->second->id != -22, "This node has already been deleted " + it->first + "\n");
+            Assert(it->second->id != -22, "This node has already been deleted " << it->first << endl);
+            AssertDebug(bdag->nodes.size() > it->second->id, " Bad node  " + it->first + "\n");
+            Assert(bdag->nodes.size() > it->second->id, " Bad node  " << it->first << endl);
+            if(prev_name_to_new_name.find(it->first) != prev_name_to_new_name.end())
+            {
+                assert(it->second->type == bool_node::CTRL);
+                assert(bdag->named_nodes.find(prev_name_to_new_name[it->first]) == bdag->named_nodes.end());
+                //changed name
+                assert(prev_name_to_new_name[it->first] != it->first);
+                bdag->named_nodes[prev_name_to_new_name[it->first]] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
+            }
+            else {
+                if(it->first != "#PC")
+                assert(it->second->type != bool_node::CTRL);
+                assert(bdag->named_nodes.find(it->first) == bdag->named_nodes.end());
+                //name hasn't been changed
+                bdag->named_nodes[it->first] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
+            }
+        }
+    }
+    else {
+        for (map<string, INTER_node *>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it) {
+            AssertDebug(it->second->id != -22, "This node has already been deleted " + it->first + "\n");
+            Assert(it->second->id != -22, "This node has already been deleted " << it->first << endl);
+            AssertDebug(bdag->nodes.size() > it->second->id, " Bad node  " + it->first + "\n");
+            Assert(bdag->nodes.size() > it->second->id, " Bad node  " << it->first << endl);
+            bdag->named_nodes[it->first] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
+        }
+    }
+
+    assert(bdag->check_ctrl_node_source_dag_naming_invariant());
+
+    return bdag;
 }
 
 
 void BooleanDAG::registerOutputs(){
-	 vector<bool_node*>& vn = getNodesByType(bool_node::DST);
+	 auto vn = getNodesByType(bool_node::DST);
 	 for(int i=0; i<vn.size(); ++i){
 		assertions.append( getDllnode(vn[i]) );
 	 }
 }
 
+void BooleanDAG::replace_label_with_another(const string replace_this, const string with_this) {
+    auto ufun_nodes = getNodesByType(bool_node::UFUN);
+    bool enter = false;
+    for(auto ufun_node : ufun_nodes){
+        assert(ufun_node->type == bool_node::UFUN);
+        if(((UFUN_node *) ufun_node)->get_ufun_name() == replace_this) {
+            ((UFUN_node*)ufun_node)->modify_ufname(with_this);
+            enter = true;
+        }
+    }
+    AssertDebug(enter, replace_this + " doesn't exist in " + name);
+}
+
+bool BooleanDAG::get_is_clone() {
+    return is_clone;
+}
+
+vector<string> BooleanDAG::get_ufun_names() const {
+    auto ufuns = getNodesByType(bool_node::UFUN);
+    vector<string> ret;
+    ret.reserve(ufuns.size());
+    for(auto it : ufuns)
+    {
+        ret.push_back(((UFUN_node *) it)->get_ufun_name());
+    }
+    return ret;
+}
+
+map<string, string> BooleanDAG::get_hole_assignment_map() {
+    map<string, string> hole_assignment_map;
+    for(const auto& _it: getNodesByType(bool_node::CTRL))
+    {
+        const CTRL_node* ctrl_node = (CTRL_node*)_it;
+        if(ctrl_node->get_name() != "#PC")
+        {
+            const string& var_name = ctrl_node->get_original_name();
+            const string& val_name = ctrl_node->get_name();
+            assert(hole_assignment_map.find(var_name) == hole_assignment_map.end());
+            hole_assignment_map[var_name] = val_name;
+        }
+    }
+    return hole_assignment_map;
+}
 
 
+#include "NodeEvaluator.h"
+#include "File.h"
+#include "BenchmarkScore.h"
+
+string zeros(int n)
+{
+    string ret = "";
+    for(int i = 0;i<n;i++) ret+= "0";
+    return ret;
+}
+
+#include "FileForVecInterp.h"
+#include "vectorized_interpreter_main.h"
+
+vector<bool> evaluate_inputs_baseline(BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
+{
+    for(int i = 0;i<repeats;i++) {
+        evaluate_inputs_baseline(dag, file, floats, 0);
+    }
+
+    NodeEvaluator node_evaluator(dag, floats);
+
+    vector<bool> ret(file->size());
+
+    string size_str = std::to_string(dag.size());
+    size_str = zeros(4-size_str.size()) + size_str;
+    int ground_truth_score = 0;
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+        ret[i] = !fails;
+        ground_truth_score += ret[i];
+    }
+//    timestamp(after_prep, "exec[baseline]_n"+size_str);
+    timestamp(after_prep, "exec[baseline]");
+
+    node_evaluator.reset_src_to_input_id();
+
+    return ret;
+}
+
+vector<bool> evaluate_inputs_vectorized_interpreter_assert_correctness(BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
+{
+
+    for(int i = 0;i<repeats;i++) {
+        evaluate_inputs_vectorized_interpreter_assert_correctness(dag, file, floats, 0);
+    }
+
+    NodeEvaluator node_evaluator(dag, floats);
+
+    vector<bool> ret(file->size());
+
+    string size_str = std::to_string(dag.size());
+    size_str = zeros(4-size_str.size()) + size_str;
+    int ground_truth_score = 0;
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+        ret[i] = !fails;
+        ground_truth_score += ret[i];
+    }
+    timestamp(after_prep, "exec[baseline]_n"+size_str);
+    timestamp(after_prep, "exec[baseline]");
+
+    //vectorized_interpreter part
+
+    stringstream dagstream;
+
+    dag.mrprint(dagstream, true);
+
+    cout << "GROUND_TRUTH_CHECKSUM: " << ground_truth_score << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+    auto start_reading_exhausitve_inputs = std::chrono::steady_clock::now();
+
+    string dag_string = dagstream.str();
+
+//    cout << "dagstream: " << dag_string << endl;
+
+    vector<VectorizedInterpreter::BaseType> batch_output =
+            VectorizedInterpreter::main(dag_string, *file->get_file_from_vectorized_interpreter());
+
+    int predicted_checksum = 0;
+    for(int i = 0;i<batch_output.size();i++)
+    {
+        assert(VectorizedInterpreter::is_bit(batch_output[i]));
+        predicted_checksum += batch_output[i];
+    }
+
+//    cout << "PREDICTED_CHECKSUM = " << predicted_checksum << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+    assert(ground_truth_score == predicted_checksum);
+
+    if(repeats != 0) {
+        assert(false);
+    }
+
+    node_evaluator.reset_src_to_input_id();
+
+    for(int i = 0;i<batch_output.size();i++) {
+        assert(ret[i] == batch_output[i]);
+    }
+
+    return ret;
+}
+
+vector<bool> evaluate_inputs_vectorized_interpreter(BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
+{
+    for(int i = 0;i<repeats;i++) {
+        evaluate_inputs_vectorized_interpreter(dag, file, floats, 0);
+    }
+
+    NodeEvaluator node_evaluator(dag, floats);
+
+    vector<bool> ret(file->size());
+
+    string size_str = std::to_string(dag.size());
+    size_str = zeros(4-size_str.size()) + size_str;
+    int ground_truth_score = 0;
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+        ret[i] = !fails;
+        ground_truth_score += ret[i];
+        break;
+    }
+    timestamp(after_prep, "prep_for_vecinterp");
+
+    //vectorized_interpreter part
+
+    stringstream dagstream;
+
+    dag.mrprint(dagstream, true);
+
+//    cout << "GROUND_TRUTH_CHECKSUM: " << ground_truth_score << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+    string dag_string = dagstream.str();
+
+//    cout << "dagstream: " << dag_string << endl;
+
+    vector<VectorizedInterpreter::BaseType> batch_output =
+            VectorizedInterpreter::main(dag_string, *file->get_file_from_vectorized_interpreter());
+
+//    int predicted_checksum = 0;
+//    for(int i = 0;i<batch_output.size();i++)
+//    {
+//        assert(VectorizedInterpreter::is_bit(batch_output[i]));
+//        predicted_checksum += batch_output[i];
+//    }
+
+//    cout << "PREDICTED_CHECKSUM = " << predicted_checksum << endl;
+//    cout << performance_summary_to_string(true) << endl;
+
+//    assert(ground_truth_score == predicted_checksum);
+
+    if(repeats != 0) {
+        assert(false);
+    }
+
+    node_evaluator.reset_src_to_input_id();
+
+    for(int i = 0;i<batch_output.size();i++) {
+        assert(VectorizedInterpreter::is_bit(batch_output[i]));
+        ret[i] = batch_output[i];
+    }
+
+    return ret;
+}
 
 
+vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats, int repeats) {
+//    return evaluate_inputs_vectorized_interpreter(*this, file, floats, 0);
+//    return evaluate_inputs_vectorized_interpreter_assert_correctness(*this, file, floats, 0);
+    return evaluate_inputs_baseline(*this, file, floats, 0);
+}
+
+int get_passing_input_id__w__vectorized_interpreter(BooleanDAG& dag, const File* _file, FloatManager& floats)
+{
+    NodeEvaluator node_evaluator(dag, floats);
+
+    string size_str = std::to_string(dag.size());
+    size_str = zeros(4-size_str.size()) + size_str;
+
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<_file->size();i++) {
+        VarStore* row_pointer = (VarStore*)_file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+        break;
+    }
+    timestamp(after_prep, "prep_for_vecinterp_main_get_id");
+
+    //vectorized_interpreter part
+
+    stringstream dagstream;
+    dag.mrprint(dagstream, true);
+    string dag_string = dagstream.str();
+
+    int rez = VectorizedInterpreter::main_get_passing_input_idx(
+            dag_string, *_file->get_file_from_vectorized_interpreter());
+
+    node_evaluator.reset_src_to_input_id();
+    return rez;
+
+//    auto file = _file->get_file_from_vectorized_interpreter();
+//    assert(file->size() % 2 == 0);
+//    const int stage_size = file->size()/2;
+//    vector<const VectorizedInterpreter::FileForVecInterp*> slices =
+//            file->get_slices(stage_size);
+//
+//    int sum = 0;
+//    for(int slice_id = 0;slice_id<slices.size();slice_id++) {
+//        vector<VectorizedInterpreter::BaseType> batch_output =
+//                VectorizedInterpreter::main(dag_string, *slices[slice_id]);
+//        for (int i = 0; i < batch_output.size(); i++) {
+//            if (batch_output[i]) {
+//                node_evaluator.reset_src_to_input_id();
+//                return i+sum;
+//            }
+//        }
+//        sum += slices[slice_id]->size();
+//    }
+//    node_evaluator.reset_src_to_input_id();
+//    return -1;
+
+}
+
+int get_passing_input_id__from_native_evaluator(BooleanDAG& dag, const File* file, FloatManager& floats)
+{
+    NodeEvaluator node_evaluator(dag, floats);
+
+    string size_str = std::to_string(dag.size());
+    size_str = zeros(4-size_str.size()) + size_str;
+
+    int ret = -1;
+
+    auto after_prep = chrono::steady_clock::now();
+    for(int i = 0;i<file->size();i++) {
+        VarStore* row_pointer = (VarStore*)file->at(i);
+        bool fails = node_evaluator.run(*row_pointer, false, true);
+
+        if(!fails)
+        {
+            ret = i;
+            break;
+        }
+    }
+    timestamp(after_prep, "exec_n"+size_str+"_m"+std::to_string(ret));
+
+    node_evaluator.reset_src_to_input_id();
+
+    return ret;
+}
+
+int BooleanDAG::get_passing_input_id(const File* file, FloatManager& floats)
+{
+    int ret_predicted = get_passing_input_id__w__vectorized_interpreter(*this, file, floats);
+//    int ret_ground_truth =  get_passing_input_id__from_native_evaluator(*this, file, floats);
+//    assert(ret_ground_truth == ret_predicted);
+    return ret_predicted;
+//    return ret_ground_truth;
+}
 
 
+void BooleanDAG::set_dag_id_from_the_user(int _dag_id_from_the_user) {
+    assert(dag_id_from_the_user == -1);
+    dag_id_from_the_user = _dag_id_from_the_user;
+}
 
-
-
-
-
+int BooleanDAG::get_dag_id_from_the_user() {
+    return dag_id_from_the_user;
+}

@@ -356,7 +356,7 @@ private:
 			}
 			case bool_node::UFUN: {
 				minterval = getInterval(((UFUN_node*)node)->multi_mother[0]);
-				const string& name = ((UFUN_node*)node)->get_ufname();
+				const string& name = ((UFUN_node *) node)->get_ufun_name();
 				if (name == "_cast_int_float_math") {
 					interval = Interval::i_cast_int_float(minterval);
 				} else if (name == "arctan_math") {
@@ -580,7 +580,7 @@ private:
 			case bool_node::UFUN: {
 				if (parent != ((UFUN_node*)node)->multi_mother[0]) return true;
 				pinterval = getInterval(((UFUN_node*)node)->multi_mother[0]);
-				const string& name = ((UFUN_node*)node)->get_ufname();
+				const string& name = ((UFUN_node *) node)->get_ufun_name();
 				if (name == "_cast_int_float_math") {
 					interval = Interval::i_cast_float_int(ninterval);
 				} else if (name == "arctan_math") {

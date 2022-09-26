@@ -28,7 +28,7 @@
 #endif
 
 using namespace std;
-// #define SCHECKMEM
+#define SCHECKMEM
 
 inline bool comp_id(bool_node* n1, bool_node* n2){
   unsigned int n1id = (unsigned int) n1->id;
@@ -51,12 +51,35 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
 
 //extern timerclass TTMMPP;
 
+class FloatManager;
+class File;
+
+string zeros(int n);
+
 class BooleanDAG  
 {
 private:
+    long long dag_id;
+    static long long global_boolean_dag_id;
 #ifdef SCHECKMEM
 	static set<BooleanDAG*> allocated;
+public:
+    static set<BooleanDAG*>& get_allocated()
+    {
+        return allocated;
+    }
 #endif
+    static string create_suffix(bool modify_name, long long int dag_id);
+    static long long get_global_boolean_dag_id()
+    {
+        return global_boolean_dag_id;
+    }
+    long long get_dag_id()
+    {
+        return dag_id;
+    }
+private:
+    int dag_id_from_the_user = -1;
 
   int n_inputs;
   int n_outputs;
@@ -74,6 +97,7 @@ private:
   
 
   const string name;
+  const bool is_clone;
   bool is_sorted; //The sorted property implies that everyone comes after their parents
   bool is_layered;  //The layered property implies that nodes are sorted by layer. is_layered implies is_sorted.
   
@@ -93,11 +117,13 @@ Dllist assertions;
   INTER_node* create_inputs(int n, OutType* type, const string& gen_name=string("INPUT"), int arrSz=-1, int tupDepth = -1);
   INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false, bool angelic = false, bool spConcretize = false, int max = -1, bool isFloat = false, bool isSpeical = false);
 
-  void growInputIntSizes();
+    void growInputIntSizes();
 
-  void disownNodes(){
-	  ownsNodes=false;
-  }
+    vector<CTRL_node*> get_CTRL_nodes() const;
+
+    void disownNodes(){
+        ownsNodes=false;
+    }
 
   int getIntSize(){
 	return intSize;
@@ -113,6 +139,13 @@ Dllist assertions;
 	
   //void nameNode(bool_node* node){ named_nodes[node->name] = node; }
 
+  bool check_ctrl_node_source_dag_naming_invariant() const
+  {
+      for(auto it : getNodesByType(bool_node::CTRL)) {
+          assert(((CTRL_node*)it)->get_source_dag_name() == get_name());
+      }
+      return true;
+  }
 
   ////////////////////////////////////////////////////////////////////////
   //Mutators for graph cleanup and refactoring.
@@ -152,7 +185,7 @@ Dllist assertions;
   
   bool_node* get_node(const string& name);  
   bool_node* unchecked_get_node(const string& name);
-  iterator begin(){ return nodes.begin(); }
+  iterator begin() { return nodes.begin(); }
   iterator end(){ return nodes.end(); }
 
   reverse_iterator rbegin(){ return nodes.rbegin(); }
@@ -164,8 +197,12 @@ Dllist assertions;
 	return bid < this->size() && bid >= 0 && bn == nodes[bid];
   }
 
+  vector<bool> evaluate_inputs(const File* file, FloatManager& floats, int repeats = 1);
+    int get_passing_input_id(const File* file, FloatManager& floats);
 
-  vector<bool_node*>& getNodesByType(bool_node::Type t);
+
+  const vector<bool_node*>& getNodesByType(bool_node::Type t) const;
+  vector<bool_node*>& getNodesByType_NonConst(bool_node::Type t);
 
 
   
@@ -231,12 +268,12 @@ Dllist assertions;
 
   void repOK();
 
-  BooleanDAG* clone();
-  void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=NULL);
+  BooleanDAG* clone(const string& explict_name = "", const bool rename_holes = false, const map<string, string>* = nullptr);
+  void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=nullptr);
 
   void print(ostream& out)const;
   void lprint(ostream& out);
-  void mrprint(ostream& out);
+  void mrprint(ostream& out, bool print_only_nodes = false);
   void smtlinprint(ostream& out, int &nbits);
   void smt_exists_print(ostream &out);
   void print_wrapper()const;
@@ -252,9 +289,33 @@ Dllist assertions;
 	  return useSymbolicSolver;
   }
 
-   BooleanDAG(const string& name_="anon", bool isModel_=false);
+   BooleanDAG(const string& name_="anon", bool isModel_=false, const string& explicit_name = "", bool is_clone = false);
 
 	virtual ~BooleanDAG();
+
+private:
+    ASSERT_node *failed_assert = nullptr;
+public:
+    void set_failed_assert(ASSERT_node *_failed_assert)
+    {
+        failed_assert = _failed_assert;
+    }
+    ASSERT_node* get_failed_assert()
+    {
+        return failed_assert;
+    }
+
+    void replace_label_with_another(const string replace_this, const string with_this);
+
+    bool get_is_clone();
+
+    vector<string> get_ufun_names() const;
+
+    map<string, string> get_hole_assignment_map();
+
+    void set_dag_id_from_the_user(int dag_id_from_the_user);
+
+    int get_dag_id_from_the_user();
 };
 
 

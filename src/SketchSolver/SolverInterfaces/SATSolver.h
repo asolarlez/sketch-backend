@@ -18,7 +18,30 @@ using namespace MSsolverNS;
 
 class Tvalue;
 
-class SATSolver {	
+enum SATSolverResult{
+    UNSPECIFIED,
+
+	SAT_UNDETERMINED,
+	SAT_UNSATISFIABLE,
+	SAT_SATISFIABLE,
+	SAT_TIME_OUT,
+	SAT_MEM_OUT,
+	SAT_ABORTED,
+};
+
+static const string SATSolverResultNames[7] =
+{
+	"SAT_UNDETERMINED",
+	"SAT_UNSATISFIABLE",
+	"SAT_SATISFIABLE",
+	"SAT_TIME_OUT",
+	"SAT_MEM_OUT",
+	"SAT_ABORTED",
+
+    "SAT_NOT_FULLY_CONCRETIZED"
+};
+
+class SATSolver {
 
 protected:
     string name;
@@ -31,6 +54,7 @@ protected:
      */
     const bool solveNegation;
 public:
+
 	bool isNegated(){
 		return solveNegation;
 	}
@@ -42,16 +66,7 @@ public:
 	virtual bool isOK()=0;
 	virtual bool assertIfPossible(int a)=0;
 
-    enum SATSolverResult{
-	UNDETERMINED,
-	UNSATISFIABLE,
-	SATISFIABLE,
-	TIME_OUT,
-	MEM_OUT,
-	ABORTED
-    };
-
-    SATSolver(const string& name_p, SolverMode smode):name(name_p), solveNegation(smode==CHECKER){		
+    SATSolver(const string& name_p, SolverMode smode):name(name_p), solveNegation(smode==CHECKER){
 	FileOutput( string nm = name; nm += ".circuit"; );
 	FileOutput( output.open(nm.c_str()) );		
     }
@@ -106,7 +121,7 @@ public:
     virtual bool ignoreOld()=0;
 
     
-    virtual SATSolverResult solve()=0;
+    virtual SATSolverResult solve(unsigned long long timeout_max_microseconds)=0;
 
     virtual void reset()=0;
     virtual void retractAssumptions()=0;

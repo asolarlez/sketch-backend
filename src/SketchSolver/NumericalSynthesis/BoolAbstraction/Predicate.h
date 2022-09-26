@@ -28,6 +28,7 @@ public:
     virtual void makeImpure() = 0;
     virtual bool isBasic() = 0;
     virtual bool isDiff() = 0;
+    virtual ~Predicate() {};
 };
 
 class BasicPredicate: public Predicate { // TODO: override equal 

@@ -3,8 +3,8 @@
 #include <iomanip>
 
 // Class for interpreter of BooleanDAG.
-NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats):
-functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p), floats(_floats)
+NodeEvaluator::NodeEvaluator(BooleanDAG &bdag_p, FloatManager &_floats) :
+trackChange(false), failedAssert(false), bdag(bdag_p), floats(_floats)
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
@@ -108,14 +108,6 @@ void NodeEvaluator::visit( ARR_W_node &node){
 	}else{
 		vecvalues[node.id] = new cpvec(vvin, idx, i(*node.getNewVal()));
 	}
-	if (false && node.id == 197) {
-		cout << node.lprint() << ":";
-		vecvalues[node.id]->print(cout);
-		cout << endl;
-		cout << node.getOldArr()->id << "{" << idx << "->" << i(*node.getNewVal()) << "} ";
-		vvin->print(cout);
-		cout << endl;
-	}
 }
 
 void NodeEvaluator::visit( ARR_CREATE_node &node){
@@ -127,7 +119,7 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 	}
 	vecvalues[node.id] = cpv;	
 	for(int t=0; t<sz; ++t){
-		cpv->vv[t] = i(*node.arguments(t));
+        (*cpv->mutable_vv).set_int_at_index(t, i(*node.arguments(t)));
 	}
 	// TODO xzl: temporarily disable -333
 	
@@ -144,14 +136,14 @@ void NodeEvaluator::visit( TUPLE_CREATE_node &node){
 		delete tuplevalues[node.id];
 	}
 	tuplevalues[node.id] = cpv;
-  Tuple* otp = (Tuple*)node.getOtype();
+    Tuple* otp = (Tuple*)node.getOtype();
 	for(int t=0; t<sz; ++t){
-    OutType* e = otp->entries[t];
-    if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
-      cpv->vv[t] = i(*node.get_parent(t));
-    } else {
-      cpv->vv[t] = (node.get_parent(t)->id);
-    }
+        OutType* e = otp->entries[t];
+        if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
+          cpv->vv[t] = i(*node.get_parent(t));
+        } else {
+          cpv->vv[t] = (node.get_parent(t)->id);
+        }
 	}
 	setbn(node, node.id );
     
@@ -172,15 +164,32 @@ void NodeEvaluator::visit( SRC_node& node ){
 		if(vecvalues[node.id] != NULL){
 			delete vecvalues[node.id];
 		}
-		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObj(node.get_name())));
+
+        assert(node.local_id_in_inputs);
+        assert(node.current_node_evaluator == this);
+		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObjConst(node.local_id_in_inputs)));
 		// for SRC arrays, anything beyond bounds are 0 by default
 		setbn(node, 0);
 	}else{
-		setbn(node, (*inputs)[node.get_name()]);	
-	}
+        assert(node.local_id_in_inputs >= 0);
+        assert(node.current_node_evaluator == this);
+        setbn(node, (*inputs)[node.local_id_in_inputs]);
+    }
 }
 void NodeEvaluator::visit( DST_node& node ){
-	setbn(node, i(*node.mother()));
+    if(false) {
+        cout << "SETTING DST_NODE " << node.lprint() << endl;
+        cout << "SETTING TO VALUE OF NODE " << node.mother()->lprint() << " " << node.mother()->get_tname() << endl;
+        cout << "NEW VAL = " << endl;
+        int to_set_to = i(*node.mother());
+        cout << "\t" << to_set_to << endl;
+    }
+    setbn(node, i(*node.mother()));
+    if(false) {
+        cout << "REALIZED" << endl;
+        cout << "\t" << getValue(node) << endl;
+        cout << "--" << endl;
+    }
 }
 void NodeEvaluator::visit( NOT_node& node ){
 	setbn(node, !b(*node.mother()));
@@ -188,7 +197,14 @@ void NodeEvaluator::visit( NOT_node& node ){
 void NodeEvaluator::visit( CTRL_node& node ){
 	// TODO xzl: will we encounter angelic array here?
 	//cout << "NodeEvaluator CTRL " << node.lprint() << " " << node.get_Angelic() << " " << node.getArrSz() << " " << node.get_nbits() << endl;
-	setbn(node, (*inputs)[node.get_name()]);
+
+    if(node_type == bool_node::CTRL) {
+        assert(node.local_id_in_inputs != -1);
+        assert(node.current_node_evaluator == this);
+        setbn(node, (*inputs)[node.local_id_in_inputs]);
+    } else {
+        setbn(node, (*inputs)[node.get_name()]);
+    }
 }
 
 
@@ -244,7 +260,7 @@ void NodeEvaluator::builtinRetVal(UFUN_node& node, int idxval) {
 
 
 bool NodeEvaluator::checkKnownFun(UFUN_node& node) {
-	const string& name = node.get_ufname();
+	const string& name = node.get_ufun_name();
 	if (name == "_cast_int_float_math") {
 		int val = i(*node.arguments(0));
 		builtinRetVal(node, floats.getIdx((float)val));
@@ -266,7 +282,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 	}
 
 
-	vector<pair<int, vector<int> > >& args = funargs[node.get_ufname()];
+	vector<pair<int, vector<int> > >& args = funargs[node.get_ufun_name()];
 	vector<int> cargs;
 	for(int ii=0; ii<node.nargs(); ++ii){
 		bool_node* pred = node.arguments(ii);
@@ -298,7 +314,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 
 	for (int j = 0; j < size ; j++) {
 		stringstream sstr;
-		sstr<<node.get_ufname()<<"_"<<node.get_uniquefid()<<"_"<<j;
+		sstr << node.get_ufun_name() << "_" << node.get_uniquefid() << "_" << j;
 		OutType* type = tuple_type->entries[j];
 		Assert(!type->isTuple, "NYS");
 		if(type->isArr){
@@ -306,7 +322,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 				if(vecvalues[node.id] != NULL){
 					delete vecvalues[node.id];
 				}
-				VarStore::objP& op = inputs->getObj(sstr.str());
+				auto op = inputs->getObjConst(sstr.str());
 				
 				vecvalues[node.id] = new cpvec(op.arrSize(), &(op));
 			}else{
@@ -328,7 +344,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 	vector<bool_node*>& mm = node.multi_mother;
 	visitArith(node);
 	VarStore tmp = inputs;
-	BooleanDAG* callee = functionMap[node.get_name()];
+	BooleanDAG* callee = function_map[node.get_name()];
 	vector<bool_node*>& inodes = callee->getNodesByType(bool_node::SRC);
 	Assert(inodes.size()== mm.size(), "The sizes don't match!!");
 	for(int t=0; t<node.multi_mother.size(); ++t){
@@ -340,7 +356,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 
 	bool_node* outnode = outnodes[0];
 
-	recursives.insert(make_pair(&node, NodeEvaluator(functionMap, inputs)));
+	recursives.insert(make_pair(&node, NodeEvaluator(function_map, inputs)));
 	recursives[&node].process(*callee);
 	
 	map<UFUN_node*, NodeEvaluator>::iterator it = recursives.find(&node);
@@ -495,32 +511,37 @@ void NodeEvaluator::printNodeValue(int i){
 			cout<<vv->get(j, values[j])<<", ";
 		}
 		cout<<endl;
-		if (false && (i == 197 || i==194)) {
-			vv->print(cout);
-			cout << endl;
-		}
 	}else{
 		cout<<values[i]<<endl;
 	}
 }
 
+bool NodeEvaluator::run(const VarStore &_inputs, bool do_reset_src_to_input_id, bool assert_invariant){
+    funargs.clear();
+    inputs = &_inputs;
+    set_inputs(&_inputs, assert_invariant);
 
-bool NodeEvaluator::run(VarStore& inputs_p){
-	funargs.clear();
-	inputs = &inputs_p;
 	int i=0;
 	failedAssert = false;
 	failedHAssert = false;
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
-		(*node_it)->accept(*this);
-		if(failedAssert){
-			return true;
-		}
-		if(failedHAssert){
-			return false;
-		}
+    bool ret = false;
+
+	for(auto & node_it : bdag){
+		node_it->accept(*this);
 	}
-	return false;
+
+    if(failedAssert){
+        ret = true;
+    }
+    if(failedHAssert){
+        ret = false;
+    }
+
+    if(do_reset_src_to_input_id) {
+        reset_src_to_input_id();
+    }
+
+    return ret;
 }
 
 void NodeEvaluator::display(ostream& out){

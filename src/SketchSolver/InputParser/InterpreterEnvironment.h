@@ -12,7 +12,7 @@
 #include "DagOptimizeCommutAssoc.h"
 #include "CEGISSolver.h"
 #include "REASSolver.h"
-
+#include "SketchFunction.h"
 
 #include <sstream>
 
@@ -182,10 +182,10 @@ public:
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
-	CEGISFinderSpec* cegisfind;
     // REASSolver* reasSolver;
 
-	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
+	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0), floats(p.epsilon) {
+
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if (p.outputSat) {
 			_pfind->outputSAT();
@@ -195,21 +195,24 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);
 
+        CEGISFinderSpec* cegisfind;
 		if (params.numericalSolver) 
 		{
 			cegisfind = new CEGISFinderNumerical(floats, cout);
 	    }
 	    else
 	    {
-			cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
-		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
+		solver = new CEGISSolver(cegisfind, params, floats, hardcoder);
         //reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 		hasGoodEnoughSolution = false;
 	}
 
 	vector<spskpair > spskpairs;
+
+    SATSolverResult run_hypersketch(int inlineAmnt, const string& file_name);
 
 	void addspskpair(const string& spec, const string& sketch) {
 		spskpairs.push_back(spskpair(spec, sketch));
@@ -236,21 +239,21 @@ public:
 		delete _pfind;
 		delete solver;
         //delete reasSolver;
-		delete cegisfind;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
 		finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.setSolver(finder);
 
+        CEGISFinderSpec* cegisfind;
 		if (params.numericalSolver) 
 		{
 			cegisfind = new CEGISFinderNumerical(floats, cout);
 	    }
 	    else
 	    {
-			cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
-		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
+		solver = new CEGISSolver(cegisfind, params, floats, hardcoder);
         //reasSolver = new REASSolver(floats);
 		cout << "ALLRESET" << endl;
 		status = READY;
@@ -296,8 +299,10 @@ public:
 
 
 	void recordSolution() {
-		solver->get_control_map(currentControls);
+	    // holes concretized during hardcoding
 		hardcoder.get_control_map(currentControls);
+		//holes concretized during cegis (previously hardcoded holes are invisible)
+        solver->get_control_map_as_map_str_str(currentControls);
 		cout << "VALUES ";
 		for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
 			cout << it->first << ": " << it->second << ", ";
@@ -365,8 +370,9 @@ public:
 	This function takes ownership of dag. After this,
 	dag will be useless, and possibly deallocated.
 	*/
-	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out, const string& file);
-	// SATSolver::SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
+    SATSolverResult assertDAG(BooleanDAG *dag, ostream &out, const string &file);
+    SATSolverResult assertHarness(BooleanDagLightUtility *harness, ostream &out, const string &file);
+	// SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 

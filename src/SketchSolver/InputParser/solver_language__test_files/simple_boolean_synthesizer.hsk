@@ -1,0 +1,95 @@
+
+
+
+/*
+pragma options "--bnd-inline-amnt 3";
+pragma options "--bnd-inbits 2";
+
+generator bit predicate(int n, bit[n] bits) {
+     //space of predicates that the user defines.
+}
+
+
+bit program(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+bit composite_program(int n, bit[n] bits)
+{
+    //space of composite programs
+}
+
+@FromFile("inputs.data")
+harness void main(int n, bit[n] bits, bit out) {
+    assert(program(n, bits) == out);
+}
+*/
+
+/*
+
+Mirrored fully inlined version
+
+*/
+
+/*
+pragma options "--bnd-inline-amnt 2";
+pragma options "--bnd-inbits 2";
+
+generator bit predicate(int n, bit[n] bits) {
+     //space of predicates that the user defines.
+     //example: p = in[??] | and p p | or p p | not p
+     int choose = ??;
+     if(choose == 0) {
+         return bits[??];
+     } else if(choose == 1) {
+         return predicate(n, bits) ||
+                predicate(n, bits);
+     } else if (choose == 2){
+         return predicate(n, bits) &&
+                predicate(n, bits);
+     } else {
+         return !predicate(n, bits);
+     }
+}
+
+bit program(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+bit right_branch(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+
+bit left_branch(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+bit composite_program(int n, bit[n] bits)
+{
+    if(branch(n, bits)) {
+        return left_branch(n, bits);
+    }
+    else {
+        return right_branch(n, bits);
+    }
+}
+
+@FromFile("inputs.data")
+harness void sketch_main(int n, bit[n] bits, bit out) {
+    assert(program(n, bits) == out);
+}
+*/
+
+hypersketch main()
+{
+    file = File(file_name);
+    return SATSolver(sketch_main, file);
+}
+
+
+
+// comparing hypersketch synthesis strategies vs sketchs solver on fully inlined trees.
+
+// need a synthesis strategy synthesizing a program of size x.
+// need a pure sketch end-to-end space mirrored by the program space in the previous strategy.

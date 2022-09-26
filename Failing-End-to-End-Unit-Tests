@@ -1,0 +1,385 @@
+now Aug 10 11:34am. 68 failing. wo ._sk.
+       9      40     207 miniTest207MainMethodAndPragma.sk
+      23      60     308 miniTest74.sk
+      49     144     765 miniTestb185.sk
+      23      65     385 miniTestb220.sk
+      11      34     177 miniTestb220_harnesses.sk
+      23      65     378 miniTestb221.sk
+      12      30     188 miniTestb298.sk
+      23      69     462 miniTestb303.sk
+      30      71     507 miniTestb367.sk
+      17      53     313 miniTestb433.sk
+      25      78     459 miniTestb435.sk
+      25      81     470 miniTestb436.sk
+      15      36     243 miniTestb445.sk
+      13      32     238 miniTestb446.sk
+      19      41     300 miniTestb447.sk
+    1082    3561   30028 miniTestb449.sk
+    1085    3556   31102 miniTestb450.sk
+    1111    3720   31621 miniTestb452.sk
+    1043    3430   28376 miniTestb457.sk
+      29      70     423 miniTestb459.sk
+      91     254    1896 miniTestb460.sk
+      14      41     269 miniTestb465.sk
+      28      67     398 miniTestb475.sk
+      31      72     436 miniTestb480.sk
+      36      99     571 miniTestb481.sk
+      54     190    1148 miniTestb482.sk
+      25     117     712 miniTestb483.sk
+      22      53     367 miniTestb484.sk
+      37     102     705 miniTestb486.sk
+      81     226    1729 miniTestb489.sk
+      48     119     994 miniTestb500.sk
+      22      49     416 miniTestb523.sk
+      58     147    1114 miniTestb529.sk
+      19      54     309 miniTestb557.sk
+      32      98     578 miniTestb558.sk
+      34     166     894 miniTestb564_angelic.sk
+      94     283    1770 miniTestb565_angelic.sk
+      34      96     513 miniTestb575.sk
+      20      36     193 miniTestb577.sk
+      20      41     215 miniTestb578.sk
+      34      74     423 miniTestb579.sk
+      19      50     275 miniTestb645.sk
+     277     783    5352 miniTestb647.sk
+      33     105     669 miniTestb669.sk
+      27      64     385 miniTestb681.sk
+      51     189    1159 miniTestb683.sk
+      30      79     442 miniTestb696.sk
+      34     101     730 miniTestb704.sk
+     183    1321    6777 miniTestb705.sk
+     125     535    3074 miniTestb706.sk
+      33     101     729 miniTestb712.sk
+      14      40     206 miniTestb714.sk
+      14      36     196 miniTestb717.sk
+      22      66     343 miniTestb718.sk
+       7      24     128 miniTestb776.sk
+      65     225    1370 miniTestb777.sk
+      64     219    1336 miniTestb778.sk
+     588    6967   35372 miniTestb841.sk
+     336    1749    9832 miniTestb852.sk
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk
+      37      65     603 miniTestb861.sk
+      29      59     441 miniTestb862.sk
+      45     113     837 miniTestb877.sk
+      79     204    1605 miniTestb878.sk
+      13      42     262 miniTestb889.sk
+      31      84     707 miniTestb897.sk
+      18      50     345 miniTestb901.sk
+     813     813   16309 cur
+    8569   31841  233293 total
+
+
+
+now
+
+       9      40     207 miniTest207MainMethodAndPragma.sk
+      15      48     214 miniTest208Globals.sk
+      70     250    1186 miniTest209Globals.sk
+      54     184    1326 miniTest213ArrExpScaling.sk
+      32     115     744 miniTest215Choice.sk
+      23      60     308 miniTest74.sk
+      15      44     209 miniTest79.sk
+      23      42     221 miniTest81.sk
+      11      47     216 miniTestBigInts7.sk
+       3      26     120 miniTestb146.sk
+      20      68     319 miniTestb166.sk
+      20      44     201 miniTestb169.sk
+     110     288    1733 miniTestb184.sk
+      49     144     765 miniTestb185.sk
+      50     102     718 miniTestb209.sk
+      27      56     321 miniTestb210.sk
+      12      23     126 miniTestb211.sk
+      13      25     140 miniTestb212.sk
+      23      65     385 miniTestb220.sk
+      11      34     177 miniTestb220_harnesses.sk
+      23      65     378 miniTestb221.sk
+      15      28     176 miniTestb222.sk
+       9      25     137 miniTestb268.sk
+      12      30     188 miniTestb298.sk
+      23      69     462 miniTestb303.sk
+      12      33     183 miniTestb309.sk
+      19      49     291 miniTestb310.sk
+       9      24     149 miniTestb336.sk
+      21      62     300 miniTestb352.sk
+      30      71     507 miniTestb367.sk
+      44      89     542 miniTestb408.sk
+      24      66     584 miniTestb416.sk
+      16      38     261 miniTestb420.sk
+      17      53     313 miniTestb433.sk
+      25      78     459 miniTestb435.sk
+      25      81     470 miniTestb436.sk
+      15      36     243 miniTestb445.sk
+      13      32     238 miniTestb446.sk
+      19      41     300 miniTestb447.sk
+    1082    3561   30028 miniTestb449.sk
+    1085    3556   31102 miniTestb450.sk
+    1111    3720   31621 miniTestb452.sk
+      29      56     360 miniTestb454.sk
+    1043    3430   28376 miniTestb457.sk
+      29      70     423 miniTestb459.sk
+      91     254    1896 miniTestb460.sk
+      14      41     269 miniTestb465.sk
+      28      67     398 miniTestb475.sk
+      24      59     414 miniTestb479.sk
+      31      72     436 miniTestb480.sk
+      36      99     571 miniTestb481.sk
+      54     190    1148 miniTestb482.sk
+      25     117     712 miniTestb483.sk
+      22      53     367 miniTestb484.sk
+      37     102     705 miniTestb486.sk
+      81     226    1729 miniTestb489.sk
+       6      18     134 miniTestb498.sk
+       5      19     146 miniTestb499.sk
+      48     119     994 miniTestb500.sk
+      62     209    1444 miniTestb501.sk
+      74     243    1786 miniTestb502.sk
+      12      37     244 miniTestb517.sk
+      22      49     416 miniTestb523.sk
+      19      42     209 miniTestb525.sk
+      58     147    1114 miniTestb529.sk
+      41     110     662 miniTestb547.sk
+      12      21     118 miniTestb548.sk
+      19      54     309 miniTestb557.sk
+      32      98     578 miniTestb558.sk
+      17      39     207 miniTestb559_RemoveFunctionParameters.sk
+      23      82     414 miniTestb561_RemoveFunctionParameters.sk
+      34     166     894 miniTestb564_angelic.sk
+      94     283    1770 miniTestb565_angelic.sk
+      10      35     193 miniTestb570.sk
+      34      96     513 miniTestb575.sk
+      20      36     193 miniTestb577.sk
+      20      41     215 miniTestb578.sk
+      34      74     423 miniTestb579.sk
+      17      24     226 miniTestb627.sk
+      26      45     278 miniTestb630.sk
+      36      59     367 miniTestb636.sk
+      21      57     268 miniTestb638.sk
+      29     108     627 miniTestb642.sk
+      19      50     275 miniTestb645.sk
+      31     114     595 miniTestb646.sk
+     277     783    5352 miniTestb647.sk
+      27      68     366 miniTestb652.sk
+      23      72     338 miniTestb657.sk
+      22      78     336 miniTestb659.sk
+      33     105     669 miniTestb669.sk
+      32      65     530 miniTestb670.sk
+      32      69     550 miniTestb671.sk
+      32      70     558 miniTestb672.sk
+      32      74     578 miniTestb673.sk
+      32      70     556 miniTestb674.sk
+      32      72     566 miniTestb675.sk
+      33      73     604 miniTestb676.sk
+       6      21     104 miniTestb677.sk
+      27      64     385 miniTestb681.sk
+      51     189    1159 miniTestb683.sk
+      29      75     492 miniTestb691.sk
+      15      37     253 miniTestb695.sk
+      30      79     442 miniTestb696.sk
+      34     101     730 miniTestb704.sk
+     183    1321    6777 miniTestb705.sk
+     125     535    3074 miniTestb706.sk
+      33     101     729 miniTestb712.sk
+      14      40     206 miniTestb714.sk
+      14      36     196 miniTestb717.sk
+      22      66     343 miniTestb718.sk
+      12      47     219 miniTestb747.sk
+      17      47     239 miniTestb752.sk
+      14      49     245 miniTestb757.sk
+      14      44     223 miniTestb758.sk
+      10      34     190 miniTestb760.sk
+      15      51     228 miniTestb762.sk
+       7      24     128 miniTestb776.sk
+      65     225    1370 miniTestb777.sk
+      64     219    1336 miniTestb778.sk
+      13      36     221 miniTestb799.sk
+      14      63     321 miniTestb804.sk
+      16      62     277 miniTestb805.sk
+      13      55     247 miniTestb806.sk
+      13      58     255 miniTestb807.sk
+      11      51     228 miniTestb808.sk
+      20      75     351 miniTestb813.sk
+      20      71     334 miniTestb814.sk
+      25      78     404 miniTestb816.sk
+      10      27     145 miniTestb820.sk
+     588    6967   35372 miniTestb841.sk
+     336    1749    9832 miniTestb852.sk
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk
+      37      65     603 miniTestb861.sk
+      29      59     441 miniTestb862.sk
+      99     431    2793 miniTestb865.sk
+      45     113     837 miniTestb877.sk
+      79     204    1605 miniTestb878.sk
+      13      42     262 miniTestb889.sk
+      31      84     707 miniTestb897.sk
+      18      50     345 miniTestb901.sk
+      44     112     654 miniTestb906.sk
+     739     739   14750 cur
+   10360   37155  264248 total
+
+
+
+This test is before the porting of VecInterp
+
+      17      53     313 miniTestb433.sk
+      25      78     459 miniTestb435.sk
+      25      81     470 miniTestb436.sk
+      15      36     243 miniTestb445.sk
+      13      32     238 miniTestb446.sk
+      19      41     300 miniTestb447.sk
+    1082    3561   30028 miniTestb449.sk
+    1085    3556   31102 miniTestb450.sk
+    1111    3720   31621 miniTestb452.sk
+    1043    3430   28376 miniTestb457.sk
+      29      70     423 miniTestb459.sk
+      91     254    1896 miniTestb460.sk
+      14      41     269 miniTestb465.sk
+      31      72     436 miniTestb480.sk
+      36      99     571 miniTestb481.sk
+      54     190    1148 miniTestb482.sk
+      22      53     367 miniTestb484.sk
+      48     119     994 miniTestb500.sk
+      22      49     416 miniTestb523.sk
+      58     147    1114 miniTestb529.sk
+      19      54     309 miniTestb557.sk
+      32      98     578 miniTestb558.sk
+      34     166     894 miniTestb564_angelic.sk
+      94     283    1770 miniTestb565_angelic.sk
+      34      96     513 miniTestb575.sk
+      20      36     193 miniTestb577.sk
+      20      41     215 miniTestb578.sk
+      34      74     423 miniTestb579.sk
+     125     535    3074 miniTestb706.sk
+     588    6967   35372 miniTestb841.sk
+     336    1749    9832 miniTestb852.sk
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk
+      37      65     603 miniTestb861.sk
+      29      59     441 miniTestb862.sk
+      13      42     262 miniTestb889.sk
+      31      84     707 miniTestb897.sk
+      18      50     345 miniTestb901.sk
+     843     843   16935 cur
+    7228   27061  204459 total
+
+
+
+The following unit tests are now failing.
+Mainly due to the fact that ufuns are used to refer to unimplemented, unanumous, and actual functions
+
+      20      65     409 miniTestb385.sk was failing
+     185     428    3057 miniTestb414.sk
+      17      53     313 miniTestb433.sk
+      25      78     459 miniTestb435.sk was failing
+      25      81     470 miniTestb436.sk was failing
+      14      41     269 miniTestb465.sk
+      22      53     367 miniTestb484.sk
+      81     226    1729 miniTestb489.sk
+      22      49     416 miniTestb523.sk
+      32      98     578 miniTestb558.sk
+      34     166     894 miniTestb564_angelic.sk
+      94     283    1770 miniTestb565_angelic.sk
+     588    6967   35372 miniTestb841.sk was failing
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk was failing
+      37      65     603 miniTestb861.sk was failing
+      29      59     441 miniTestb862.sk was failing
+      13      42     262 miniTestb889.sk
+      18      50     345 miniTestb901.sk
+     863     863   17335 cur
+    2200    9804   66298 total
+
+Same goes for the following.
+They have extensions ._sk due to the fact that they take longer to run,
+so we split the execution is two batches.
+
+      30      85     460 miniTestBigInts2._sk
+     212     745    4630 miniTestb377._sk
+    2894    9528  146863 miniTestb678._sk was failing
+     204     527    4831 miniTestb895._sk
+     887     887   17836 cur
+    4227   11772  174620 total
+
+------
+
+The following unit tests were failing last stable commit;
+annotated with whether or not they are resolved or still failing.
+
++    32    123    729 miniTestb358.sk resolved
++   212    745   4630 miniTestb377.sk resolved
++    20     65    409 miniTestb385.sk still failing
++    25     78    459 miniTestb435.sk still failing
++    25     81    470 miniTestb436.sk still failing
++   140    499   2695 miniTestb567_angelic.sk resolved
++  2894   9528 146863 miniTestb678.sk still failing
++   588   6967  35372 miniTestb841.sk still failing
++    64    105    971 miniTestb860.sk still failing
++    37     65    603 miniTestb861.sk still failing
++    29     59    441 miniTestb862.sk still failing
++    75    314   1743 miniTestb869.sk resolved
++    35    104    687 miniTestb880.sk resolved
++    30     85    460 miniTestBigInts2.sk still failing
+
+
+
+
+
+---
+
+update: d641575dac15bd178db3842db4b05a93b1bd08c4
+
+
+      17      53     313 miniTestb433.sk
+      25      78     459 miniTestb435.sk
+      25      81     470 miniTestb436.sk
+      14      41     269 miniTestb465.sk
+      22      53     367 miniTestb484.sk
+      81     226    1729 miniTestb489.sk
+      22      49     416 miniTestb523.sk
+      32      98     578 miniTestb558.sk
+      34     166     894 miniTestb564_angelic.sk
+      94     283    1770 miniTestb565_angelic.sk
+     588    6967   35372 miniTestb841.sk
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk
+      37      65     603 miniTestb861.sk
+      29      59     441 miniTestb862.sk
+      13      42     262 miniTestb889.sk
+      18      50     345 miniTestb901.sk
+
+      --
+
+      todo: test long
+
+      --
+
+
+--
+
+
+      20      65     409 miniTestb385.sk was failing | resolved.
+     185     428    3057 miniTestb414.sk | resolved
+      17      53     313 miniTestb433.sk | sill failing
+      25      78     459 miniTestb435.sk was failing | still failing
+      25      81     470 miniTestb436.sk was failing | still failing
+      14      41     269 miniTestb465.sk | still failing
+      22      53     367 miniTestb484.sk | still failing
+      81     226    1729 miniTestb489.sk | still failing
+      22      49     416 miniTestb523.sk | still failing
+      32      98     578 miniTestb558.sk | still failing
+      34     166     894 miniTestb564_angelic.sk | still failing
+      94     283    1770 miniTestb565_angelic.sk | still failing
+     588    6967   35372 miniTestb841.sk was failing | still failing
+      17      32     238 miniTestb858.sk | still failing
+      64     105     971 miniTestb860.sk was failing | still failing
+      37      65     603 miniTestb861.sk was failing | still failing
+      29      59     441 miniTestb862.sk was failing | still failing
+      13      42     262 miniTestb889.sk | still failing
+      18      50     345 miniTestb901.sk | still failing
+
+      30      85     460 miniTestBigInts2._sk
+     212     745    4630 miniTestb377._sk
+    2894    9528  146863 miniTestb678._sk was failing
+     204     527    4831 miniTestb895._sk

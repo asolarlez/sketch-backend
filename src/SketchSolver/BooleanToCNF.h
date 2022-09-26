@@ -43,6 +43,80 @@ class varRange{
 	varRange& operator=(const varRange& vr){varID=vr.varID; range=vr.range; return *this;};
 };
 
+/*
+This class tracks dependencies between holes and harnesses.
+*/
+class DepTracker{
+    /*Each hole has an index*/
+    map<string, int> ctrlIdx;
+    vector<set<int> > harnessPerHole; // holeId -> [harnesses]
+    vector<set<int> > holesPerHarness; // harnesId -> {holes}
+
+    /*In this variable, we record all the decisions that have been made during each harness.*/
+    vector<vector<Lit> > decisionsPerHarness;
+    int curHarness;
+
+
+    /*
+    out tracks all the literals that were set leading to a concretization failure.
+    If harnid failed, first, we will add all the holes that were concretized for harness harnid.
+    But then it could also be that the problem was not the concretization of holes in harnid, but of holes somewhere else.
+    For example, suppose you have a harness that says
+    assert H_1 == H_2.
+    Then you have another harness that says
+    assert H_2 > 5;
+
+    If I concretize H_1 to 3, that could lead to an assertion failure in the second harness despite the fact that
+    the only hole (H_2) in that harness was not concretized.
+    Therefore, we must include as dependencies not just the holes in that harness, but holes in all other harnesses
+    that transitively share holes with the currentt harness.
+
+    */
+    void helper(int harnid, vector<char>& visited, set<int>& out);
+
+public:
+
+    void reset(){
+        for(size_t i=0; i<holesPerHarness.size(); ++i){
+            holesPerHarness[i].clear();
+            decisionsPerHarness[i].clear();
+        }
+        for(size_t i=0; i<harnessPerHole.size(); ++i){
+            harnessPerHole[i].clear();
+        }
+    }
+
+    void genConflict(vec<Lit>& vl){
+        genConflict(curHarness, vl);
+    }
+    void recordDecision(const Lit l){
+        decisionsPerHarness[curHarness].push_back(l);
+    }
+    void genConflict(int harnid, vec<Lit>& vl);
+
+    void declareControl(string const & ctrl){
+        if(ctrlIdx.count(ctrl)==0){
+            int sz = ctrlIdx.size();
+            ctrlIdx[ctrl] = sz;
+            harnessPerHole.push_back(set<int>());
+        }
+    }
+    void setCurHarness(int hid){
+        curHarness = hid;
+    }
+    void setHarnesses(int nharnesses){
+        holesPerHarness.resize(nharnesses);
+        decisionsPerHarness.resize(nharnesses);
+    }
+
+
+    void regHoleInHarness(string const & hname){
+        int hole = ctrlIdx[hname];
+        harnessPerHole[hole].insert(curHarness);
+        holesPerHarness[curHarness].insert(hole);
+    }
+
+};
 
 
 class SolverHelper {
@@ -51,8 +125,13 @@ class SolverHelper {
 	StringHTable2<int> intmemo;
 
 	bool doMemoization;
-    map<string, int> varmap;
-    map<string, int> arrsize;
+    map<string, int> varmap; //var names -> var id in the sat solver
+    map<string, int> arrsize; //var names -> if arr then size
+    map<string, OutType*> vartype;
+    map<string, string> ctrls_original_names;
+    map<string, string> ctrls_dag_name;
+    map<string, bool_node::Type> ctrls_type;
+
 	map<string, Tvalue> controls;
 	map<string, SynthInSolver*> sins;
 	map<int, int> bitToInt;
@@ -67,7 +146,6 @@ class SolverHelper {
 	This function is in charge of instantiating new synthesizers.
 	*/
 	Synthesizer* newSynthesizer(const string& name, FloatManager& _fm);
-
 
 	int freshBoolIntVar(int boolVar);
 
@@ -104,6 +182,7 @@ class SolverHelper {
 		tch[p-1] = 0;
 		return p-1;
 	}
+
 	void addGV(char* tch, size_t& p, const guardedVal& gv);
 
 	int setStrBO(int* a, size_t last, char separator = '|', int ofst = 1){
@@ -263,14 +342,13 @@ public:
 	}
     int getVarCnt() { return varCnt; }
 
-    void declareVar(const string& vname) {
-	int idx = mng.newVar();
-	lastVar = idx;
-	Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
-	varmap[vname]= idx;
-	++varCnt;
-    }
-
+//    void declareVar(const string& vname) {
+//        int idx = mng.newVar();
+//        lastVar = idx;
+//        Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
+//        varmap[vname]= idx;
+//        ++varCnt;
+//    }
 
 	void outputVarMap(ostream& out){
 		cout<<" Outputing a map of size "<<varmap.size()<<endl;
@@ -282,7 +360,7 @@ public:
 		}		
 	}
 
-    void declareInArr(const string& arName, int size) {
+    void declareInArr(const string& arName, int size, OutType* otype, bool_node::Type type, const string& ctrl_original_name, const string& ctrls_source_dag_name) {
 		map<string, int>::iterator fit = arrsize.find(arName);
 		if(fit != arrsize.end()){
 			Assert(fit->second == size, "You declared the same array with a different size earlier!");
@@ -302,7 +380,17 @@ public:
 			Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
 			mng.annotateInput(arName, frst, size);
 			varmap[arName] = frst;
+
+            { //CODE FOR INTEGRATION WITH SOLVER LANGUAGE.
+                assert(ctrls_original_names.find(arName) == ctrls_original_names.end());
+                ctrls_original_names[arName] = ctrl_original_name;
+                assert(ctrls_dag_name.find(arName) == ctrls_dag_name.end());
+                ctrls_dag_name[arName] = ctrls_source_dag_name;
+                assert(ctrls_type.find(arName) == ctrls_type.end());
+                ctrls_type[arName] = type;
+            }
 			arrsize[arName] = size;
+			vartype[arName] = otype;
 			Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
 			varCnt += size;	
 		}	
@@ -426,6 +514,37 @@ public:
   void setNumericalAbsMap(map<string, BooleanDAG*> numericalAbsMap_p) {
     numericalAbsMap = numericalAbsMap_p;
   }
+
+    OutType *getOtype(const string basicString);
+
+private:
+    bool pendingConstraints = false;
+public:
+
+    bool solvePendingConstraints(){
+        if(pendingConstraints){
+            cout << "in solvePendingConstraints in BooleanToCNF.h" << endl;
+            int res = getMng().solve(numeric_limits<unsigned long long>::max());
+            cout << "out solvePendingConstraints in BooleanToCNF.h" << endl;
+            if(res != SAT_SATISFIABLE){
+                return false;
+            }
+        }
+        pendingConstraints = false;
+        return true;
+    }
+
+    bool get_pendingConstraints();
+
+    void set_pendingConstraints(bool val);
+
+    void dismissedPending();
+
+    const string &get_original_name(const string &name) const ;
+
+    const string & get_source_dag_name(const string &name) const ;
+
+    bool_node::Type get_type(const string &name) const ;
 };
 
 /*

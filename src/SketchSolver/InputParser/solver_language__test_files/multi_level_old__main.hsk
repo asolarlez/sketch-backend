@@ -1,0 +1,228 @@
+
+hypersketch _main()
+{
+
+    int rows_per_sample_mult = 3;
+    int num_trials_mult = 2;
+    int num_trials_base = 2;
+
+    int num_trials = num_trials_base*num_trials_mult;
+    int num_rows_per_sample = rows_per_sample_base*rows_per_sample_mult;
+
+    file = File(file_name, sketch_main__Wrapper);
+    local_dags = best_effort_programs(sketch_main__Wrapper.deep_clone(), file, num_trials, num_rows_per_sample, file.size());
+    init_score = local_dags[0].first();
+    init_dag = local_dags[0].second();
+
+    int best_score = init_score;
+    SketchFunction current_dag = init_dag;
+
+    run__main_em_cond_branches_step = true;
+
+    if(run__main_em_cond_branches_step)
+    {
+        best_score_and_current_dag = main_em_cond_branches_step(init_score, init_dag, file);
+
+        best_score = best_score_and_current_dag.first();
+        current_dag = best_score_and_current_dag.second();
+
+        print("POST-main_em_cond_branches_step: best_score: ", best_score);
+    }
+
+    //--{
+        file = File(file_name, current_dag);
+        //split file based on condition
+        if_true_file = file.produce_filter(lambda[current_dag](x){
+            return current_dag.passes(x);});
+        if_false_file = file.produce_filter(lambda[current_dag](x){
+            return not(current_dag.passes(x, false));});
+
+        print("if_true_file.size()", if_true_file.size());
+        print("if_false_file.size()", if_false_file.size());
+        assert((if_true_file.size() + if_false_file.size()) == file.size());
+    //--}
+
+
+    // now construct a dual to the current_dag.
+    // a dag that will be able to solve all of the negative side of current_dag.
+    // and also maximizes how many it can solve of the positive side as well.
+    // then find a good conditional to bring them together.
+
+
+    //always include if_false_file; sample from if_true_file.
+
+    num_rows_per_sample = (rows_per_sample_base+1)*rows_per_sample_mult;
+    local_num_trials = (num_traials_base+1)*num_trials_mult;
+    local_dags = best_effort_programs(
+        sketch_main__Wrapper.deep_clone(), if_false_file, local_num_trials, num_rows_per_sample, if_false_file.size()-1);
+    left_score = local_dags[0].first();
+    left_dag = local_dags[0].second();
+
+
+        comp_pred = composite_predicate.produce_replace(
+            "right_branch",
+             current_dag["sketch_main"]["composite_predicate"]
+        );
+
+        comp_pred = comp_pred.produce_replace(
+            "left_branch",
+             left_dag["sketch_main"]["composite_predicate"]
+        );
+
+        resynth_cond = sketch_main__Wrapper.produce_replace(
+            "sketch_main",
+            sketch_main.produce_replace(
+                "composite_predicate",
+                comp_pred
+            )
+        );
+
+    num_rows_per_sample = 6*rows_per_sample_mult;
+    local_num_trials = (num_trials_base+2)*num_trials_mult;
+    file = File(file_name, resynth_cond);
+    local_dags = best_effort_programs(
+        resynth_cond, file, local_num_trials, num_rows_per_sample, file.size());
+
+    final_dag = local_dags[0].second();
+
+    //--{
+
+            condition_lvl1_sub_sub = final_dag["sketch_main"]["composite_predicate"]["condition"];
+            condition_lvl1_sub = (eval_program_main.produce_replace("composite_predicate", condition_lvl1_sub_sub)).produce_executable();
+//            condition_lvl1 = eval_program_main__Wrapper.produce_replace("eval_program_main", condition_lvl1_sub);
+
+            file = File(file_name, condition_lvl1_sub);
+            //split file based on condition
+            if_true_file = file.produce_filter(lambda[condition_lvl1_sub](x){
+                return condition_lvl1_sub(x);});
+            if_false_file = file.produce_filter(lambda[condition_lvl1_sub](x){
+                return not(condition_lvl1_sub(x));});
+
+            print("if_true_file.size()", if_true_file.size());
+            print("if_false_file.size()", if_false_file.size());
+
+            assert((if_true_file.size() + if_false_file.size()) == file.size());
+    //--}
+
+    print("STARTING if_true_file.size()", if_true_file.size());
+    new_harness = sketch_main__Wrapper.deep_clone();
+    if_true_file.relabel(new_harness);
+    num_rows_per_sample = 7*rows_per_sample_mult;
+    local_num_trials = (num_trails_base+3)*num_trials_mult;
+    local_dags = best_effort_programs(
+        new_harness, if_true_file, local_num_trials, num_rows_per_sample, if_true_file.size()-1);
+
+    best_if_true_score = local_dags[0].first();
+    best_if_true = local_dags[0].second();
+
+    print("STARTING if_false_file.size()", if_false_file.size());
+    new_harness = sketch_main__Wrapper.deep_clone();
+    if_false_file.relabel(new_harness);
+    num_rows_per_sample = 7*rows_per_sample_mult;
+    local_num_trials = 8+4*num_trials_mult;
+    local_dags = best_effort_programs(
+        new_harness, if_false_file, local_num_trials, num_rows_per_sample, if_false_file.size()-1);
+
+    best_if_false_score = local_dags[0].first();
+    best_if_false = local_dags[0].second();
+
+    if((best_if_true_score + best_if_false_score) == file.size())
+    {
+
+        comp_pred = composite_predicate.produce_replace(
+            "left_branch",
+             best_if_true["sketch_main"]["composite_predicate"]
+        );
+
+        comp_pred = comp_pred.produce_replace(
+            "right_branch",
+             best_if_false["sketch_main"]["composite_predicate"]
+        );
+
+        comp_pred = comp_pred.produce_replace(
+            "condition",
+             condition_lvl1_sub_sub
+        );
+
+        no_resynth = sketch_main__Wrapper.produce_replace(
+            "sketch_main",
+            sketch_main.produce_replace(
+                "composite_predicate",
+                comp_pred
+            )
+        );
+
+        no_resynth.make_executable();
+
+        file = File(file_name, no_resynth);
+        int final_score = no_resynth.vectorized_count_passing_inputs(file);
+
+        print("final_score", final_score, "/", file.size(), "dag.size", no_resynth.size());
+
+        return no_resynth;
+    }
+
+    else
+    {
+        file = File(file_name, best_if_false);
+        //split file based on condition
+        passes_file = file.produce_filter(lambda[best_if_false](x){
+            return best_if_false.passes(x);});
+        not_passes_file = file.produce_filter(lambda[best_if_false](x){
+            return not(best_if_false.passes(x));});
+
+        print("passes_file.size()", passes_file.size());
+        print("not_passes_file.size()", not_passes_file.size());
+
+        assert((passes_file.size() + not_passes_file.size()) == file.size());
+
+        {
+            new_harness = sketch_main__Wrapper.deep_clone();
+            not_passes_file.relabel(new_harness);
+            num_rows_per_sample = 7*rows_per_sample_mult;
+            local_num_trials = 4*num_trials_mult;
+
+            local_dags = best_effort_programs_always_and_sometimes_include(
+                new_harness, not_passes_file, passes_file, local_num_trials, num_rows_per_sample, file.size());
+
+            best_not_passes = local_dags[0].second();
+
+            {
+                comp_pred = composite_predicate.produce_replace(
+                    "right_branch",
+                     best_not_passes["sketch_main"]["composite_predicate"]
+                );
+
+                comp_pred = comp_pred.produce_replace(
+                    "left_branch",
+                     best_if_false["sketch_main"]["composite_predicate"]
+                );
+
+                resynth_cond = sketch_main__Wrapper.produce_replace(
+                    "sketch_main",
+                    sketch_main.produce_replace(
+                        "composite_predicate",
+                        comp_pred
+                    )
+                );
+
+                num_rows_per_sample = 16*rows_per_sample_mult;
+                local_num_trials = 4*num_trials_mult;
+                file = File(file_name, resynth_cond);
+                local_dags = best_effort_programs(
+                    resynth_cond, file, local_num_trials, num_rows_per_sample, file.size()-1);
+
+                final_dag = local_dags[0].second();
+
+                int final_score = final_dag.vectorized_count_passing_inputs(file);
+
+                print("final_score", final_score, "/", file.size(), "dag.size", final_dag.size());
+
+                return final_dag;
+
+            }
+
+        }
+
+    }
+}

@@ -1,13 +1,20 @@
 #pragma once
+#include <random>
+
 #include "NodeEvaluator.h"
 #include "StringHTable.h"
 
 #include "BitSet.h"
+#include "DagFunctionInliner.h"
 
+class File;
+
+using namespace std;
 
 class CounterexampleFinder :
 	public NodeEvaluator
 {
+    VarStore* inputs = nullptr;
 	float sparseArray;
 	Ostore<unsigned> store;
 	vector<BitSet* >  influences;
@@ -32,7 +39,7 @@ class CounterexampleFinder :
 				jumpids[oid] = src->id;
 			}else if (cur->type == bool_node::UFUN) {
 				UFUN_node& node = *((UFUN_node*)cur);
-				string uname = node.get_ufname();
+				string uname = node.get_ufun_name();
 				vector<UFUN_node*>& uv = ufmap[uname];
 
 				const string& tuple_name = node.getTupleName();
@@ -46,7 +53,7 @@ class CounterexampleFinder :
 					UFUN_node* ufn = uv[tt];
 					for (int j = 0; j < size; j++) {
 						stringstream sstr;
-						sstr << ufn->get_ufname() << "_" << ufn->get_uniquefid() << "_" << j;
+						sstr << ufn->get_ufun_name() << "_" << ufn->get_uniquefid() << "_" << j;
 						int oid = inputs->getId(sstr.str());
 						nb->insert(oid);
 						if (ufn == &node) {
@@ -91,205 +98,19 @@ class CounterexampleFinder :
 		}
 	}
 public:
-	typedef enum {FOUND, NOTFOUND, UNSAT, MOREBITS} Result;
+    typedef enum {FOUND, NOTFOUND, UNSAT, MOREBITS} Result;
 	const string* message;
 	void init(VarStore& vs){
 		inputs = &vs;
+        set_inputs(inputs);
 		computeInfluences();
 	}
-
-
-	bool parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes) {
-
-		auto vsi = inputs->begin();
-		VarStore::objP* arrit = NULL;
-		VarStore::objP* prevArrit = NULL;
-		bool inArray = false;
-
-		int inputId = 0;
-
-		char ch;
-		in.get(ch);
-		string line;
-		while (ch == '#') {
-			std::getline(in, line);
-			in.get(ch);
-		}
-
-
-		int cur=0;
-		bool neg = false;
-		int depth = 0;
-		bool hasCaptured = true;
-		bool outOfRange = false;
-		bool isFloat = false;
-		double floatVal = 0.0;
-
-		auto regval = [&]() {
-			if (!hasCaptured) {
-
-				if (isFloat) {
-					cur = floats.getIdx(floatVal);
-				}
-
-				if (depth == 0) {
-					//we just finished a number, and we are not inside an array.
-					outOfRange = !vsi->setValSafe(neg ? (-cur) : cur);
-					++vsi;
-					++inputId;
-				}
-				else {
-					if (!inArray) {
-						cerr << "Error parsing the input. Was expecting a line with the following format" << endl;
-						for (auto it = inputs->begin(); it != inputs->end(); ++it) {
-							auto type = it->otype != NULL? it->otype->str() : "scalar";
-							const auto isArr = it->arrSize() > 1;
-							if (isArr) {
-								cerr << "{" << type << " }  ";
-							}
-							else {
-								cerr << type << "  ";
-							}
-						}
-						cerr << endl;
-						cerr << "corresponding to inputs "<<endl;
-						for (auto it = inputs->begin(); it != inputs->end(); ++it) {
-							cerr << it->getName()<<"  ";
-						}
-						cerr << endl;
-						throw BasicError(string("file parsing error"), "name");
-
-					}
-					if (arrit == NULL) {
-						prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
-						arrit = prevArrit->next;	
-						((SRC_node*)inputNodes[inputId])->arrSz++;
-					}
-					
-					//we just finished a number, and we are inside an array.
-					outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
-					prevArrit = arrit;
-					arrit = arrit->next;
-					
-					
-				}
-			}
-			hasCaptured = true;
-		};
-		auto reset = [&]() {
-			cur = 0;
-			neg = false;
-			isFloat = false;
-		};
-
-		while (ch != '\n') {
-			switch (ch) {
-			case '{': {
-				regval();
-				reset();
-				if (depth == 0) {
-					arrit = &(*vsi);
-					inArray = true;
-				}
-				depth++;
-				break;
-			}
-			case '}': {
-				regval();
-				reset();
-				depth--;
-				if (depth == 0) {
-					while (arrit != NULL) {
-						arrit->setValSafe(0);
-						arrit = arrit->next;
-					}
-					inArray = false;
-					++vsi;
-					++inputId;
-				}
-				break;
-			}
-			case ' ': {
-				regval();
-				reset();
-				break;
-			}
-			case ',': {
-				regval();
-				reset();
-				break;
-			}
-			case '-': {
-				neg = true;
-				break;
-			}
-			default:
-				if (ch >= '0' && ch <= '9') {
-					if (isFloat) {
-						floatVal = floatVal + ((double)(ch - '0') / cur);
-						cur = cur * 10;
-					}
-					else {
-						hasCaptured = false;
-						cur = cur * 10 + (ch - '0');
-					}
-				}
-				if (ch =='.') {
-					isFloat = true;
-					floatVal = (double)cur;
-					cur = 10;
-				}
-
-			}
-			if (outOfRange) {				
-				return false;
-			}
-			in.get(ch);
-			if (in.eof()) {
-				regval();
-				return !outOfRange;
-			}
-		}
-		regval();
-		return !outOfRange;
-	}
-
-
-	Result fromFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes) {
-		ifstream file;
-		file.open(fname);
-		bool ok = true;
-
-		if (!file.is_open() || file.fail()) {
-			Assert(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
-			return UNSAT;
-		}
-
-		while (!file.eof()) {
-			try {
-				ok = parseLine(file, floats, inputNodes);
-			}
-			catch (BasicError& e) {
-				cerr << "Error parsing file " << fname << endl;
-				throw e;
-			}
-			
-			if (!ok) {
-				file.close();
-				return MOREBITS;
-			}
-			if (PARAMS->verbosity > 12) {
-				inputs->printContent(cout);
-			}
-			bool rv = this->run(*inputs);
-			if (rv) {
-				return FOUND;
-			}
-		}
-		file.close();
-		return UNSAT;
-	}
-
+    bool parseLine(const VarStore* var_store)
+    {
+        *inputs = *var_store;
+        return true;
+    }
+	Result fromFile(const File *file, FloatManager& floats, vector<bool_node*>& inputNodes);
 
 	Result searchLoop(int maxfails){
 		int failcount = 0;
@@ -297,7 +118,7 @@ public:
 		failedHAssert = false;
 		failedAssert = false;
 		int bdsz = bdag.size();
-		vector<bool_node*>& ctrls = bdag.getNodesByType(bool_node::CTRL);
+		auto ctrls = bdag.getNodesByType(bool_node::CTRL);
 		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){		
 			(*node_it)->accept(*this);
 
@@ -323,7 +144,7 @@ public:
 					if(eq->mother()->type==bool_node::SRC){
 						int fv = this->getValue(eq->father());
 
-						VarStore::objP& op = inputs->getObj(eq->mother()->get_name());
+						auto op = inputs->getObjConst(eq->mother()->get_name());
 
 						bool inrange = op.setValSafe(fv);
 						if(!inrange){
@@ -336,7 +157,7 @@ public:
 					}
 					if(eq->father()->type==bool_node::SRC){
 						int fv = this->getValue(eq->mother());
-						bool inrange = inputs->getObj(eq->father()->get_name()).setValSafe(fv);
+						bool inrange = inputs->_getObj(eq->father()->get_name()).setValSafe(fv);
 						if(!inrange){
 							message = &(an->getMsg());
 							return UNSAT;
@@ -349,9 +170,9 @@ public:
 				int jmp = bdsz;
 				for(;it != -1; it = inf->next(it)){
 					if(sparseArray > 0.000001){
-						inputs->getObj(it).makeRandom(sparseArray);
+                        inputs->_getObj(it).makeRandom(sparseArray);
 					}else{
-						inputs->getObj(it).makeRandom();
+                        inputs->_getObj(it).makeRandom();
 					}
 					int jid = jumpids[it];
 					if(jid < jmp){ jmp = jid; }
@@ -385,7 +206,7 @@ public:
 	}
 
 	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, float sparseArray_p, FloatManager& _floats):
-	NodeEvaluator(functionMap_p, bdag_p, _floats), sparseArray(sparseArray_p)
+            NodeEvaluator(bdag_p, _floats), sparseArray(sparseArray_p)
 	{
 	}
 
@@ -393,6 +214,31 @@ public:
 	{
 		
 	}
+
+    #ifdef CHECK_FILE_INVARIANT
+        bool check_file_invariant(File* file) {
+            vector<int> fails;
+            for(int i = 0;i<file->get_counterexample_ids_over_time().size();i++)
+            {
+                int row_id = file->get_counterexample_ids_over_time()[i];
+                bool ok = parseLine(file->at(row_id));
+                assert(ok);
+                //inputs->printBrief(cout);
+                bool rv = this->run(*inputs);
+                assert(bdag.get_failed_assert() == nullptr);
+                if(rv){
+                    //cout << "subset row id: " << i << " FAILS" << endl;
+                    fails.push_back(row_id);
+                }
+                else
+                {
+                    //cout << "subset row id: " << i << " PASSES" << endl;
+                }
+            }
+
+            return fails.empty();
+        }
+    #endif
 };
 
 

@@ -1,0 +1,215 @@
+For meeting:
+    1. Sketch frontend is optimizing out any functions not used by a harness.
+    2. What is the replace map?
+    3. Raise issue about
+            bit one = 1;
+            assert(program(num_bools, bools) == one);
+        vs
+            assert(program(num_bools, bools) == 1);
+
+     4. ASK ABOUT
+           void NodeEvaluator::visit( TUPLE_CREATE_node &node){
+
+           	int sz = node.nparents();
+           	cptuple* cpv = new cptuple(sz);
+           	if(tuplevalues[node.id] != NULL){
+           		delete tuplevalues[node.id];
+           	}
+           	tuplevalues[node.id] = cpv;
+               Tuple* otp = (Tuple*)node.getOtype();
+           	for(int t=0; t<sz; ++t){
+                   OutType* e = otp->entries[t];
+                   if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
+                     cpv->vv[t] = i(*node.get_parent(t));
+                   } else {
+                     cpv->vv[t] = (node.get_parent(t)->id);
+                   }
+           	}
+           	setbn(node, node.id );// <<<<<<<<<<<<<< HERE WHY node.id rather than values[node.id]?
+
+           }
+
+    5. Discussion:
+        What should be the semantics of replace and produce_replace?
+            f.replace("dummy_program", new_program);
+            should new_program be inlined in f, or should "dummy_program" be replaced with the string new_program.get_name()?
+            * the names of the underlying dags, are different then the names of the variables that hold the objects in the solver language.
+            How should this relate to the FunctionMapTransformerProgram and the construction of a var store.
+            easiest would be to inline the dag before returning the var store.
+
+            --it's like assign. and you actually can use it as such.
+
+    6. Ask Armando about returning an object vs a pointer to an object.
+    7. Raise concern:
+        CEGISSolver returns UNSAT: ******** FAILED ********
+        Leaves some holes unconcretized
+        When concretizing inputs this happens
+        to_concretize =
+            dag sketch_main__Wrapper__id1658726__id1672757__id1672758{
+                H__0_28_26_24_15_12_10_7
+                1= H__0_28_26_24_15_12_10_7 !
+                2= ASSERT (!H__0_28_26_24_15_12_10_7) : boolean..mplate.sk:18: Array out of bounds
+                3= ASSERT H__0_28_26_24_15_12_10_7 : boolean..mplate.sk:28: Array out of bounds
+            }
+        This asserts false: assert((to_concretize->size() == 0) == (to_concretize->get_failed_assert() == nullptr));
+        because to_concretize->get_failed_assert() == nullptr.
+        TODO: fix issue where there are failing dags without failing asserts. Proposal: solve the dag again?
+        TODO: handle this edge case with proper asserts. [dag].(if(|ctrls| != 0) => assert unsat).
+    8. TODO: Investigate Pcond1
+        Discuss about the pcond (concretize #PC to true vs leave #PC):
+        proposed strategy:
+            when concretizing holes, leave #PC.
+            when concretizing inputs, set #PC to 1
+            when solving, set #PC to 1.1
+    9. Discuss: when cloning a recursive function it stops being recursive because the clone rather than pointing to itself, points to the original.
+    10. setVal takes as input a size_t, is this something we should be worried about?
+    11. what are -1s in controls in CegisChecker (I guess they are 'unset'?); they seem to be interpreted as 0 here: int intFromBV(T& bv, int start, int nbits)
+        TODO: added that -1 and 0 are equal in ObjP:: bool operator == (const objP& other) const
+    12. Can arrays be holes? Seems like only SRC can be arrays but not CTRLS. Otherwise, need to fix the tracking of original name for arrays.
+
+
+Priority for merging with Master
+    DONE: Add separate file as console output for Solver Language.
+        TODO: add an error/warning file
+    TODO: 3. Set up pipeline
+        *7.1. Thread params for which solver program file to use
+        *7.2. Two pipelines: old and new
+        *7.3. merge with master.
+
+TODO: Priority for integration with Siemens
+    1. Integrate with Python frontend.
+
+Use-cases
+Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
+    DONE: one shot level1. (bot-top-bot)
+    DONE: bot-top-bot-top
+    DONE: iterative lvl1.
+    TODO: one shot lvl2
+    TODO: iterative lvl2
+    TODO: crete more complicated zig-zag example.
+    TODO: implement 'synthesize_composite_programs_from_parts' as a constructed sketch. (instead of the two for loops, make them holes in a sketch)
+    TODO: use pareto frontier when selecting best candidates for left/right split (pareto frontier on both parts). Can use both best_effort on both parts for both parts
+    DONE: Stun with recursive function.
+
+Finish FunctionMapTransformer:
+    DONE 1. Fix weird bug with FunctionMapTransformer
+    DONE 3. Fix VarStore delete/clear in order to remove leaks
+    TODO: 4. Further stress-test this functionality
+    TODO: 5. Print the FunctionMapTransformer program for the frontend.
+
+Light tasks:
+    DONE remove dead code.
+    DONE add printing to a file.
+    remove debug code
+        turn off SCHECKMEM
+        DONE add flag for checking file invariant in cegis solver and checker.
+
+Necessary
+1. Complete language
+    DONE Remove ; at the end of {} blocks
+    DONE Add {} block
+    DONE: complete if - else block.
+    *TODO: complete if - else if ... - else block
+    DONE 1.1. implement subscoping for {} nesting (for, while, if, {}}
+    Complete boolean predicates
+        DONE: >, <, >=, ==
+        *TODO: <=, !=, &&, ||, ^, !
+        *TODO: FIX ORDER OF OPERATIONS
+    Implement integer and float expressions
+        DONE: +, -, /, *
+        TODO: %, --, +=, -=, *=, /=, %=
+        TODO: &=, |=, ^= (bitwise)
+        *TODO: FIX ORDER OF OPERATIONS
+
+    DONE Implement garbage collection
+    TODO: Implement garbage collection when there are cycles of skfuncs
+    TODO: Remove harness from argument in File.
+        Have current File be implemented as a vector rather than having a specific File class.
+            Interpret an input as a InputStore right before using in a sketch.
+    TODO: Remove need for ..__Wrapper
+    ~ 1.7. There should be a version of solvers that returns a concretized function rather than a solution.
+    TODO: add [] for accessing arrays;
+    *TODO: add (,) as a pair constructor.
+    DONE implement lambdas.
+    DONE Refactor FunctionCall
+    TODO: get rid of outname in UFUN_node
+    DONE implement <file>.produce_filter
+    *TODO: refactor as needed and assert(false)s from explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>()
+    TODO: loop control flow operators
+            continue
+            break
+    *TODO: Add custom output files to Solver Language.
+    DONE: Shed dead code.
+    TODO: deal with the case when not all holes are concretized after concretization
+    TODO: deal with the case where some holes are optimized out due to inlining.
+    TODO: figure out what to do with adding/removing do_deactivate_pcond.
+    TODO: add parallelization capabilities though cilk.
+    recursive subdag access.
+        allow access even when subdag has been cleared.
+            TODO: check what happens with name conflicts when reconstructing a superseeded dag.
+        DONE: (it's called superseeded) set (intermediate-)is_erased when a dag gets modified and the original version is not kept. update use of is_erased in reconstruct_sketch_function.
+    TODO: internalize inlining in solver langauge
+    DONE Test InliningTree on a recursive function.
+    DONE: when narrowing down InliningTree within VarStore, remove excess holes that are not aplicable after the narrowing.
+    DONE: reason about what happens in InliningTree._find when there are multiple ways to get to the target_dag (what needs to happen on at the site where the result is needed?) Probably you need extra asserts for type checking that the user knows what they are doing.
+    DONE: fix exponential blow-up in #inlining_trees
+    TODO: produce_deep_concretize
+    TODO: produce_unit_concretize
+    TODO: inplace_deep_concretize
+    TODO: inplace_unit_concretize
+    DONE: produce_executable
+    DONE: make_executable
+    DONE: deep_clone
+    DONE: unit_clone
+
+TODO: 2. Incorporate numerical solver
+TODO: 3. Incorporate doallpairs
+3. Fix memory leaks (remove all boolean dag copies that are not used).
+    DONE in SolverLanguage
+        DONE use SCHECKMEM in boolean_node and boolean_dag
+        DONE CUSTOM use shared_pointer
+    DONE In rest of codebase
+    DONE check why the computer is running out of memory when running the current sketch (31st Jan 2022).
+        the issue was not deleting next in objs.
+DONE 4. Dynamic typing
+    DONE add 'any' type.
+6. Implement methods for modification of sketches
+    6.1. DONE replace_produce, and replace
+    *DONE: Fix renaming.
+    Return file that modifies the sketch to the frontend
+        DONE: FunctionMapTransformerLanguage that keeps track of the modification of the sketch.
+        DONE: Read solution from a FunctionMapTransformer program
+        TODO: Create file that modifies the sketch.
+        TODO: Add functionality to frontend.
+    DONE: 6.4  Allow concretized sketches to be executed on inputs, and their result read.
+        TODO: 6.4.1: fix the weirdness where the output of a function is a tuple, so you need to go to it's first parent to get the true value in node_evaluator.
+
+TODO: 5. Make frontend spit harnesses for each function when using solver language. Be careful of structs as inputs.
+
+For Master's thesis
+1. Write thesis
+    1.1. outline
+    1.2. rest
+
+Good to do
+Refactor interpreter to use classes and subclasses instead of switches for different values/methods (like in SolverLanguage.h).
+
+Medium term
+0. TODO: Implement useful error/warning messages with line numbers.
+1. refactor backend code to look like solver language (meaning the signatures of the functions concretize and file).
+    1.1 Compile directly to Cpp rather than interpreting program
+3. Implement classes
+4. Allow for construction of sketches during runtime.
+
+Other medium terms
+1. Holes in solver program and meta-solver programs
+
+Longer term
+1. Implement other domains using solver language
+    1.1. Karel
+    1.2 compression
+        1.2.1 Geometric images
+        1.2.2 Timeseries
+2. How to integrate with hardcoder and parallelism
+    1. TODO: Have doallparis be a module.
+    2. ...

@@ -1149,13 +1149,13 @@ public:
 
 		bool is_idx_node_one_hot = node_id_to_replacement_nodes.find(idx_node->id) != node_id_to_replacement_nodes.end();
 
-		cout << "idx_node " << idx_node->lprint() << endl;
-		cout << "arr_node " << arr_node->lprint() << " out type: " << arr_node->getOtype()->str() << endl;
-		if(arr_node->getOtype() == OutType::FLOAT_ARR || arr_node->getOtype() == OutType::INT_ARR)
-		{
-			cout <<"arr_node->nparents() " << arr_node->nparents() << endl;
-		}
-		cout << "new_val " << new_val->lprint() << endl;
+//		cout << "idx_node " << idx_node->lprint() << endl;
+//		cout << "arr_node " << arr_node->lprint() << " out type: " << arr_node->getOtype()->str() << endl;
+//		if(arr_node->getOtype() == OutType::FLOAT_ARR || arr_node->getOtype() == OutType::INT_ARR)
+//		{
+//			cout <<"arr_node->nparents() " << arr_node->nparents() << endl;
+//		}
+//		cout << "new_val " << new_val->lprint() << endl;
 
 		if(is_idx_node_one_hot)
 		{

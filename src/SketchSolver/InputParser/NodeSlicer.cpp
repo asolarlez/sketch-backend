@@ -1,7 +1,7 @@
 #include "NodeSlicer.h"
 
 NodeSlicer::NodeSlicer(map<string, BooleanDAG*>& functionMap_p, VarStore& inputs_p, BooleanDAG& bdag_p, FloatManager& _floats):
-functionMap(functionMap_p), inputs(inputs_p), ne(functionMap_p, bdag_p, _floats)
+functionMap(functionMap_p), inputs(inputs_p), ne(bdag_p, _floats)
 {
 }
 
@@ -156,7 +156,7 @@ void NodeSlicer::process(BooleanDAG& bdag){
 	ne.process(bdag);
 	marked.clear();
 	marked.resize(bdag.size(), 0);
-	vector<bool_node*>& asserts = bdag.getNodesByType(bool_node::ASSERT);
+	auto asserts = bdag.getNodesByType(bool_node::ASSERT);
 	int insize = bdag.getNodesByType(bool_node::SRC).size();
 	bool found = false;
 	for(BooleanDAG::iterator node_it = asserts.begin(); node_it != asserts.end(); ++node_it){

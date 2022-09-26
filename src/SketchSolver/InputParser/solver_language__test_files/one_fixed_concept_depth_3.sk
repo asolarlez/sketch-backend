@@ -1,0 +1,98 @@
+pragma options "--bnd-inline-amnt 1";
+pragma options "--bnd-arr-size 9";
+pragma options "--bnd-unroll-amnt 9";
+
+generator bit template_binary_concept(bit x0, bit x1) {
+    if(x0 && x1) {
+        return ??;
+    } else if (x0 && !x1) {
+        return ??;
+    } else if(!x0 && x1) {
+        return ??;
+    } else if(x0 && x1) {
+        return ??;
+    }
+}
+
+bit template_binary_concept_1___meta(bit x0, bit x1) {
+    return template_binary_concept(x0, x1); // 2^4 = 16 languages with one operator each
+}
+
+bit template_binary_concept_2___meta(bit x0, bit x1) {
+    return template_binary_concept(x0, x1); // 2^4 = 16 languages with one operator each
+}
+
+bit template_binary_concept_3___meta(bit x0, bit x1) {
+    return template_binary_concept(x0, x1); // 2^4 = 16 languages with one operator each
+}
+
+bit template_binary_concept_4___meta(bit x0, bit x1) {
+    return template_binary_concept(x0, x1); // 2^4 = 16 languages with one operator each
+}
+
+generator bit bin(bit x0, bit x1) {
+    return {|template_binary_concept_1___meta(x0, x1) | template_binary_concept_2___meta(x0, x1) | template_binary_concept_3___meta(x0, x1) | template_binary_concept_4___meta(x0, x1) |};
+}
+
+generator bit f(int n, bit[n] bits)
+{
+    int id_1 = ??(4);
+    int _id_2 = ??(4);
+    if(id_1 < 3) {
+        return !bits[_id_2];
+    }
+    int id_2 = _id_2;
+    if (id_1 == 0) {
+        id_2 = id_2 + 1;
+    } else if(id_1 == 1) {
+        if(id_2 == 1) {
+            id_2 = 2;
+        }
+    }
+    return bin(bits[id_1], bits[id_2]);
+}
+
+generator bit four_ops_lang(int n, bit[n] bits) {
+    return {| bits[??(4)] | f(n, bits) | 0 | 1 |};
+}
+
+generator bit op(int n, bit[n] bits)
+{
+    return four_ops_lang(n, bits);
+}
+
+bit op_4(int n, bit[n] bits) {
+    return predicate(n, bits);
+}
+
+generator bit five_ops_lang(int n, bit[n] bits) {
+    return {| four_ops_lang(n, bits) | op_4(n, bits) |};
+}
+
+generator bit predicate(int n, bit[n] bits) {
+
+    bit first = op(n, bits);
+    bit first_2 = op(n, bits);
+    bit second = bin(first, first_2);
+    bit third = bin(second, first);
+    bit third_2 = bin(second, first_2);
+    bit fourth = bin(second, third_2);
+
+    bit second_2 = bin(first,  op(n, bits));
+    bit second_3 = bin(first_2,  op(n, bits));
+    bit third_3 = bin(second_2, op(n, bits));
+    bit fourth_2 = bin(third_3, op(n, bits));
+    bit fourth_3 = bin(second_2, second_3);
+
+    return {| first | second | third | fourth | second_2 | third_2 | fourth_2 | fourth_3 |};
+}
+
+bit program(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.data")
+harness void main_sk(int n, bit[n] bits, bit out) {
+    assert(program(n, bits) == out);
+}

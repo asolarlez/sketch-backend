@@ -1,6 +1,3 @@
-#pragma once
-
-#include "CEGISSolver.h"
 #include "timerclass.h"
 #include <queue>
 #include "CommandLineArgs.h"
@@ -16,55 +13,60 @@
 #include "CEGISFinder.h"
 
 
-BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats){
-	BooleanDAG* newdag = dag->clone();	
-	
-	int oldsize = newdag->size();
-
-	// if(PARAMS->verbosity > 2) {
-		// char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
-		// cout<<" * Specializing problem for "<< stype <<endl;
-		// cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
-	// }
-	
-	NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type, floats);
-	nhc.process(*newdag);
-
-	Dout( newdag->print(cout) ); 
-	DagOptim cse(*newdag, floats);
-	cse.process(*newdag);
-	newdag->cleanup();
-	if(false){
-		BackwardsAnalysis ba;
-		ba.process(*newdag);
-	}
-	if(false){
-		DagOptim cse(*newdag, floats);			
-		cse.process(*newdag);
-	}
-	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }	
-	return newdag;
-}
-
 int CEGISsolveCount=0;
 
 
-bool CEGISFinder::find(BooleanDAG* problem, VarStore& input, VarStore& controls, bool hasInputChanged){
-	
+SATSolverResult CEGISFinder::find(
+        BooleanDAG* problem,
+        VarStore& controls,
+        bool hasInputChanged,
+        unsigned long long max_finder_solve_timeout_in_microseconds){
 	// the caller expects find to keep track of all the constraints.
 	// here dirfind is doing that.
 
+    if(hasInputChanged)
+    {
+        BooleanDAG* newdag = problem->clone();
+        if(allInputsDag == nullptr)
+        {
+            assert(newdag != nullptr);
+            allInputsDag = newdag;
+        }
+        else
+        {
+            allInputsDag->andDag(newdag);
+            DagOptim dag_optim(*allInputsDag, floats);
+            dag_optim.process(*allInputsDag);
+        }
+    }
+    else
+    {
+        //claim: solution is already optimal.
+        AssertDebug(false, "INVESTIGATE");
+        return SAT_SATISFIABLE;
+    }
+
+	//hasInputChange == is it a new problem;
 	if(hasInputChanged){
 		timerclass tc("* TIME TO ADD INPUT ");
-		tc.start();				
-		addInputsToTestSet(problem, input);
+		tc.start();
+        addProblemToTestSet(problem);
+//		addInputsToTestSet(problem, input);
 		tc.stop();
 		if(PARAMS->verbosity > 2){ tc.print(); }
 	}
+
 	//Solve
-	
-	SATSolver::SATSolverResult result = mngFind.solve();
-	hcoder.dismissedPending();
+    bool do_print = false;
+    string CEGISFINDer_find_spec__as_str =
+            "bool CEGISFinder::find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) in CEGISFinder.cpp";
+    if(do_print) {
+        cout << "in " + CEGISFINDer_find_spec__as_str << endl;
+    }
+    SATSolverResult result = mngFind.solve(max_finder_solve_timeout_in_microseconds);
+    if(do_print) {
+        cout << "out " + CEGISFINDer_find_spec__as_str << endl;
+    }
 
 	if(PARAMS->outputSat){
 		++CEGISsolveCount;
@@ -75,42 +77,45 @@ bool CEGISFinder::find(BooleanDAG* problem, VarStore& input, VarStore& controls,
 		this->dirFind.writeDIMACS(file);		
 	}
 
-
-	if(params.printDiag){	  	
-		printDiagnostics(mngFind, 'f');
+	if(params.printDiag){
+        mngFind.printDiagnostics('f');
 	}
-    if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
-    	if( result != SATSolver::UNSATISFIABLE){
+
+    if (result != SAT_TIME_OUT && result != SAT_SATISFIABLE){ 	//If solve is bad, return false.
+    	if( result != SAT_UNSATISFIABLE){
 	    	switch( result ){
-			case SATSolver::UNDETERMINED: {
+			    case SAT_UNDETERMINED: {
 					if (params.lightVerif) {
-						return false;
+						return result;
 					}
 					else {
-						throw new SolverException(result, "UNDETERMINED"); break;
+						throw new SolverException(result, "SAT_UNDETERMINED"); break;
 					}
-				}									
-	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
-	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
-	    	}    			
+				}
+	    		case SAT_TIME_OUT:  throw new SolverException(result, "SAT_TIME_OUT"); break;
+	    		case SAT_MEM_OUT:  throw new SolverException(result, "SAT_MEM_OUT"); break;
+	    		case SAT_ABORTED:  throw new SolverException(result, "SAT_ABORTED"); break;
+
+                default:
+                    Assert(false, "MISSING CASE in CEGISFinder::find.");
+	    	}
     	}
 		if(this->stoppedEarly){
 			cout<<dirFind.lastErrMsg<<endl;
 		}
-    	return false;
+    	return result;
     }
 	Dout( dirFind.print() );
 	//dirFind.printAllVars();
-	//Get the values of the Controls.
+	//Get the values of the Controls.6-
 
-	for(VarStore::iterator it = controls.begin(); it !=controls.end(); ++it){
-		const string& cname = it->getName();
+	for(auto it = controls.begin(); it !=controls.end(); ++it){
+		const string& cname = it->get_name();
 		int cnt = dirFind.getArrSize(cname);
-		Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+		Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
 		for(int i=0; i<cnt; ++i){
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
-			it->setBit(i, (val==1) ? 1 : 0);			
+			it->set_bit(i, (val==1) ? 1 : 0);
 		}
 	}
 
@@ -130,18 +135,50 @@ bool CEGISFinder::find(BooleanDAG* problem, VarStore& input, VarStore& controls,
 	}
 
 	mngFind.reset();
-	return true;
-	//Return true.
+	return result;
 }
 
-void CEGISFinder::addInputsToTestSet(BooleanDAG* problem, VarStore& input){
+void CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
+{
+    map<bool_node*,  int> node_values;
+    if(PARAMS->verbosity > 2){  cout<<" intsize = "<< newdag->getIntSize()<<endl; }
+
+    if(PARAMS->verbosity > 6){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }
+    // find_node_ids store the mapping between node in the DAG (miter) vs
+    // the variables in the CNF.
+    find_node_ids.resize(newdag->size());
+
+    try{
+        stoppedEarly = NodesToSolver::createConstraints(*newdag, dirFind, node_values, find_node_ids, floats);
+    }catch(BasicError& e){
+        dirFind.nextIteration();
+        if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
+
+
+        find_node_ids.clear();
+
+        AssertDebug(false, "error");
+        throw e;
+    }
+    // Keeps the history around for debugging purposes.
+    if( params.superChecks ){ find_history = find_node_ids; }
+    dirFind.nextIteration();
+    if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
+
+    find_node_ids.clear();
+}
+
+void
+CEGISFinder::
+addInputsToTestSet(BooleanDAG* problem, VarStore& input){
 	map<bool_node*,  int> node_values;
 	bool specialize = PARAMS->olevel >= 6;
 	BooleanDAG* tmpproblem = NULL;	
 	if(PARAMS->verbosity > 2){  cout<<" intsize = "<< problem->getIntSize()<<endl; }
-	
+
+    AssertDebug(false, "NEED TO USE THE NEW HARDCODER (The 2-in-1 inliner and hardcoder).")
 	BooleanDAG* newdag = hardCodeINode(problem, input, bool_node::SRC, floats);
-	BackwardsAnalysis ba;
+//	BackwardsAnalysis ba;
 	// ba.process(*newdag);
 	DagOptim fa(*newdag, floats);
 	fa.process(*newdag);
@@ -152,7 +189,7 @@ void CEGISFinder::addInputsToTestSet(BooleanDAG* problem, VarStore& input){
 	// find_node_ids store the mapping between node in the DAG (miter) vs
 	// the variables in the CNF.
 	find_node_ids.resize(newdag->size());
-	//getProblem()->lprint(cout);
+	//getProblemDag()->lprint(cout);
 	
 	//FindCheckSolver::addInputsToTestSet(input);
 	//lastFproblem = newdag;	
@@ -187,7 +224,7 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 	for(size_t i=0; i<mhsizes.size(); ++i){
 		string& locminVarNodeName = mhnames[i];
 		int minVarNodeSize = mhsizes[i];
-		int H__0_val = ctrlStore.getObj(locminVarNodeName).getInt(); 
+		int H__0_val = ctrlStore.getObjConst(locminVarNodeName).getInt();
 		int H__0_var_idx = dirFind.getVar(locminVarNodeName);
 		cout <<locminVarNodeName<<"=" << H__0_val << ", " << flush;
 		Tvalue tv = H__0_var_idx;		
@@ -216,7 +253,6 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 			return false;
 		}
 	}
-	cout<<endl;
 	if(!isSingleMinHole){
 		dirFind.addBigOrClause(&bigor[0], bigor.size()-1);
 		try{
@@ -230,5 +266,5 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 		dirFind.getMng().lightSolve();
 	}
 	
-	return true;
+	return true; //doMore
 }

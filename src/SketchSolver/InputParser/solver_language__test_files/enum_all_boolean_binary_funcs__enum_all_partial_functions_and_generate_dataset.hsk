@@ -1,0 +1,183 @@
+
+hypersketch list_of_bits_to_int(list_of_bits)
+{
+    int ret = 0;
+    int pow = 1;
+    for(int i = 0;i<list_of_bits.size();i++)
+    {
+        int is_set = list_of_bits[i];
+        if(not(is_set == 0)) {
+            assert(is_set == 1);
+        }
+        int is_set_as_int = 0;
+        if(is_set) {
+            is_set_as_int = 1;
+        }
+        ret = ret + pow * is_set;
+        pow = pow * 2;
+    }
+    return ret;
+}
+
+hypersketch main()
+{
+    file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs_3.txt", main_sk__Wrapper);
+
+        partial_funcs_files = [];
+        source_total_funcs_files = [];
+
+        original_total_func_of_partial_func = [];
+        input_mask_ids = [];
+
+        input_masks =
+            [
+                [0, 1, 0, 1, 0, 1, 0, 1],
+                [0, 0, 0, 0, 1, 1, 1, 1],
+                [1, 0, 0, 1, 0, 1, 1, 0],
+                [0, 1, 1, 0, 1, 0, 0, 1]
+            ];
+
+        int num_partial_funcs = 0;
+        for(int i = 0;i<256;i++) {
+            for(int j = 0;j<input_masks.size();j++) {
+                int meta_example_size = 0;
+                partial_func_ij = File();
+                source_total_func_ij = File();
+                for(int k = 0;k<8;k++) {
+                    if(input_masks[j][k] == 1) {
+                        partial_func_ij.append(file_0[k]);
+                        int meta_example_id = meta_example_size;
+                        meta_example_size = meta_example_size + 1;
+                        partial_func_ij.set(meta_example_id, 2, i.get_bit(k));
+                    }
+                    source_total_func_ij.append(file_0[k]);
+                    source_total_func_ij.set(k, 2, i.get_bit(k));
+                }
+                partial_funcs_files.append(partial_func_ij);
+                source_total_funcs_files.append(source_total_func_ij);
+                original_total_func_of_partial_func.append(i);
+                input_mask_ids.append(j);
+
+/*
+                print("num_partial_funcs", num_partial_funcs);
+                print("partial_funcs_files.size()", partial_funcs_files.size());
+                print("partial_funcs_files[num_partial_funcs].size()", partial_funcs_files[num_partial_funcs].size());
+                print("meta_example_size", meta_example_size);*/
+
+                assert(num_partial_funcs == partial_funcs_files.size() - 1);
+                assert(meta_example_size == partial_funcs_files[num_partial_funcs].size());
+                num_partial_funcs++;
+            }
+        }
+
+    fs = [];
+    total_funcs_files = [];
+
+    final_dataset = [];
+
+    meta_inputs_to_meta_outputs = [];
+
+    int score = 0;
+    for(int i = 0;i<partial_funcs_files.size();i++) {
+
+        new_dag = main_sk__Wrapper.deep_clone(i);
+        solution = SATSolver(new_dag, partial_funcs_files[i]);
+        //solution = BatchEnumerationSolver(new_dag, partial_funcs_files[i]);
+        new_dag.make_executable(solution);
+        result_train = new_dag.evaluate_inputs(partial_funcs_files[i]);
+        result_total = new_dag.evaluate_inputs(source_total_funcs_files[i]);
+        print("---------------------------------------");
+        print("partial_function_file id", i );
+        print( partial_funcs_files       [i]);
+        print("source_total_function_i", original_total_func_of_partial_func[i]);
+        print("source_total_function_file id", i);
+        print(source_total_funcs_files[i]);
+
+        int input_mask_id = input_mask_ids[i];
+        print("input_mask_id:", input_mask_id);
+        print("input_mask   :", input_masks[input_mask_id]);
+        print("train_passing:", result_train);
+        print("total_passing:", result_total);
+        for(int j = 0; j<8;j++) {
+            // print("source_total_funcs_files[i][j]", source_total_funcs_files[i][j]);
+            synthesizer_meta_example = [];
+            //synthesizer_meta_example.append(9);
+            //synthesizer_meta_example.append("{");
+            synthesizer_meta_example.append(input_mask_id.get_bit(0));
+            synthesizer_meta_example.append(input_mask_id.get_bit(1));
+            synthesizer_meta_example.append(partial_funcs_files[i].get(0, 2));
+            synthesizer_meta_example.append(partial_funcs_files[i].get(1, 2));
+            synthesizer_meta_example.append(partial_funcs_files[i].get(2, 2));
+            synthesizer_meta_example.append(partial_funcs_files[i].get(3, 2));
+            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 0));
+            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 1));
+            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 2));
+            //synthesizer_meta_example.append("}");
+
+            // | output
+            out_bit = 0;
+            if(result_total[j] == true) {
+                out_bit = source_total_funcs_files[i].get(j, 2);
+            }
+            else {
+                out_bit = source_total_funcs_files[i].get(j, 2);
+                if(not(out_bit == 0)) {
+                    assert(out_bit == 1);
+                }
+                out_bit = 1 - out_bit; // not!
+            }
+            //add to inputs to outputs;
+            {
+                int meta_example_input_as_an_int = list_of_bits_to_int(synthesizer_meta_example);
+
+                while(meta_example_input_as_an_int >= meta_inputs_to_meta_outputs.size())
+                {
+                    meta_inputs_to_meta_outputs.append([]);
+                }
+
+                assert((meta_example_input_as_an_int < meta_inputs_to_meta_outputs.size()));
+                meta_inputs_to_meta_outputs[meta_example_input_as_an_int].append(out_bit);
+            }
+
+            synthesizer_meta_example = [9, "{"] + synthesizer_meta_example + ["}"];
+
+            synthesizer_meta_example.append(out_bit);
+            print("synthesizer_meta_example", synthesizer_meta_example);
+            final_dataset.append(synthesizer_meta_example);
+        }
+
+        print("---------------------------------------");
+        fs.append(new_dag);
+
+        int sum = 0;
+        for(int i = 0;i<result_train.size();i++)
+        {
+            if(result_train[i]){
+                sum = sum + 1;
+            }
+        }
+        print("score:", sum == result_train.size());
+        if(sum == result_train.size())
+        {
+            score = score+1;
+        }
+        print("running score:", score, "/", i+1);
+        print("elapsed_time");
+        timestamp();
+        print("---------------------------------------");
+    }
+
+    print("final_dataset");
+    for(int i = 0;i<final_dataset.size();i++) {
+        print(final_dataset[i]);
+    }
+
+    print("meta_inputs__to__meta_outputs");
+    for(int i = 0;i<meta_inputs_to_meta_outputs.size();i++) {
+        print(meta_inputs_to_meta_outputs[i]);
+    }
+
+    print("final score:", score, "/", partial_funcs_files.size());
+
+    return fs[0];
+}

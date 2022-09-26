@@ -1,0 +1,50 @@
+pragma options "--bnd-arr-size 3";
+
+generator bit template_binary_concept(bit x0, bit x1) {
+    if(x0 && x1) {
+        return ??;
+    } else if (x0 && !x1) {
+        return ??;
+    } else if(!x0 && x1) {
+        return ??;
+    } else if(x0 && x1) {
+        return ??;
+    }
+}
+
+
+bit template_binary_concept_1___meta(bit x0, bit x1) {
+    return template_binary_concept(x0, x1); // 2^4 = 16 languages with one operator each
+}
+
+bit template_binary_concept_2___meta(bit x0, bit x1) {
+    return template_binary_concept(x0, x1); // 2^4 = 16 languages with one operator each
+}
+
+generator bit one_of_two_binary_concepts(bit x0, bit x1) {
+    return {|template_binary_concept_1___meta(x0, x1) | template_binary_concept_2___meta(x0, x1) |};
+}
+
+bit binary_concept_1(bit x0, bit x1)
+{
+    return one_of_two_binary_concepts(x0, x1);
+}
+
+bit binary_concept_2(bit x0, bit x1)
+{
+    return one_of_two_binary_concepts(x0, x1);
+}
+
+generator bit predicate(int n, bit[n] bits) {
+    return binary_concept_1(binary_concept_2(bits[??(2)], bits[??(2)]), bits[??(2)]);
+}
+
+bit program(int n, bit[n] bits){
+    return predicate(n, bits);
+}
+
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs.data")
+harness void main_sk(int n, bit[n] bits, bit out) {
+    assert(program(n, bits) == out);
+}

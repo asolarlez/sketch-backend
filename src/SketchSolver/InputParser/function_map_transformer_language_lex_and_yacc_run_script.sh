@@ -1,0 +1,6 @@
+rm function_map_transformer_language_yacc.cpp
+rm function_map_transformer_language_yacc.h
+
+yacc -d function_map_transformer_language_parser.y && mv y.tab.c function_map_transformer_language_yacc.cpp && mv y.tab.h function_map_transformer_language_yacc.h
+g++ function_map_transformer_language_yacc.cpp SolverLanguageLexAndYaccHeader.cpp -o function_map_transformer_language_executable
+./function_map_transformer_language_executable < function_map_transformer_language_program.txt

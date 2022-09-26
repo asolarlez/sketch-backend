@@ -418,7 +418,7 @@ void DagCSE::visit(  UFUN_node& node ){
     
 	size_t p = 0;
     
-	const string& tst = node.get_ufname();
+	const string& tst = node.get_ufun_name();
 	size_t mxsz = tst.size() + node.outname.size() + node.nargs() * 8 + 17;
 	if(tmpbuf.size() < mxsz){
 		tmpbuf.resize(mxsz);

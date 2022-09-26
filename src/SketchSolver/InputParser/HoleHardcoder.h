@@ -10,88 +10,13 @@
 /*
 Excelption class used to signal that a concretization failed.
 */
+
 class BadConcretization {
 public:
 	string msg;
 	BadConcretization(const string& s) :msg(s) {}
 	BadConcretization() {}
 };
-
-/*
-This class tracks dependencies between holes and harnesses. 
-*/
-class DepTracker{
-	/*Each hole has an index*/
-	map<string, int> ctrlIdx;
-	vector<set<int> > harnessPerHole; // holeId -> [harnesses]
-	vector<set<int> > holesPerHarness; // harnesId -> {holes}
-
-	/*In this variable, we record all the decisions that have been made during each harness.*/
-	vector<vector<Lit> > decisionsPerHarness;
-	int curHarness;
-	
-
-	/*
-	out tracks all the literals that were set leading to a concretization failure. 
-	If harnid failed, first, we will add all the holes that were concretized for harness harnid.
-	But then it could also be that the problem was not the concretization of holes in harnid, but of holes somewhere else.
-	For example, suppose you have a harness that says
-	assert H_1 == H_2.
-	Then you have another harness that says 
-	assert H_2 > 5;
-
-	If I concretize H_1 to 3, that could lead to an assertion failure in the second harness despite the fact that 
-	the only hole (H_2) in that harness was not concretized. 
-	Therefore, we must include as dependencies not just the holes in that harness, but holes in all other harnesses
-	that transitively share holes with the currentt harness.
-
-	*/
-	void helper(int harnid, vector<char>& visited, set<int>& out);
-
-public:
-
-	void reset(){
-		for(size_t i=0; i<holesPerHarness.size(); ++i){
-			holesPerHarness[i].clear();
-			decisionsPerHarness[i].clear();
-		}
-		for(size_t i=0; i<harnessPerHole.size(); ++i){
-			harnessPerHole[i].clear();
-		}
-	}
-
-	void genConflict(vec<Lit>& vl){
-		genConflict(curHarness, vl);
-	}
-	void recordDecision(const Lit l){
-		decisionsPerHarness[curHarness].push_back(l);
-	}
-	void genConflict(int harnid, vec<Lit>& vl);
-	
-	void declareControl(string const & ctrl){
-		if(ctrlIdx.count(ctrl)==0){
-			int sz = ctrlIdx.size();
-			ctrlIdx[ctrl] = sz;
-			harnessPerHole.push_back(set<int>());
-		}
-	}
-	void setCurHarness(int hid){
-		curHarness = hid;
-	}
-	void setHarnesses(int nharnesses){
-		holesPerHarness.resize(nharnesses);
-		decisionsPerHarness.resize(nharnesses);		
-	}
-
-
-	void regHoleInHarness(string const & hname){		
-		int hole = ctrlIdx[hname];
-		harnessPerHole[hole].insert(curHarness);
-		holesPerHarness[curHarness].insert(hole);
-	}
-
-};
-
 
 
 
@@ -168,10 +93,10 @@ class HoleHardcoder{
 	//have tried cover the set of all solutions.
 	SolverHelper* globalSat;
 
+
 	vec<Lit> sofar;
 	double totsize;
 	int randdegree;
-	DepTracker dt;
 	RandDegreeControl degreeControl;
 
 	
@@ -181,7 +106,7 @@ class HoleHardcoder{
 	harnesses before those constraints are dismissed through calling 
 	solve, you will missattribute those constraints to the wrong harness.
 	*/
-	bool pendingConstraints;
+//	bool pendingConstraints;
 
 	double getAvg(vector<double>& vd){
 		double rv = 0.0;
@@ -224,10 +149,14 @@ class HoleHardcoder{
 
 	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
 	void addedConstraint() {
-		pendingConstraints = true;
+        set_pendingConstraints(true);
 	}
 public:
 
+    SolverHelper* get_globalSat()
+    {
+        return globalSat;
+    }
 
 	void settleHole(const string& name, int value) {
 		settledHoles[name] = value;
@@ -246,7 +175,7 @@ public:
     int fixValue(CTRL_node& node, int bound, int nbits);
 
 	void get_control_map(map<string, string>& values);
-	
+
 	/*
 	This function updates the current set of rand degrees using an MCMC style search to try to 
 	converge to the best rand degree.
@@ -288,7 +217,7 @@ public:
 	int getRanddegree(){
 		return randdegree;
 	}
-	HoleHardcoder():
+	HoleHardcoder() :
 		degreeControl(PARAMS->randdegree, PARAMS->nprocs),
 		totsize(0.0),
 		randdegree(PARAMS->randdegree)
@@ -296,7 +225,7 @@ public:
 		
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
 		globalSat = new SolverHelper(*ms);
-		pendingConstraints = false;		
+        set_pendingConstraints(false);
 		hardcodeMinholes = false;
 	}
 
@@ -305,27 +234,35 @@ public:
 		delete globalSat;
 	}
 
-	
+// REDO
 
-	void dismissedPending(){
-		pendingConstraints=false;
-	}
+private:
+    bool pendingConstraints;
+	DepTracker dt;
+public:
 
-	bool checkHarnessSwitch(int hid){
-		if(pendingConstraints){
-			int res = sat->getMng().solve();
-			if(res != SATSolver::SATISFIABLE){
-				return false;
-			}
-		}
-		dt.setCurHarness(hid);
-		pendingConstraints = false;
-		return true;
-	}
+    void setCurrentHarness(int hid){
+//        if(pendingConstraints){
+//            int res = sat->getMng().solve();
+//            if(res != SAT_SATISFIABLE){
+//                return false;
+//            }
+//        }
+        get_dt().setCurHarness(hid);
+       // pendingConstraints = false;
+    }
+
+    DepTracker &get_dt();
+
+    bool get_pendingConstraints();
+
+    void set_pendingConstraints(bool val);
+
+    void dismissedPending();
 
 	void setCurHarness(int hid){
-		dt.setCurHarness(hid);
-		Assert(!pendingConstraints, "There can't be any pending unchecked constraints!");
+		get_dt().setCurHarness(hid);
+		Assert(!get_pendingConstraints(), "There can't be any pending unchecked constraints!");
 	}
 
 	bool isDone(){
@@ -336,13 +273,13 @@ public:
 		return totsize;
 	}
 	void setHarnesses(int nharnesses){
-		dt.setHarnesses(nharnesses);
+		get_dt().setHarnesses(nharnesses);
 	}
 
 	void registerAllControls(map<string, BooleanDAG*>& functionMap) {
 		for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
 			BooleanDAG* bd = it->second;
-			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
+			auto ctrl = bd->getNodesByType(bool_node::CTRL);
 			for (size_t i = 0; i<ctrl.size(); ++i) {
 				declareControl((CTRL_node*)ctrl[i]);
 			}
@@ -352,7 +289,7 @@ public:
 	void declareControl(CTRL_node* node){
 		globalSat->declareControl(node);
     string name = node->get_name();
-		dt.declareControl(name);
+		get_dt().declareControl(name);
 	}
 
 	void tryHarder(){
@@ -413,13 +350,13 @@ public:
 		cout << endl;
 		globalSat->getMng().addHelperClause(sofar);
 
-		dt.reset();
+		get_dt().reset();
 
 		((MiniSATSolver&)globalSat->getMng()).dump();
 		randholes.clear();
 		sofar.clear();
 		totsize = 0.0;
-		pendingConstraints = false;
+        set_pendingConstraints(false);
 	}
 	
 	void reset(){
@@ -428,7 +365,7 @@ public:
 			cout<<", "<<toInt(sofar[i]);
 		}
 		cout<<endl;		
-		dt.genConflict(sofar);
+		get_dt().genConflict(sofar);
 		resetCore();		
 	}
 
@@ -450,6 +387,8 @@ public:
     int getValue(const string& s) {
         return randholes[s];
     }
+
+    bool solvePendingConstraints();
 };
 
 

@@ -34,6 +34,39 @@ int SwapperPredicate::numvars;
 #endif
 
 
+void DepTracker::helper(int harnid, vector<char>& visited, set<int>& out) {
+    visited[harnid] = 1;
+    vector<Lit>& lits = decisionsPerHarness[harnid];
+
+    for (vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit) {
+        out.insert(toInt(*llit));
+    }
+
+    set<int>& holes = holesPerHarness[harnid];
+    for (set<int>::iterator it = holes.begin(); it != holes.end(); ++it) {
+        set<int>& vi = harnessPerHole[*it];
+        if (vi.size()>1) {
+            for (set<int>::iterator vvi = vi.begin(); vvi != vi.end(); ++vvi) {
+                if (visited[*vvi] == 0) {
+                    helper(*vvi, visited, out);
+                }
+            }
+        }
+    }
+}
+
+void DepTracker::genConflict(int harnid, vec<Lit>& out) {
+    cout << " charness = " << harnid << endl;
+    out.clear();
+    vector<char> visited(holesPerHarness.size(), 0);
+    set<int> tout;
+    helper(harnid, visited, tout);
+    for (set<int>::iterator it = tout.begin(); it != tout.end(); ++it) {
+        out.push(toLit(*it));
+    }
+}
+
+
 
 void SolverHelper::writeDIMACS(ofstream& dimacs_file){	
 	for(map<string, int>::iterator fit = varmap.begin(); fit != varmap.end(); ++fit){
@@ -94,7 +127,7 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
   }
   else*/{
 
-	  Assert(false,"Invalid synthesizer name: " + name);
+	  AssertDebug(false,"Invalid synthesizer name: " + name);
   }
 	
 	
@@ -203,7 +236,8 @@ Tvalue& SolverHelper::getControl(const string& name) {
 Tvalue& SolverHelper::getControl(CTRL_node* ctrlnode){	
 	Assert(!ctrlnode->get_Angelic(), "not allowed");
 	string name = ctrlnode->get_name();
-	map<string, Tvalue>::iterator mp = controls.find(name);	
+	map<string, Tvalue>::iterator mp = controls.find(name);
+    AssertDebug(mp != controls.end(), "Not here");
 	Assert(mp != controls.end(), "Not here");
 	return mp->second;
 }
@@ -216,7 +250,7 @@ Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 		return mp->second;
 	}else{
 		int nbits = ctrlnode->get_nbits();
-		declareInArr(name, nbits);
+		declareInArr(name, nbits, ctrlnode->getOtype(), bool_node::CTRL, ctrlnode->get_original_name(), ctrlnode->get_source_dag_name());
 		Tvalue& rv = controls[name];
 		rv = getArr(name, 0);
 		if(nbits > 1){			
@@ -624,6 +658,40 @@ void SolverHelper::addHelperC(int l1, int l2){
 	if(l1 == -l2)
 		return;
 	mng.addHelper2Clause(l1, l2);
+}
+
+OutType *SolverHelper::getOtype(const string varname) {
+    Assert(vartype.find(varname) != vartype.end(), varname + " not found in SolverHelper");
+    return vartype[varname];
+}
+
+
+bool SolverHelper::get_pendingConstraints() {
+    return pendingConstraints;
+}
+
+void SolverHelper::dismissedPending() {
+    set_pendingConstraints(false);
+}
+
+void SolverHelper::set_pendingConstraints(bool val)
+{
+	pendingConstraints = val;
+}
+
+const string &SolverHelper::get_original_name(const string &name) const {
+    assert(ctrls_original_names.find(name) != ctrls_original_names.end());
+    return ctrls_original_names.at(name);
+}
+
+const string & SolverHelper::get_source_dag_name(const string &name) const {
+    assert(ctrls_dag_name.find(name) != ctrls_dag_name.end());
+    return ctrls_dag_name.at(name);
+}
+
+bool_node::Type SolverHelper::get_type(const string &name) const {
+    assert(ctrls_dag_name.find(name) != ctrls_dag_name.end());
+    return ctrls_type.at(name);
 }
 
 /*

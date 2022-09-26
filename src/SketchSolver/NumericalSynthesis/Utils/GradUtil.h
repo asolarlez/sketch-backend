@@ -1,6 +1,5 @@
 #pragma once
 
-
 #ifndef _NOGSL
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>

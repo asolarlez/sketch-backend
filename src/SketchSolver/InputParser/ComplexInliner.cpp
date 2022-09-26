@@ -191,7 +191,7 @@ void ComplexInliner::mergeFuncalls(int first, int second){
 void ComplexInliner::computeSpecialInputs(){
 	for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
 		BooleanDAG* fun = it->second;
-		vector<bool_node*>& inputs  = fun->getNodesByType(bool_node::SRC);
+		auto inputs  = fun->getNodesByType(bool_node::SRC);
 		for(int i=0; i<inputs.size(); ++i){	
 			string fn = inputs[i]->get_name();
 			if(fn.find("PC") != -1 ){
@@ -219,9 +219,10 @@ void ComplexInliner::unify(){
 	int maxDif = -1;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
-		if(typeid(*dag[i]) == typeid(UFUN_node)){
+        auto dag_i = dag[i];
+		if(typeid(*dag_i) == typeid(UFUN_node)){
 			UFUN_node* ufun = dynamic_cast<UFUN_node*>(dag[i]);
-			const string& name = ufun->get_ufname();
+			const string& name = ufun->get_ufun_name();
 			if(checkFunName(name)){
 				vector<vector<bool_node*> >& v = argLists;	
 				int id = v.size();
@@ -324,7 +325,7 @@ void ComplexInliner::immInline(BooleanDAG& dag){
 
 
 void ComplexInliner::process(BooleanDAG& dag){
-	// cout<<" funmap has size " << functionMap.size() << endl;
+	// cout<<" funmap has size " << function_map.size() << endl;
 	somethingChanged = true;
 	{
 		DagOptim optim(dag, floats);

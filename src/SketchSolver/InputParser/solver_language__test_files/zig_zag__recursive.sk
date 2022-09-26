@@ -1,0 +1,47 @@
+generator int line_generator(int x)
+{
+    return (??-16)*x + (??-16);
+}
+
+generator bit predicate_generator(int x)
+{
+    return {|0|7|8|15|16|23|} <= x && x <= {|0|7|8|15|16|23|};
+}
+
+generator int program_generator(int x) {
+    return line_generator(x);
+}
+
+int program_lvl0(int x)
+{
+    return program_generator(x);
+}
+
+bit condition(int x)
+{
+    return predicate_generator(x);
+}
+
+int composite_predicate(int x)
+{
+    if(condition(x)) {
+        return composite_predicate(x);
+    }
+    else {
+        return program_lvl0(x);
+    }
+}
+
+int dummy_program(int x) {return 1;}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+harness int eval_program_main(int x, int out)
+{
+    return dummy_program(x);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+harness void sketch_main(int x, int out)
+{
+    assert(composite_predicate(x) == out);
+}

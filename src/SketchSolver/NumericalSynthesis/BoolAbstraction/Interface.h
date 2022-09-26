@@ -82,7 +82,7 @@ public:
         set<Predicate*> s;
         levelPredicates.push_back(s);
 
-        vector<bool_node*>& ctrlNodes = dag->getNodesByType(bool_node::CTRL);
+        auto ctrlNodes = dag->getNodesByType(bool_node::CTRL);
         int ctr = 0;
         for (int i = 0; i < ctrlNodes.size(); i++) {
             if (ctrlNodes[i]->getOtype() == OutType::FLOAT || ctrlNodes[i]->getOtype() == OutType::BOOL) {

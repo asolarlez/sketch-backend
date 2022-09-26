@@ -1,0 +1,59 @@
+
+generator int predicate(int x)
+{
+    return (??-16)*x + (??-16);
+}
+
+generator int compound_predicate(int prev_left, int prev_right, int x)
+{
+    if({|0|7|8|15|16|23|} <= x && x <= {|0|7|8|15|16|23|})
+    {
+        return prev_left;
+    }
+    else
+    {
+        return prev_right;
+    }
+}
+
+int predicate_lvl0(int x)
+{
+    return predicate(x);
+}
+
+int predicate_lvl0_left(int x)
+{
+    return predicate(x);
+}
+
+int predicate_lvl0_right(int x)
+{
+    return predicate(x);
+}
+
+int predicate_lvl1(int x)
+{
+    return compound_predicate(
+        predicate_lvl0_left(x),
+        predicate_lvl0_right(x),
+        x
+    );
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+harness void main_lvl1(int x, int y)
+{
+    assert(predicate_lvl1(x) == y);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+harness void main_lvl0_left(int x, int y)
+{
+    assert(predicate_lvl0_left(x) == y);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+harness void main_lvl0_right(int x, int y)
+{
+    assert(predicate_lvl0_right(x) == y);
+}

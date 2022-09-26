@@ -34,6 +34,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 		DebugOut((**node_it), node_ids[(*node_it)->id]);
 		}catch(BasicError& be){
+		    assert(false);
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
     	}
 	}
@@ -81,7 +82,7 @@ bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bo
 		//timer.start();
 	bool stoppedEarly;
 		int YES = dir.newYES();
-		//getProblem()->lprint(cout);
+		//getProblemDag()->lprint(cout);
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids, floats);	
 		nts.sparseArray = sparseArray;
 		try{
@@ -93,7 +94,7 @@ bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bo
 			}
 
 			/*
-			BooleanDAG& bd = *getProblem();
+			BooleanDAG& bd = *getProblemDag();
 			for(int i=0; i<node_ids.size(); ++i){
 				cout<< bd[i]->lprint() <<"="<<node_ids[i]<<endl;
 			}
@@ -1403,7 +1404,7 @@ NodesToSolver::visit(EQ_node &node)
 
 
 bool NodesToSolver::checkKnownFun(UFUN_node& node) {
-	const string& name = node.get_ufname();	
+	const string& name = node.get_ufun_name();
 	if (floats.hasFun(name) || name == "_cast_int_float_math") {
 		Tvalue mval = tval_lookup(node.arguments(0), TVAL_SPARSE);
 		mval.makeSparse(dir);
@@ -1449,7 +1450,7 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
   string tuple_name = node.getTupleName();
   Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
   
-  const string& name = node.get_ufname();
+  const string& name = node.get_ufun_name();
   if (floats.hasFun(name) || name == "_cast_int_float_math") {
     return;
   }
@@ -1469,7 +1470,7 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
   for (int i = 0; i<nouts; ++i) {
     OutType* ttype = tuple_type->entries[i];
     stringstream sstr;
-    sstr << node.get_ufname() << "_" << node.get_uniquefid() << "_" << i;
+    sstr << node.get_ufun_name() << "_" << node.get_uniquefid() << "_" << i;
     bool isArr = ttype->isArr;
     bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
     int cbits = isBool ? 1 : nbits;
@@ -1546,13 +1547,13 @@ void NodesToSolver::visit( UFUN_node& node ){
 	if(isVerification){
 		//This means you are in the checking phase.
 
-		map<string, int>::iterator idit = ufunids.find(node.get_ufname());
+		map<string, int>::iterator idit = ufunids.find(node.get_ufun_name());
 
 		int funid = -1;
 		if (idit == ufunids.end()) {
 			Assert(ufunids.size() == ufinfos.size(), ";ly7u8AA?");
 			int sz = ufunids.size();
-			ufunids[node.get_ufname()] = sz;
+			ufunids[node.get_ufun_name()] = sz;
 			funid = sz;
 			ufinfos.push_back(vector<Ufinfo>());
 		}
@@ -1588,7 +1589,7 @@ void NodesToSolver::visit( UFUN_node& node ){
 		ms->addUfun(funid, ufs);
 				
 	}else{		
-		newSynthesis(node.get_ufname(), node.getTupleName(), params, nvars, dir);
+		newSynthesis(node.get_ufun_name(), node.getTupleName(), params, nvars, dir);
 	}
 
 
@@ -2823,8 +2824,7 @@ void NodesToSolver::regTuple(vector<Tvalue>* new_vec, Tvalue& nvar) {
 	}
 }
 
-void
-NodesToSolver::visit (ASSERT_node &node)
+void NodesToSolver::visit (ASSERT_node &node)
 {
 	
 	Tvalue fval = tval_lookup (node.mother());
@@ -2843,8 +2843,8 @@ NodesToSolver::visit (ASSERT_node &node)
 			//whether there are assumptions before this point, or if this
 			//assertion itself is an assumption.
 			if(!dir.getMng().isNegated()){				
-				cout<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 				
-				errorMsg = "  UNSATISFIABLE ASSERTION ";
+				cout<<"  SAT_UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl;
+				errorMsg = "  SAT_UNSATISFIABLE ASSERTION ";
 				errorMsg += node.getMsg();
 				if(PARAMS->verbosity > 7){
 					stringstream cstr;
@@ -2875,8 +2875,8 @@ NodesToSolver::visit (ASSERT_node &node)
 
 	if (!dir.getMng().isOK()) {
 		if (!dir.getMng().isNegated()) {
-			cout << "  UNSATISFIABLE ASSERTION " << node.getMsg() << endl;
-			errorMsg = "  UNSATISFIABLE ASSERTION ";
+			cout << "  SAT_UNSATISFIABLE ASSERTION " << node.getMsg() << endl;
+			errorMsg = "  SAT_UNSATISFIABLE ASSERTION ";
 			errorMsg += node.getMsg();
 		}
 		stopAddingClauses = true;
@@ -2887,8 +2887,10 @@ NodesToSolver::visit (ASSERT_node &node)
 	
 	if(PARAMS->debug){
 		cout<<"ASSERTING "<<node.getMsg()<<endl;
-		int res = dir.getMng().solve();
-		Assert(res == SATSolver::SATISFIABLE, "Failed assertion!");
+        cout << "in void NodesToSolver::visit (ASSERT_node &node) in NodesToSolver.cpp" << endl;
+		int res = dir.getMng().solve(numeric_limits<unsigned long long>::max());
+        cout << "out void NodesToSolver::visit (ASSERT_node &node) in NodesToSolver.cpp" << endl;
+		Assert(res == SAT_SATISFIABLE, "Failed assertion!");
 		lgv.clear();
 		for(int i=1; i < dir.getVarCnt(); ++i){
 			lgv.push_back( dir.getMng().getVarVal(i) );
@@ -3102,7 +3104,6 @@ void NodesToSolver::process(BooleanDAG& bdag){
   
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
-	//		if ((i>=2423808 && i<=2423808+1024) || i%1024 == 0) cout << "processing " << i << " " << (*node_it)->lprint() << endl;
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
@@ -3136,8 +3137,9 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	  //cout << endl;
       //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
-			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
-    		}
+            AssertDebug(false, "ERROR WAS IN THE FOLLOWING NODE" + (*node_it)->get_name());
+            throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");
+        }
 //		catch (exception e) {
 //			cout << "exception" << endl;
 //			cout << e.what() << endl;

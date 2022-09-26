@@ -1,16 +1,18 @@
 #include "InterpreterEnvironment.h"
-//#include "ABCSATSolver.h"
+
+#include <utility>
 #include "InputReader.h"
 #include "CallGraphAnalysis.h"
-#include "ComplexInliner.h"
 #include "DagFunctionToAssertion.h"
-#include "InputReader.h" // INp yylex_init, yyparse, etc.
 #include "Util.h"
 
 #include "ArithmeticExpressionBuilder.h"
 #include "SwapperPredicateBuilder.h"
 #include "DeductiveSolver.h"
 #include "IntToFloatRewriteDag.h"
+#include "SolverLanguage.h"
+#include "SketchFunction.h"
+#include "ProgramEnvironment.h"
 
 #ifdef CONST
 #undef CONST
@@ -26,8 +28,6 @@ public:
 	Strudel(vector<Tvalue>& vtv, SATSolver* solv, FloatManager& fm):vals(vtv), solver(solv), floats(fm){
 		cout << "This is strange size=" << vtv.size() << endl;
 	}
-
-
 
 
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits) {
@@ -50,12 +50,12 @@ public:
 			BooleanDAG* cl = newdag->clone();
 			for (int i = 0; i<newdag->size(); ++i) {
 				// Get the code for this node.				
-				if ((*newdag)[i] != NULL) {
+				if ((*newdag)[i] != nullptr) {
 					if ((*newdag)[i]->type == bool_node::CTRL) {
 						INTER_node* inode = dynamic_cast<INTER_node*>((*newdag)[i]);
 						int nbits;
 						int t = valueForINode(inode, values, nbits);
-						bool_node * repl = NULL;
+						bool_node * repl = nullptr;
 						if (nbits == 1) {
 							repl = cse.getCnode(t == 1);
 						}
@@ -101,17 +101,16 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 {
 	for (map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it) {
 		it->second->clear();
-		delete it->second;
 	}
 	if (bgproblem != NULL) {
 		bgproblem->clear();
-		delete bgproblem;
 	}
 	ArithExprBuilder::clearStaticMapMemory();
 	SwapperPredicateNS::PredicateBuilder::clearStaticMapMemory();
+    solver->clear();
+    delete solver;
 	delete finder;
 	delete _pfind;
-	delete cegisfind;
 }
 
 /* Runs the input command in interactive mode. 'cmd' can be:
@@ -163,7 +162,15 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
 * expressions 'assert sketch SKETCHES spec' in the input file to back-end.
 */
 BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt){
-	if (params.verbosity > 2) {
+
+
+//    for(int i = 0; i<sketch->size();i++)
+//    {
+//        assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//    }
+
+
+    if (params.verbosity > 2) {
 
 		cout << "* before  EVERYTHING: " << spec->get_name() << "::SPEC nodes = " << spec->size() << "\t " << sketch->get_name() << "::SKETCH nodes = " << sketch->size() << endl;
 	}
@@ -175,11 +182,17 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 	{
 		Dout(cout << "BEFORE Matching input names" << endl);
-		vector<bool_node*>& specIn = spec->getNodesByType(bool_node::SRC);
-		vector<bool_node*>& sketchIn = sketch->getNodesByType(bool_node::SRC);
+		auto specIn = spec->getNodesByType(bool_node::SRC);
+		auto sketchIn = sketch->getNodesByType(bool_node::SRC);
 
 		int inints = 0;
 		int inbits = 0;
+
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
 
 		Assert(specIn.size() <= sketchIn.size(), "The number of inputs in the spec and sketch must match");
 		for (int i = 0; i<specIn.size(); ++i) {
@@ -193,13 +206,20 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			else {
 				inints++;
 			}
-      if (sknode->isTuple) {
-        if (sknode->depth == -1)
-          sknode->depth = params.srcTupleDepth;
-      }
+            if (sknode->isTuple) {
+                if (sknode->depth == -1)
+                  sknode->depth = params.srcTupleDepth;
+            }
 		}
 
-		if (params.verbosity > 2) {
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
+
+
+        if (params.verbosity > 2) {
 			cout << " input_ints = " << inints << " \t input_bits = " << inbits << endl;
 		}
 
@@ -207,14 +227,26 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 	{
 		Dout(cout << "BEFORE Matching output names" << endl);
-		vector<bool_node*>& specDST = spec->getNodesByType(bool_node::DST);
-		vector<bool_node*>& sketchDST = sketch->getNodesByType(bool_node::DST);
+		auto specDST = spec->getNodesByType(bool_node::DST);
+		auto sketchDST = sketch->getNodesByType(bool_node::DST);
 		Assert(specDST.size() == sketchDST.size(), "The number of inputs in the spec and sketch must match");
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
+
 		for (int i = 0; i<sketchDST.size(); ++i) {
 			DST_node* spnode = dynamic_cast<DST_node*>(specDST[i]);
 			DST_node* sknode = dynamic_cast<DST_node*>(sketchDST[i]);
 			sketch->rename(sknode->name, spnode->name);
 		}
+
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
 	}
 
 
@@ -240,14 +272,12 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			}catch (BadConcretization& bc) {
 				sketch->clear();
 				spec->clear();
-				delete sketch;
-				delete spec;
 				throw bc;
 			}
 			
 
 			/*
-			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );
+			ComplexInliner cse(*sketch, function_map, params.inlineAmnt, params.mergeFunctions );
 			cse.process(*sketch);
 			*/
 		}
@@ -256,6 +286,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			try {
 				doInline(*spec, functionMap, inlineAmnt, replaceMap);
 			} catch (BadConcretization& bc) {
+                assert(false);
 				sketch->clear();
 				spec->clear();
 				delete sketch;
@@ -265,7 +296,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			
 
 			/*
-			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );
+			ComplexInliner cse(*spec, function_map,  params.inlineAmnt, params.mergeFunctions  );
 			cse.process(*spec);
 			*/
 		}
@@ -403,43 +434,44 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 
 
 
-void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns) {
+//void findPureFuns(map<string, BooleanDAG*>& function_map, set<string>& pureFuns) {
+//
+//	for (auto it = function_map.begin(); it != function_map.end(); ++it) {
+//		auto ctrlvec = it->second->getNodesByType(bool_node::CTRL);
+//		if (ctrlvec.size() == 0) {
+//			pureFuns.insert(it->first);
+//			continue;
+//		}
+//		if (ctrlvec.size() == 1 && ctrlvec[0]->get_name() == "#PC") {
+//			pureFuns.insert(it->first);
+//		}
+//	}
+//
+//	set<string> other;
+//	do{
+//		other = pureFuns;
+//		for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
+//			BooleanDAG* bd = function_map[*it];
+//
+//			auto ufvec = bd->getNodesByType(bool_node::UFUN);
+//			for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
+//
+//				UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
+//				if (ufn == NULL) { continue;  }
+//				if (other.count(ufn->get_ufun_name()) == 0) {
+//					//calling a non-pure function means you are not pure either.
+//					other.erase(*it);
+//					break;
+//				}
+//			}
+//		}
+//		swap(other, pureFuns);
+//	} while (other.size() != pureFuns.size());
+//
+//}
 
-	for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
-		vector<bool_node*>& ctrlvec = it->second->getNodesByType(bool_node::CTRL);
-		if (ctrlvec.size() == 0) {
-			pureFuns.insert(it->first);
-			continue;
-		}
-		if (ctrlvec.size() == 1 && ctrlvec[0]->get_name() == "#PC") {
-			pureFuns.insert(it->first);
-		}
-	}
-
-	set<string> other;
-	do{
-		other = pureFuns;
-		for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
-			BooleanDAG* bd = functionMap[*it];
-
-			vector<bool_node*>& ufvec = bd->getNodesByType(bool_node::UFUN);
-			for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
-				
-				UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
-				if (ufn == NULL) { continue;  }
-				if (other.count(ufn->get_ufname()) == 0) {
-					//calling a non-pure function means you are not pure either.
-					other.erase(*it);
-					break;
-				}
-			}
-		}
-		swap(other, pureFuns);
-	} while (other.size() != pureFuns.size());
-
-}
-
-void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
+void InterpreterEnvironment::doInline(
+        BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
 	TheBestInliner fin(steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -452,12 +484,27 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>&
 	*/
 
 
+//    for(int i = 0; i<dag.size();i++)
+//    {
+//        assert(dag[i]->get_name() != "num_bools_4_0_0");
+//    }
+
+
 	set<string> pureFuns;
 
 	findPureFuns(functionMap, pureFuns);
 
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, &hardcoder, pureFuns, params.randomassign, &fin, params.onlySpRandAssign,
-                         params.spRandBias); 
+	DagFunctionInliner dfi(
+	        dag,
+	        functionMap,
+	        std::move(replaceMap),
+	        floats,
+	        &hardcoder,
+	        pureFuns,
+	        params.randomassign,
+	        &fin,
+	        params.onlySpRandAssign,
+	        params.spRandBias);
 
 
 
@@ -466,7 +513,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>&
 	bool nofuns = false;
 	for (int i = 0; i<steps; ++i) {
 		int t = 0;
-    int ct = 0;
+		int ct = 0;
 		do {
 			if (params.randomassign && params.onlySpRandAssign) {
 				if (ct < 2) {
@@ -475,8 +522,14 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>&
 				} else {
 				dfi.turnOnRandomization();
 				}
-			}			
-			dfi.process(dag);
+			}
+            try {
+                dfi.process(dag);
+            }
+            catch(BadConcretization bc)
+            {
+                throw bc;
+            }
 			//
 			// dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();
@@ -510,6 +563,11 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>&
 		DagFunctionToAssertion makeAssert(dag, functionMap, floats);
 		makeAssert.process(dag);
 	}
+
+//    for(int i = 0; i<dag.size();i++)
+//    {
+//        assert(dag[i]->get_name() != "num_bools_4_0_0");
+//    }
 	
 }
 
@@ -685,13 +743,21 @@ void InterpreterEnvironment::fixes(const string& holename) {
 	holesToHardcode[pos-1].push_back(holename);
 }
 
-
-
-
 int InterpreterEnvironment::doallpairs() {
+//
+
+//    SolverLanguageParser parser("solver_program.txt");
+//    return 0;
+
+    if(params.numericalSolver)
+    {
+        Assert(spskpairs.size() == 1, string("If using numerical solver then CEGISSolver can only handle 1 harness,") +
+        string("due to keeping track of pending constraints introduced by the hardcoder, but the NumericalSolver doesn't incorporate those constraints in the solving process"));
+    }
+
 	int howmany = params.ntimes;
 	if (howmany < 1 || !params.randomassign) { howmany = 1; }
-	SATSolver::SATSolverResult result = SATSolver::UNDETERMINED;
+	SATSolverResult result = SAT_UNDETERMINED;
 
 
 	// A dummy ctrl for inlining bound
@@ -710,9 +776,11 @@ int InterpreterEnvironment::doallpairs() {
 			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);
 		}
 	}
+
 	string errMsg;
 	maxRndSize = 0;
 	hardcoder.setHarnesses(spskpairs.size());
+
 	for (int trailID = 0; trailID<howmany; ++trailID) {
 		if (howmany>1) { cout << "ATTEMPT " << trailID << endl; }
 		if (trailID % 5 == 4) {
@@ -736,21 +804,80 @@ int InterpreterEnvironment::doallpairs() {
 			hardcoder.fixValue(*inline_ctrl, params.inlineAmnt - minInlining, 5);
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
+
+        bool do_run_hypersketch = params.hypersketch_file_path != "";
+
+        if(do_run_hypersketch)
+        {
+            cout << "RUNNING SOLVE PROGRAM AT: " << params.hypersketch_file_path << endl;
+            BooleanDagLightUtility::new_way = true; // indicates using InlinedAndConcretizer for concretization, rather than inlining ahead of time.
+            assert(howmany == 1);
+            //TODO: Incorporate: hardcoder.setCurHarness((int)i);
+            assert(spskpairs.size() >= 1);
+            string str = spskpairs[0].file;
+            for(int i = 1;i<spskpairs.size();i++)
+            {
+                assert(str == spskpairs[i].file);
+            }
+            result = run_hypersketch(inlineAmnt, spskpairs[0].file);
+            assert(result == SAT_SATISFIABLE);
+            return 0;
+            break;
+        }
+        else
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
-			hardcoder.setCurHarness(i);
+			hardcoder.setCurHarness((int)i);
 			try {
-				BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-				result = assertDAG(bd, cout, spskpairs[i].file);
-				cout << "RESULT = " << result << "  " << endl;;
-				printControls("");
+                BooleanDagLightUtility::new_way = false;
+                ProgramEnvironment *program_env =
+			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
+
+                BooleanDAG* bd = nullptr;
+                bool use_prepareMiter = true;
+                if(use_prepareMiter) {
+                    bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
+                }
+
+                BooleanDagLightUtility* local_harness = nullptr;
+                if(BooleanDagLightUtility::new_way) {
+                    bool inline_ahead_of_time = true;
+                    if(inline_ahead_of_time) {
+                        if(use_prepareMiter) {
+                            local_harness = new SketchFunction(bd, program_env);
+                        }
+                        else
+                        {
+                            local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                            local_harness->inline_this_dag();
+                        }
+                    }
+                    else {
+                        local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                    }
+                }
+                else {
+                    if(use_prepareMiter) {
+                        local_harness = new SketchFunction(bd, program_env);
+                    }
+                    else
+                    {
+                        local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                        local_harness = local_harness->produce_inlined_dag(true);
+                    }
+                }
+
+//                local_harness->get_dag()->lprint(cout);
+
+                result = assertHarness(local_harness, cout, spskpairs[i].file);
+                printControls("");
 			}
 			catch (BadConcretization& bc) {
 				errMsg = bc.msg;
 				hardcoder.dismissedPending();
-				result = SATSolver::UNSATISFIABLE;
+				result = SAT_UNSATISFIABLE;
 				break;
 			}
-			if (result != SATSolver::SATISFIABLE) {
+			if (result != SAT_SATISFIABLE) {
 				break;
 			}
 			if (hardcoder.isDone()) {
@@ -786,21 +913,24 @@ int InterpreterEnvironment::doallpairs() {
 			}
 
 		}
+
+
 		roundtimer.stop();
 		cout << "**ROUND " << trailID << " : " << hardcoder.getTotsize() << " ";
 		roundtimer.print("time");
 		cout << "RNDDEG = " << hardcoder.getRanddegree() << endl;
 		double comp = log(roundtimer.get_cur_ms()) + hardcoder.getTotsize();
 		hardcoder.addScore(comp);
-		if (result == SATSolver::SATISFIABLE) {
-			cout << "return 0" << endl;
+		if (result == SAT_SATISFIABLE) {
 			if (params.minvarHole) {
 				resetMinimize();
 				if (hardcoder.isDone()) {
+                    cout << "return 0" << endl;
 					return 0;
 				}
 			}
 			else {
+                cout << "return 0" << endl;
 				return 0;
 			}
 		}
@@ -827,14 +957,12 @@ int InterpreterEnvironment::doallpairs() {
 }
 
 
-
-
 /*
-SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
+SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->get_dag(), ostream& out) {
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
 	
-	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag, floats);
+	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*harness->get_dag(), floats);
 	BooleanDAG* new_dag = rewriter.rewrite();
 
     reasSolver->addProblem(new_dag);
@@ -847,35 +975,206 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
     }catch(SolverException* ex){
         cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
         status=UNSAT;
-		return SATSolver::UNSATISFIABLE; // ex->code + 2;
+		return SAT_UNSATISFIABLE; // ex->code + 2;
     }catch(BasicError& be){
-        reasSolver->get_control_map(currentControls);
+        reasSolver->get_control_map_as_map_str_str(currentControls);
         cout<<"ERROR: "<<basename()<<endl;
         status=UNSAT;
-        return SATSolver::UNSATISFIABLE;
+        return SAT_UNSATISFIABLE;
     }
     if( !solveCode ){
         status=UNSAT;				
-        return SATSolver::UNSATISFIABLE;
+        return SAT_UNSATISFIABLE;
     }
     
-    return SATSolver::SATISFIABLE;
+    return SAT_SATISFIABLE;
 }
 */
-    
 
-SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
+SATSolverResult InterpreterEnvironment::run_hypersketch(int inlineAmnt, const string& file_name)
+{
+    ProgramEnvironment program_env =
+            ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
-    /*if (params.numericalSolver) {
-    	assert(false);
-        return assertDAGNumerical(dag, out);
-    }*/
+    SolverLanguage solver_language = SolverLanguage();
+
+//    string hypersketch_file_name = "solver_language_program__multi_harness_stun.txt";
+
+    assert(currentControls.empty());
+    currentControls = solver_language.eval(params.hypersketch_file_path, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+
+    for(const auto& it: program_env.function_map) {
+        delete it.second; // keeps the underlying dags, but deletes the skfunc.
+    }
+    delete &program_env.function_map; //.clear_assert_num_shared_ptr_is_0(); // at this point all dags are cleared.
+
+    printControls("");
+
+    cout << "Final Controls:" << endl;
+    for(auto it : currentControls)
+    {
+        cout << "\t" << it.first <<" "<< it.second << endl;
+    }
+
+    return SAT_SATISFIABLE;
+}
+
+
+SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *harness, ostream &out, const string &file) {
+
+    Assert(status == READY, "You can't do this if you are UNSAT");
+    ++assertionStep;
+
+    File* new_file;
+    if (!file.empty())
+    {
+        new_file = new File(harness, file);
+    }
+    else
+    {
+        new_file = nullptr;
+    }
+
+    solver->addProblem(harness, new_file);
+
+    if (params.superChecks) {
+        history.push_back(harness->get_dag()->clone());
+    }
+
+    if (params.outputEuclid) {
+        ofstream fout("bench.ucl");
+        solver->outputEuclid(fout);
+    }
+
+    if (params.output2QBF) {
+        string fname = basename();
+        fname += "_2qbf.cnf";
+        ofstream out(fname.c_str());
+        cout << " OUTPUTING 2QBF problem to file " << fname << endl;
+        solver->setup2QBF(out);
+    }
+
+    if (harness->get_dag()->useSymbolic()) {
+        DeductiveSolver deductive(harness->get_dag(), this->floats);
+        deductive.symbolicSolve(*this->finder);
+
+
+        solver->ctrlStore.synths.clear();
+        auto end = this->finder->get_sins().end();
+        for (auto it = this->finder->get_sins().begin(); it != end; ++it) {
+            solver->ctrlStore.synths[it->first] = it->second;
+        }
+        solver->ctrlStore.finalizeSynthOutputs();
+        recordSolution();
+        return SAT_SATISFIABLE;
+    }
+
+
+    int solveCode = 0;
+    try {
+
+        solveCode = solver->solve(numeric_limits<unsigned long long>::max()).success;
+        if (solveCode || !hasGoodEnoughSolution) {
+            recordSolution();
+        }
+    }
+    catch (SolverException* ex) {
+        cout << "ERROR " << basename() << ": " << ex->code << "  " << ex->msg << endl;
+        status = UNSAT;
+        return ex->code;
+    }
+    catch (BasicError& be) {
+        if (!hasGoodEnoughSolution) {
+            recordSolution();
+        }
+        cout << "ERROR: " << basename() << endl;
+        status = UNSAT;
+        return SAT_ABORTED;
+    }
+    if (!solveCode) {
+        status = UNSAT;
+        return SAT_UNSATISFIABLE;
+    }
+
+    /*
+	if (false) {
+		statehistory.push_back(solver->find_history);
+
+		for (int i = 0; i<history.size(); ++i) {
+			cout << " ~~~ Order = " << i << endl;
+			BooleanDAG* bd = hardCodeINode(history[i], solver->ctrlStore, bool_node::CTRL, floats);
+			int sz = bd->getNodesByType(bool_node::ASSERT).size();
+			cout << " ++ Order = " << i << " size = " << sz << endl;
+			if (sz > 0) {
+				Strudel st(statehistory[i], &finder->getMng(), floats);
+				st.checker(history[i], solver->ctrlStore, bool_node::CTRL);
+			}
+		}
+	}
+	*/
+    return SAT_SATISFIABLE;
+}
+
+
+SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out, const string &file) {
+
+    //DEPRECIATED BC IT IS EXPECTED THAT DAG IS WRAPPED IN AT LEAST A BooleanDagLightUtility
+    assert(false);
+
+/*
+ *
+    /// *** STILL IN PROGRESS
+    ///  vvvvvvvvvvvvvvvvvvvv
+    bool test_solver_language = false;
+    if (test_solver_language)
+    {
+        SolverLanguage solver_language = SolverLanguage();
+        AssertDebug(false, "need to pass a ProgramEnvironment to FunctionMap.")
+        const SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
+                new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution,
+                *(new FunctionMap(nullptr))
+                );
+
+        cout << "EXITED SolverLanguage" << endl;
+        if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
+        {
+            status = UNSAT;
+        }
+        if(ret->has_assignment_skval()) {
+            hardcoder.get_control_map(currentControls);
+            ret->get_control_map(currentControls);
+            cout << "recorded_solution" << endl;
+            cout << "VALUES ";
+            for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
+                cout << it->first << ": " << it->second << ", ";
+            }
+            cout << endl;
+        }
+        else
+        {
+            cout << "No solution" << endl;
+        }
+        cout << "EXITING assertDAG" << endl;
+        return ret->get_sat_solver_result();
+    }
+    ///  ^^^^^^^^^^^^^^^^^^^
+    */
+
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 
-	
-	solver->addProblem(dag, file);
-	
+	File* new_file;
+	if (!file.empty())
+	{
+	    AssertDebug(false, "Incorporate prog_evn, activate line below.");
+//	    new_file = new File(dag, file, floats);
+	}
+	else
+	{
+	    new_file = nullptr;
+	}
+
+    solver->addProblem(new SketchFunction(dag), new_file);
 
 	//	cout << "InterpreterEnvironment: new problem" << endl;
 	//	problem->lprint(cout);
@@ -913,14 +1212,14 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 		}
 		solver->ctrlStore.finalizeSynthOutputs();
 		recordSolution();
-		return SATSolver::SATISFIABLE;
+		return SAT_SATISFIABLE;
 	}
 
 
 	int solveCode = 0;
 	try {
 
-		solveCode = solver->solve();
+		solveCode = solver->solve(numeric_limits<unsigned long long>::max()).success;
 		if (solveCode || !hasGoodEnoughSolution) {
 			recordSolution();
 		}
@@ -936,11 +1235,11 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 		}
 		cout << "ERROR: " << basename() << endl;
 		status = UNSAT;
-		return SATSolver::ABORTED;
+		return SAT_ABORTED;
 	}
 	if (!solveCode) {
 		status = UNSAT;
-		return SATSolver::UNSATISFIABLE;
+		return SAT_UNSATISFIABLE;
 	}
 
 	/*
@@ -959,7 +1258,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 		}
 	}
 	*/
-	return SATSolver::SATISFIABLE;
+	return SAT_SATISFIABLE;
 }
 
 int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag) {
@@ -1043,6 +1342,8 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	}
 	return result;
 }
+
+
 
 bool hasFloatInputs(bool_node* node) {
   //vector<bool_node*> parents = node->parents();
@@ -1217,3 +1518,375 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 
 
 */
+
+
+/*
+ *
+
+ commit: e2ce24fe204235b26a28bcb9fdad2f9ec2b834f5
+ @Nov 11th, 2021
+
+1. Finalized refactoring of inlining and concretization.
+2. Handling #PC node as intended when concretizing functions.
+3. Added seed to random generator in File for the sampler.
+4. Hardcoded progressive partial concretization for boolean_synthesis sketch in unroll_and_concertize_function.
+5. Fixed bugs in SkVal and translations. Also added invariant checking.
+6. Added is_array in Obj in VarStore, and also added method to check equality between two objs.
+7. added default: Assert(false, "missing case"); for all switch blocks that that didn't have a default case.
+
+Ran tests in seq: 14 fail. List of failed tests is at the end of InterpreterEnvironment.cpp.
+
+
+Failed tests:
+echo "LISTED BELOW ARE THE FAILED TESTS (IF ANY)"
+LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+353a354
+> miniTestb358.output
+371a373
+> miniTestb377.output
+378a381
+> miniTestb385.output
+427a431,432
+> miniTestb435.output
+> miniTestb436.output
+556a562
+> miniTestb567_angelic.output
+666a673
+> miniTestb678.output
+830a838
+> miniTestb841.output
+848a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+854a866
+> miniTestb869.output
+864a877
+> miniTestb880.output
+892a906
+> miniTestBigInts2.output
+    32    123    729 miniTestb358.sk
+   212    745   4630 miniTestb377.sk
+    20     65    409 miniTestb385.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+   140    499   2695 miniTestb567_angelic.sk
+  2894   9528 146863 miniTestb678.sk
+   588   6967  35372 miniTestb841.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    75    314   1743 miniTestb869.sk
+    35    104    687 miniTestb880.sk
+    30     85    460 miniTestBigInts2.sk
+   896    896  18024 cur
+  5102  19714 214556 total
+echo "END OF LIST"
+END OF LIST
+
+ */
+
+
+/*
+
+@Jan 23rd, 2022
+
+Running with 0.02mins timeout
+50 tests fail.
+
+LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+183a184,186
+> miniTestb180.output
+> miniTestb181.output
+> miniTestb182.output
+229a233
+> miniTestb228.output
+246a251
+> miniTestb246.output
+257a263,264
+> miniTestb258.output
+> miniTestb259.output
+258a266,267
+> miniTestb261.output
+> miniTestb262.output
+265a275
+> miniTestb270.output
+306a317
+> miniTestb312.output
+313a325
+> miniTestb320_hole.output
+330a343,344
+> miniTestb347.output
+> miniTestb348.output
+339a354
+> miniTestb358.output
+340a356
+> miniTestb360.output
+349a366
+> miniTestb370.output
+353a371
+> miniTestb375.output
+354a373
+> miniTestb377.output
+362a382
+> miniTestb386.output
+364a385
+> miniTestb389.output
+374a396
+> miniTestb400.output
+387a410
+> miniTestb414.output
+398a422
+> miniTestb426.output
+404a429
+> miniTestb433.output
+405a431,432
+> miniTestb435.output
+> miniTestb436.output
+457a485
+> miniTestb489.output
+498a527
+> miniTestb531.output
+530a560
+> miniTestb566_angelic.output
+531a562
+> miniTestb567_angelic.output
+641a673
+> miniTestb678.output
+668a701
+> miniTestb706.output
+757a791
+> miniTestb795.output
+759a794
+> miniTestb798.output
+802a838
+> miniTestb841.output
+811a848,849
+> miniTestb851.output
+> miniTestb852.output
+818a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+823a865,866
+> miniTestb868.output
+> miniTestb869.output
+829a873
+> miniTestb876.output
+832a877
+> miniTestb880.output
+836a882
+> miniTestb885.output
+845a892
+> miniTestb895.output
+846a894
+> miniTestb897.output
+851a900
+> miniTestb903.output
+856a906
+> miniTestBigInts2.output
+    22     64    343 miniTestb180.sk
+    26     68    369 miniTestb181.sk
+    26     75    385 miniTestb182.sk
+   128    447   3012 miniTestb228.sk
+    36    120    744 miniTestb246.sk
+    33     85    624 miniTestb258.sk
+    40    114    805 miniTestb259.sk
+    24     80    573 miniTestb261.sk
+    18     66    403 miniTestb262.sk
+    14     37    229 miniTestb270.sk
+    28    101    740 miniTestb312.sk
+    38    157   1080 miniTestb320_hole.sk
+   126    420   2701 miniTestb347.sk
+    22     81    675 miniTestb348.sk
+    32    123    729 miniTestb358.sk
+    19     61    358 miniTestb360.sk
+    20     84    634 miniTestb370.sk
+    28     71    433 miniTestb375.sk
+   212    745   4630 miniTestb377.sk
+   718   2390  15669 miniTestb386.sk
+    15     48    363 miniTestb389.sk
+    88    226   1973 miniTestb400.sk
+   185    428   3057 miniTestb414.sk
+    21     53    446 miniTestb426.sk
+    17     53    313 miniTestb433.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+    81    226   1729 miniTestb489.sk
+    16     47    320 miniTestb531.sk
+   105    329   2075 miniTestb566_angelic.sk
+   140    499   2695 miniTestb567_angelic.sk
+  2894   9528 146863 miniTestb678.sk
+   125    535   3074 miniTestb706.sk
+   102    379   2260 miniTestb795.sk
+   147    549   2937 miniTestb798.sk
+   588   6967  35372 miniTestb841.sk
+  1626   5939  45424 miniTestb851.sk
+   336   1749   9832 miniTestb852.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    46    170    949 miniTestb868.sk
+    75    314   1743 miniTestb869.sk
+    65    266   1590 miniTestb876.sk
+    35    104    687 miniTestb880.sk
+    89    332   2237 miniTestb885.sk
+   204    527   4831 miniTestb895.sk
+    31     84    707 miniTestb897.sk
+    12     45    328 miniTestb903.sk
+    30     85    460 miniTestBigInts2.sk
+   860    860  17291 cur
+  9723  36119 327636 total
+echo "END OF LIST"
+END OF LIST
+rm cur
+
+ running with 0.2min timeout
+ failing: 34
+
+ LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+183a184,186
+> miniTestb180.output
+> miniTestb181.output
+> miniTestb182.output
+229a233
+> miniTestb228.output
+258a263,264
+> miniTestb258.output
+> miniTestb259.output
+259a266,267
+> miniTestb261.output
+> miniTestb262.output
+266a275
+> miniTestb270.output
+344a354
+> miniTestb358.output
+345a356
+> miniTestb360.output
+354a366
+> miniTestb370.output
+360a373
+> miniTestb377.output
+371a385
+> miniTestb389.output
+381a396
+> miniTestb400.output
+394a410
+> miniTestb414.output
+412a429
+> miniTestb433.output
+413a431,432
+> miniTestb435.output
+> miniTestb436.output
+542a562
+> miniTestb567_angelic.output
+652a673
+> miniTestb678.output
+769a791
+> miniTestb795.output
+771a794
+> miniTestb798.output
+814a838
+> miniTestb841.output
+823a848
+> miniTestb851.output
+831a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+836a865,866
+> miniTestb868.output
+> miniTestb869.output
+842a873
+> miniTestb876.output
+845a877
+> miniTestb880.output
+859a892
+> miniTestb895.output
+872a906
+> miniTestBigInts2.output
+    22     64    343 miniTestb180.sk
+    26     68    369 miniTestb181.sk
+    26     75    385 miniTestb182.sk
+   128    447   3012 miniTestb228.sk
+    33     85    624 miniTestb258.sk
+    40    114    805 miniTestb259.sk
+    24     80    573 miniTestb261.sk
+    18     66    403 miniTestb262.sk
+    14     37    229 miniTestb270.sk
+    32    123    729 miniTestb358.sk
+    19     61    358 miniTestb360.sk
+    20     84    634 miniTestb370.sk
+   212    745   4630 miniTestb377.sk
+    15     48    363 miniTestb389.sk
+    88    226   1973 miniTestb400.sk
+   185    428   3057 miniTestb414.sk
+    17     53    313 miniTestb433.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+   140    499   2695 miniTestb567_angelic.sk
+  2894   9528 146863 miniTestb678.sk
+   102    379   2260 miniTestb795.sk
+   147    549   2937 miniTestb798.sk
+   588   6967  35372 miniTestb841.sk
+  1626   5939  45424 miniTestb851.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    46    170    949 miniTestb868.sk
+    75    314   1743 miniTestb869.sk
+    65    266   1590 miniTestb876.sk
+    35    104    687 miniTestb880.sk
+   204    527   4831 miniTestb895.sk
+    30     85    460 miniTestBigInts2.sk
+   876    876  17624 cur
+  7927  29395 285179 total
+echo "END OF LIST"
+END OF LIST
+
+running with 10 minute timeout
+ failing: 10
+
+ runtime: less than 4 hours.
+
+ LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+353a354
+> miniTestb358.output
+371a373
+> miniTestb377.output
+428a431,432
+> miniTestb435.output
+> miniTestb436.output
+668a673
+> miniTestb678.output
+832a838
+> miniTestb841.output
+850a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+856a866
+> miniTestb869.output
+    32    123    729 miniTestb358.sk
+   212    745   4630 miniTestb377.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+  2894   9528 146863 miniTestb678.sk
+   588   6967  35372 miniTestb841.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    75    314   1743 miniTestb869.sk
+   900    900  18116 cur
+  4881  18965 210397 total
+echo "END OF LIST"
+END OF LIST
+rm cur
+
+
+ */
+

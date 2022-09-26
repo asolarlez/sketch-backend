@@ -1,0 +1,11 @@
+pragma options "--bnd-arr-size 2";
+
+generator bit literal(bit x)
+{
+    return {|x|!x|};
+}
+
+@FromFile("inputs.data")
+harness void main_sk(int n, bit[n] bits, bit out) {
+    assert({| literal(bits[??]) | literal(bits[??]) || literal(bits[??]) |} == out);
+}

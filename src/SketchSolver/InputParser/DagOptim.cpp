@@ -850,8 +850,8 @@ void DagOptim::visit( PLUS_node& node ){
 		return;
 	}
 	
-	
-	if( typeid(*node.father()) == typeid(node) ){
+	auto node_father = node.father();
+	if( typeid(*node_father) == typeid(node) ){
 		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.father());
 		bool_node* tt1 = parent.father();
 		bool_node* tt2 = parent.mother();
@@ -871,8 +871,8 @@ void DagOptim::visit( PLUS_node& node ){
 		}
 	}
 	
-	
-	if( typeid(*node.mother()) == typeid(node) ){
+	auto node_mother = node.mother();
+	if( typeid(*node_mother) == typeid(node) ){
 		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.mother());
 		bool_node* tt1 = parent.father();
 		bool_node* tt2 = parent.mother();
@@ -1025,7 +1025,8 @@ void DagOptim::visit( NEG_node& node ){
 		}	
 		return;
 	}
-	if( typeid(*(node.mother())) == typeid(node)  ){// - -x == x;
+    auto node_mother = node.mother();
+	if( typeid(*node_mother) == typeid(node)  ){// - -x == x;
 		rvalue = node.mother()->mother();
 		return;
 	}
@@ -1588,9 +1589,9 @@ void DagOptim::visit( UFUN_node& node ){
 		}
 	}
 
-	if (floats.hasFun(node.get_ufname())) {
+	if (floats.hasFun(node.get_ufun_name())) {
 		if (isConst(node.arguments(0))) {
-			auto ff = floats.getFun(node.get_ufname());
+			auto ff = floats.getFun(node.get_ufun_name());
 			bool_node* tbn  = getCnode(ff.apply(getFval(node.arguments(0))));
 			
 			TUPLE_CREATE_node* newOutTuple = TUPLE_CREATE_node::create(1);
@@ -1611,7 +1612,7 @@ void DagOptim::visit( UFUN_node& node ){
 		return;
     }    
 
-	string tmp = node.get_ufname();
+	string tmp = node.get_ufun_name();
 	if(node.ignoreAsserts){
 		tmp += "_IA";
 	}
@@ -2831,13 +2832,13 @@ void DagOptim::findCycles(BooleanDAG& dag){
 		}
 	}
 	{
-		vector<bool_node*>& ins = dag.getNodesByType(bool_node::SRC);
+		auto ins = dag.getNodesByType(bool_node::SRC);
 		for(size_t i=0; i<ins.size(); ++i){		
 			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the sources.
 		}
 	}
 	{
-		vector<bool_node*>& ins = dag.getNodesByType(bool_node::CTRL);
+		auto ins = dag.getNodesByType(bool_node::CTRL);
 		for(size_t i=0; i<ins.size(); ++i){		
 			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the controls.
 		}
@@ -3092,9 +3093,9 @@ void DagOptim::process(BooleanDAG& dag){
 				
 
 		if(dag[i] != NULL){
-            // cout<<"Orig = "<<dag[i]->lprint();
+//             cout<<"Orig = "<<dag[i]->lprint();
 			bool_node* node = computeOptim(dag[i]);
-			// cout<<"  becomes "<<node->lprint()<<endl;
+//			 cout<<"  becomes "<<node->lprint()<<endl;
 
 
 			if(dag[i] != node){			
@@ -3113,8 +3114,7 @@ void DagOptim::process(BooleanDAG& dag){
 			}
 		}
 	}
-    
-	
+
 	cleanup(dag);
 
 	everything.stop();
@@ -3123,4 +3123,8 @@ void DagOptim::process(BooleanDAG& dag){
 	Dout( everything.print(); )
 	
 	Dout(cout<<" end cse "<<endl);
+}
+
+ASSERT_node *DagOptim::get_failedAssert() {
+    return failedAssert;
 }

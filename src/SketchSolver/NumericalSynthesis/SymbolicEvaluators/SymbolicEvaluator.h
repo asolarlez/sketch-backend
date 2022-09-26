@@ -17,6 +17,8 @@ class Interface;
 class SymbolicEvaluator {
 	double otherError = 1;
 public:
+    virtual ~SymbolicEvaluator() {};
+
 	virtual void setInputs(Interface* inputValues_p) = 0;
     
     virtual void run(const gsl_vector* ctrls_p, const set<int>& nodesSubset) = 0;

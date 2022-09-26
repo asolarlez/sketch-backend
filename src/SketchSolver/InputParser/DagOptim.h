@@ -455,7 +455,7 @@ protected:
 	void breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterator> >& s, map<int, UFUN_node*>& dupNodes);
     bool_node* process(UFUN_node* node);
 	FloatManager& floats;
-	ASSERT_node* failedAssert;
+	ASSERT_node* failedAssert; //is null unless you failed an assertion.
 
 public:
 	bool isTopLevel;
@@ -536,7 +536,7 @@ public:
 
 	virtual void visit( ASSERT_node &node);	
 	virtual void visit( DST_node& node );
-	virtual void process(BooleanDAG& bdag);	
+	virtual void process(BooleanDAG& bdag);
 	virtual  CONST_node* getCnode(int c);
 	virtual  CONST_node* getCnode(bool val); 
 	virtual  CONST_node* getCnode(double c);
@@ -614,6 +614,8 @@ public:
 		}
 		return false;
 	}
+
+    ASSERT_node *get_failedAssert();
 };
 
 

@@ -1,0 +1,148 @@
+
+pragma options "--bnd-arr-size 20";
+pragma options "--bnd-unroll-amnt 20";
+
+void record_line(int line_id, int op){}
+void record_x_y(int x, int y){}
+void record_grid(int n, int[n] grid){}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/diagonal.data")
+harness void sketch_main(int n, int width, int[n] input_grid)
+{
+    int x = 0, y = 0, dir_axis = 0, dir_polarity = 0;
+    // starts at 0, 0 facing right.
+    assert(n % width == 0);
+    int height = n/width;
+
+    int[n] output_grid;
+
+    int max_num_primitives = 7; //4 bits;
+    int[max_num_primitives] karel_program;
+    bit[max_num_primitives] has_been_set;
+
+    int at_op_id = 0;
+    int max_execution_steps = max_num_primitives;
+
+    bit in_repeat = 0;
+    int repeat_at_line = 0;
+    int repeat_counter = 0;
+    int counter_i = 0;
+    int code_block_len = 0;
+    int local_line_counter = 0;
+
+    repeat(max_execution_steps)
+    {
+        int op;
+        if(has_been_set[at_op_id] == 0) {
+            op = ??(2);
+            karel_program[at_op_id] = op;
+            has_been_set[at_op_id] = 1;
+            if(op == 4 || op == 5) {
+                assert(has_been_set[at_op_id+1] == 0);
+                has_been_set[at_op_id+1] = 1;
+                karel_program[at_op_id+1] = ??(4);
+                if(op == 4)
+                {
+                    assert(karel_program[at_op_id+1] < max_num_primitives);
+                }
+                else
+                {
+                    assert(karel_program[at_op_id+1] < max_execution_steps);
+                    assert(has_been_set[at_op_id+2] == 0);
+                    has_been_set[at_op_id+2] = 1;
+                    karel_program[at_op_id+2] = ??(4);
+                    assert(karel_program[at_op_id+2] < (max_num_primitives-(at_op_id+2)));
+                }
+            }
+        }
+        else {
+            op = karel_program[at_op_id];
+        }
+        record_line(at_op_id, op);
+        if(op == 0) {  //move
+            if(dir_axis == 0) {
+                if(dir_polarity == 0) {
+                    x = x-1;
+                } else {
+                    x = x+1;
+                }
+            } else {
+                if(dir_polarity == 0) {
+                    y = y-1;
+                } else {
+                    y = y+1;
+                }
+            }
+            at_op_id = at_op_id+1;
+            assert(0 <= x && x < height && 0 <= y && y < width);
+            record_x_y(x, y);
+        } else if(op == 1) { // switch axis
+            dir_axis = 1-dir_axis;
+            at_op_id = at_op_id+1;
+        }
+        else if(op == 2) { //place a bit;
+            output_grid[width*x + y] = 1;
+            at_op_id = at_op_id+1;
+        } else if (op == 3){ // jump to a location in the program.
+            record_line(at_op_id+1, karel_program[at_op_id+1]);
+            at_op_id = karel_program[at_op_id+1];
+        } else if (op == 5){
+            if(in_repeat){
+                //keep going from here
+                assert(repeat_at_line == at_op_id);
+                repeat_counter = repeat_counter - 1;
+                counter_i = counter_i + 1;
+                assert(repeat_counter+counter_i == karel_program[at_op_id+1]);
+                assert(code_block_len == karel_program[at_op_id+2]);
+                if(repeat_counter >= 0) {
+                    //done
+                    in_repeat = 0;
+                }
+            }
+            else
+            {
+                //start the loop
+                code_block_len = karel_program[at_op_id+2];
+                if(repeat_counter == 0 || code_block_len == 0) // little optimization
+                {
+                    //if the loop is empty, skip the loop.
+                }
+                else
+                {
+                    //otherwise set up looping state.
+                    repeat_at_line = at_op_id;
+                    repeat_counter = karel_program[at_op_id+1];
+                    code_block_len = karel_program[at_op_id+2];
+                    in_repeat = 1;
+                }
+            }
+            local_line_counter = 0;
+            at_op_id = at_op_id+3;
+        }
+
+        else { assert(false); }
+
+        if(op != 5)
+        {
+            if(in_repeat)
+            {
+                local_line_counter += 1;
+                if(local_line_counter >= code_block_len)
+                {
+                    at_op_id = repeat_at_line;
+                }
+            }
+        }
+
+    }
+
+
+    for(int i = 0;i<n;i++)
+    {
+        assert(output_grid[i] == input_grid[i]);
+    }
+
+    record_grid(n, input_grid);
+    record_grid(n, output_grid);
+
+}

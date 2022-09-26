@@ -11,6 +11,15 @@ int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
 int UFUN_node::FGID= 0;
 
+const string &UFUN_node::get_original_ufname() {
+    if(original_ufname == "") {
+        return ufname;
+    }
+    else {
+        return original_ufname;
+    }
+}
+
 
 OutType* OutType::BOTTOM = new Bottom();
 OutType* OutType::BOOL = new Bool();

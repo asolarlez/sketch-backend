@@ -2,15 +2,9 @@
 #include "BooleanDAG.h"
 
 
-NodeVisitor::NodeVisitor()
-{
-}
+NodeVisitor::NodeVisitor(){}
 
-NodeVisitor::~NodeVisitor()
-{
-}
-
-
+NodeVisitor::~NodeVisitor() {}
 
 void NodeVisitor::process(BooleanDAG& bdag){
 	int i=0;
@@ -20,12 +14,11 @@ void NodeVisitor::process(BooleanDAG& bdag){
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		(*node_it)->accept(*this);
 		}catch(BasicError& be){
+            assert(false);
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
     	}
 	}
 }
-
-
 
 void NodeVisitor::visitBool(bool_node& node ){
 	rvalue = &node;

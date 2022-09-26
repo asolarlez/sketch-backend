@@ -1,0 +1,987 @@
+/*
+
+SEE binary_boolean_predicates_dsl.sk
+
+*/
+
+//----HyperSketch----
+
+hypersketch main_baseline()
+{
+    int trials_mult = 8;
+    int init_num_rows = 5;
+    int delta_rows = 5;
+
+    int init_num_trials = 1*trials_mult;
+    int big_num_trials = 4*trials_mult;
+    int serious_num_trials = init_num_trials;
+
+    int max_number_of_rows = init_num_rows+delta_rows*16;
+    float timeout = float(1)/float(16); // in seconds
+    int trials_meta_multiple = 3; // as x in # of meta inputs.
+    int trials_meta_div = 2;
+    float timeout_mult = float(trials_meta_multiple)/float(trials_meta_div); // in seconds
+
+    _sketch_main__Wrapper = sketch_main__Wrapper.deep_clone();
+    file = File(file_name, _sketch_main__Wrapper);
+
+    int trials_multiple = 2;
+    local_dags = [];
+    number_of_rows_per_trial = delta_rows;
+    for(
+        number_of_rows_per_trial = init_num_rows;
+        number_of_rows_per_trial < max_number_of_rows+1;
+        number_of_rows_per_trial = number_of_rows_per_trial + delta_rows)
+    {
+        serious_num_trials = init_num_trials/trials_multiple;
+        local_dags = best_effort_programs(
+            _sketch_main__Wrapper, file, trials_mult, max_number_of_rows, timeout, file.size()-1, local_dags);
+        timeout = timeout * timeout_mult;
+        trials_multiple = (trials_multiple * trials_meta_multiple)/trials_meta_div;
+    }
+
+    return_dag = local_dags[0].second();
+    return_dag_score = local_dags[0].first();
+
+    print("--------- SUMM ---------");
+    print("return_dag_score", return_dag_score);
+    print("return_dag BooleanDAG::to_string");
+    print("--------- INIT ---------");
+    print(return_dag);
+    print("--------- DONE ---------");
+
+    return local_dags[0].second();
+}
+
+
+hypersketch run_one_step_bottom_up(int trials_mult)
+{
+    /*
+
+        //    int trials_mult = 16;
+        //    int init_num_rows = 6;
+        //    int delta_rows = 2;
+        //    int lvl0_hyperparam_steps = 3;
+        //    result 112 seconds; 304 best;
+
+        "print chronological dag scores"
+        "i" 0 "init_timeouts[i]" 0.062500 "count" 304 "/" 429 "%" 70.862473
+        "i" 1 "init_timeouts[i]" 0.125000 "count" 288 "/" 429 "%" 67.132866
+        "i" 2 "init_timeouts[i]" 0.250000 "count" 288 "/" 429 "%" 67.132866
+        "i" 3 "init_timeouts[i]" 0.500000 "count" 302 "/" 429 "%" 70.396271
+        "i" 4 "init_timeouts[i]" 1.000000 "count" 288 "/" 429 "%" 67.132866
+        "i" 5 "init_timeouts[i]" 2.000000 "count" 288 "/" 429 "%" 67.132866
+        "i" 6 "init_timeouts[i]" 4.000000 "count" 292 "/" 429 "%" 68.065269
+        "i" 7 "init_timeouts[i]" 8.000000 "count" 284 "/" 429 "%" 66.200470
+        "best_id" 0
+        "all_best_dags[best_id].first()" 304
+        BENCH[HyperSketchState::eval()]: 111 (s) ~ 111341683 (us)
+    */
+
+    /*
+
+        //    int trials_mult = 16;
+        //    int init_num_rows = 12;
+        //    int delta_rows = 2;
+        //    int lvl0_hyperparam_steps = 3;
+        //    result 232 seconds; 308 best;
+
+        "print chronological dag scores"
+        "i" 0 "init_timeouts[i]" 0.062500 "count" 303 "/" 429 "%" 70.629372
+        "i" 1 "init_timeouts[i]" 0.125000 "count" 290 "/" 429 "%" 67.599068
+        "i" 2 "init_timeouts[i]" 0.250000 "count" 298 "/" 429 "%" 69.463867
+        "i" 3 "init_timeouts[i]" 0.500000 "count" 308 "/" 429 "%" 71.794868
+        "i" 4 "init_timeouts[i]" 1.000000 "count" 296 "/" 429 "%" 68.997665
+        "i" 5 "init_timeouts[i]" 2.000000 "count" 305 "/" 429 "%" 71.095573
+        "i" 6 "init_timeouts[i]" 4.000000 "count" 308 "/" 429 "%" 71.794868
+        "i" 7 "init_timeouts[i]" 8.000000 "count" 292 "/" 429 "%" 68.065269
+        "best_id" 3
+        "all_best_dags[best_id].first()" 308
+        BENCH[HyperSketchState::eval()]: 231 (s) ~ 231490690 (us)
+    */
+
+    /*
+        "print chronological dag scores"
+        "i" 0 "init_timeouts[i]" 0.062500 "count" 319 "/" 429 "%" 74.358971
+        "i" 1 "init_timeouts[i]" 0.125000 "count" 299 "/" 429 "%" 69.696968
+        "i" 2 "init_timeouts[i]" 0.250000 "count" 306 "/" 429 "%" 71.328674
+        "i" 3 "init_timeouts[i]" 0.500000 "count" 303 "/" 429 "%" 70.629372
+        "i" 4 "init_timeouts[i]" 1.000000 "count" 294 "/" 429 "%" 68.531471
+        "i" 5 "init_timeouts[i]" 2.000000 "count" 294 "/" 429 "%" 68.531471
+        "i" 6 "init_timeouts[i]" 4.000000 "count" 300 "/" 429 "%" 69.930069
+        "i" 7 "init_timeouts[i]" 8.000000 "count" 303 "/" 429 "%" 70.629372
+        "best_id" 0
+        "all_best_dags[best_id].first()" 319
+        BENCH[HyperSketchState::eval()]: 475 (s) ~ 475955133 (us)
+
+        int trials_mult = 32;
+        int init_num_rows = 12;
+        int delta_rows = 2;
+        int lvl0_hyperparam_steps = 3;
+        int consider_top_count_mult = 1;
+        int trials_meta_multiple = 2;
+
+
+    int combiner_timeout = timeout; // after the set up loops;
+
+        476s seconds.
+    */
+
+/*
+    float init_timeout = float(1)/float(16);
+    print("trails_mult", trials_mult);
+    int init_num_rows = 12;
+    int delta_rows = 2;
+    int lvl0_hyperparam_steps = 3;
+    int consider_top_count_mult = 1;
+    int trials_meta_multiple = 2;
+
+    "print chronological dag scores"
+    "i" 0 "trial_mults[i]" 16 "count" 303 "/" 429 "%" 70.629372
+    "i" 1 "trial_mults[i]" 32 "count" 306 "/" 429 "%" 71.328674
+    "i" 2 "trial_mults[i]" 64 "count" 313 "/" 429 "%" 72.960373
+    "i" 3 "trial_mults[i]" 128 "count" 317 "/" 429 "%" 73.892776
+    "best_id" 3
+    "all_best_dags[best_id].first()" 317
+    BENCH[HyperSketchState::eval()]: 435 (s) ~ 435043928 (us)
+    */
+
+    /*
+        float init_timeout = float(1)/float(8);
+        print("trails_mult", trials_mult);
+        int init_num_rows = 5;
+        int delta_rows = 5;
+        int lvl0_hyperparam_steps = 4;
+        int consider_top_count_mult = 3;
+        int trials_meta_multiple = 2;
+
+        "i" 0 "trial_mults[i]" 64 "count" 308 "/" 429 "%" 71.794868
+        "i" 1 "trial_mults[i]" 128 "count" 325 "/" 429 "%" 75.757576
+        "i" 2 "trial_mults[i]" 256 "count" 319 "/" 429 "%" 74.358971
+    */
+
+        float init_timeout = float(1)/float(4);
+        print("trails_mult", trials_mult);
+        int init_num_rows = 10;
+        int delta_rows = 5;
+        int lvl0_hyperparam_steps = 3;
+        int consider_top_count_mult = 2;
+        int trials_meta_multiple = 2;
+
+    int max_number_of_rows = init_num_rows+delta_rows*lvl0_hyperparam_steps;
+    print("max_number_of_rows", max_number_of_rows);
+
+    int init_num_trials = 1*trials_mult;
+    int serious_num_trials = init_num_trials;
+
+    float timeout = init_timeout; // in seconds
+    float timeout_mult = float(trials_meta_multiple); // in seconds
+
+    _left_branch__Wrapper = sketch_main__Wrapper.produce_replace(
+        "sketch_main",
+        sketch_main.produce_replace(
+            "composite_predicate",
+            left_branch.deep_clone()
+        )
+    );
+    file = File(file_name, _left_branch__Wrapper);
+    int trials_multiple = 1;
+    local_dags = [];
+    number_of_rows_per_trial = delta_rows;
+    for(
+        number_of_rows_per_trial = init_num_rows;
+        number_of_rows_per_trial < max_number_of_rows+1;
+        number_of_rows_per_trial = number_of_rows_per_trial + delta_rows)
+    {
+        serious_num_trials = init_num_trials/trials_multiple;
+        local_dags = best_effort_programs(
+            _left_branch__Wrapper, file, serious_num_trials, number_of_rows_per_trial, timeout, file.size()-1, local_dags);
+        timeout = timeout * timeout_mult;
+        trials_multiple = trials_multiple * trials_meta_multiple;
+    }
+
+    frontier_union_intersection = Frontier(4);
+    int first_loop_consider_best = 1*consider_top_count_mult;
+    if(first_loop_consider_best > local_dags.size())
+    {
+        first_loop_consider_best = local_dags.size();
+    }
+    int second_loop_consider_best = 6*consider_top_count_mult;
+    if(second_loop_consider_best > local_dags.size())
+    {
+        second_loop_consider_best = local_dags.size();
+    }
+    for(int i = 0;i<first_loop_consider_best;i++)
+    {
+        print("processing dag i", i, "/", first_loop_consider_best);
+        for(int j = i+1;j<second_loop_consider_best;j++)
+        {
+
+        print("processing dag j", j, "/", second_loop_consider_best);
+            left_score = local_dags[i].first();
+            left_dag = local_dags[i].second();
+            right_score = local_dags[j].first();
+            right_dag = local_dags[j].second();
+
+            union = lambda[left_dag, right_dag](x) {
+                if (left_dag.passes(x)) {
+                    return true;
+                }
+                return right_dag.passes(x);
+            };
+
+            intersection = lambda[left_dag, right_dag](x) {
+                if (left_dag.passes(x)) {
+                    return right_dag.passes(x);
+                }
+                return false;
+            };
+
+            num_u = file.count(union);
+            num_i = file.count(intersection);
+            heuristic = ((4*num_u) + num_i);
+            bool was_inserted =
+                frontier_union_intersection.insert(
+                    [num_u, num_i, num_u + num_i, heuristic, "|", left_score, right_score, "@", i, j], // solution
+                    [0-heuristic, 0-num_u, 0-num_i, 0-(num_u + num_i)] // score
+                );
+
+            bool do_print = false;
+            if(do_print)
+            {
+                print("new");
+                print("combine scores: ", left_score, right_score);
+
+                if(was_inserted) {
+                    print("was inserted");
+                }
+                else {
+                    print("was not inserted");
+                }
+
+                print("print");
+                for(int i = 0;i<frontier_union_intersection.size();i++) {
+                    print(frontier_union_intersection[i]);
+                }
+            }
+        }
+
+        print("frontier at dag i", i);
+        for(int i = 0;i<frontier_union_intersection.size();i++) {
+            print(frontier_union_intersection[i]);
+        }
+    }
+
+    print("START for(int i = 0;i<frontier_union_intersection.size();i++)");
+    print("START print(frontier_union_intersection[i]);");
+
+    for(int i = 0;i<frontier_union_intersection.size();i++)
+    {
+        print(frontier_union_intersection[i]);
+    }
+
+    print("DONE print(frontier_union_intersection[i]);");
+
+    if(true)
+    {
+        ret_dags = [];
+        int best_tuple_id = 0-1;
+        int best_score = 0-1;
+        for(int i = 0;i<frontier_union_intersection.size();i++)
+        {
+            print("frontier_union_intersection[", i, "]:");
+            print(frontier_union_intersection[i]);
+            assert(frontier_union_intersection[0][7] == "@");
+            main_dag_id = frontier_union_intersection[0][8];
+            dual_dag_id = frontier_union_intersection[0][9];
+            best_score = local_dags[main_dag_id].first();
+            main_dag = local_dags[main_dag_id].second();
+            //print("best_score", best_score);
+
+            best_dual_score = local_dags[dual_dag_id].first();
+            best_dual_dag = local_dags[dual_dag_id].second();
+            //print("best_dual_score", best_dual_score);
+
+            comp_pred = composite_predicate.produce_replace(
+                "right_branch",
+                 best_dual_dag["sketch_main"]["composite_predicate"]
+            );
+
+            comp_pred = comp_pred.produce_replace(
+                "left_branch",
+                 main_dag["sketch_main"]["composite_predicate"]
+            );
+
+            resynth_cond = sketch_main__Wrapper.produce_replace(
+                "sketch_main",
+                sketch_main.produce_replace(
+                    "composite_predicate",
+                    comp_pred
+                )
+            );
+
+            local_num_trials = (trials_mult * lvl0_hyperparam_steps) / frontier_union_intersection.size();
+
+            file.relabel(resynth_cond);
+            ret_dags = best_effort_programs(
+                resynth_cond, file,
+                local_num_trials, init_num_rows,
+                timeout, file.size()-1, ret_dags);
+
+            if(ret_dags[0].first() > best_score)
+            {
+                best_score = ret_dags[0].first();
+                best_tuple_id = i;
+            }
+
+        }
+
+        print("FINAL PRINT");
+
+        for(int i = 0; i<ret_dags.size(); i++) {
+            print("count ", ret_dags[i].first(), "/", file.size(), "%",
+                ((float(100) * float(ret_dags[i].first())) / float(file.size())));
+        }
+
+        return_dag_score = ret_dags[0].first();
+        return_dag = ret_dags[0].second();
+
+        assert(return_dag_score == best_score);
+
+        print("--------- SUMM ---------");
+        print("return_dag_score", return_dag_score);
+        print("return_dag BooleanDAG::to_string");
+        print("--------- INIT ---------");
+        print(return_dag);
+        print("--------- DONE ---------");
+
+        return ret_dags[0];
+    }
+
+}
+
+hypersketch main_plot_initial_timeout_vs_score()
+{
+
+    file = File(file_name, sketch_main__Wrapper);
+
+    trial_mults = [];
+    int trial_mult = 64;
+    int p = 1;
+    for(int i = 0;i<8;i++)
+    {
+        trial_mults.append(trial_mult*p);
+        p = p * 2;
+    }
+
+    print("trial_mults", trial_mults);
+    best_score = 0;
+    best_id = 0-1;
+    all_best_dags = [];
+    for(int i = 0;i<trial_mults.size();i++)
+    {
+        print("running with trial_mults", trial_mults[i]);
+        best_score_and_dag = run_one_step_bottom_up(trial_mults[i]);
+        all_best_dags.append(best_score_and_dag);
+        print("done running; results:");
+        print(trial_mults[i], "->", best_score_and_dag);
+        if(best_score < best_score_and_dag.first())
+        {
+            print("prev_best", best_score);
+            print("NEW BEST!!!!");
+            best_score = best_score_and_dag.first();
+            print("new_best", best_score);
+            best_id = i;
+        }
+        print("print chronological dag scores");
+        for(int i = 0; i<all_best_dags.size(); i++) {
+             print(
+                "i", i,
+                "trial_mults[i]", trial_mults[i],
+                "count", all_best_dags[i].first(), "/", file.size(),
+                "%", ((float(100) * float(all_best_dags[i].first())) / float(file.size())));
+         }
+    }
+
+    print("best_id", best_id);
+    print("all_best_dags[best_id].first()", all_best_dags[best_id].first());
+
+    ret_dag = all_best_dags[best_id].second();
+
+    return ret_dag;
+}
+
+hypersketch main()
+{
+    return main_plot_initial_timeout_vs_score();
+    float timeout = float(1)/float(4); // in seconds
+    best_score_and_best_dag = run_one_step_bottom_up(timeout);
+    return best_score_and_best_dag.second();
+    //return main_baseline();
+    int trials_mult = 512;
+    int init_num_rows = 10;
+    int delta_rows = 5;
+
+    int init_num_trials = 1*trials_mult;
+    int big_num_trials = 4*trials_mult;
+    int serious_num_trials = init_num_trials;
+
+    float timeout = float(1)/float(4); // in seconds
+    int trials_meta_multiple = 2; // as x in # of meta inputs.
+    float timeout_mult = float(trials_meta_multiple); // in seconds
+
+    _left_branch__Wrapper = sketch_main__Wrapper.produce_replace(
+        "sketch_main",
+        sketch_main.produce_replace(
+            "composite_predicate",
+            left_branch.deep_clone()
+        )
+    );
+    file = File(file_name, _left_branch__Wrapper);
+
+    int max_number_of_rows = 15;
+    int trials_multiple = 1;
+    local_dags = [];
+    number_of_rows_per_trial = delta_rows;
+    for(
+        number_of_rows_per_trial = init_num_rows;
+        number_of_rows_per_trial < max_number_of_rows+1;
+        number_of_rows_per_trial = number_of_rows_per_trial + delta_rows)
+    {
+        serious_num_trials = init_num_trials/trials_multiple;
+        local_dags = best_effort_programs(
+            _left_branch__Wrapper, file, serious_num_trials, number_of_rows_per_trial, timeout, file.size()-1, local_dags);
+        timeout = timeout * timeout_mult;
+        trials_multiple = trials_multiple * trials_meta_multiple;
+    }
+
+    frontier_union_intersection = Frontier(4);
+    int consider_top_count_mult = 6;
+    int first_loop_consider_best = 1*consider_top_count_mult;
+    if(first_loop_consider_best > local_dags.size())
+    {
+        first_loop_consider_best = local_dags.size();
+    }
+    int second_loop_consider_best = 6*consider_top_count_mult;
+    if(second_loop_consider_best > local_dags.size())
+    {
+        second_loop_consider_best = local_dags.size();
+    }
+    for(int i = 0;i<first_loop_consider_best;i++)
+    {
+        print("processing dag i", i, "/", first_loop_consider_best);
+        for(int j = i+1;j<second_loop_consider_best;j++)
+        {
+
+        print("processing dag j", j, "/", second_loop_consider_best);
+            left_score = local_dags[i].first();
+            left_dag = local_dags[i].second();
+            right_score = local_dags[j].first();
+            right_dag = local_dags[j].second();
+
+            union = lambda[left_dag, right_dag](x) {
+                if (left_dag.passes(x)) {
+                    return true;
+                }
+                return right_dag.passes(x);
+            };
+
+            intersection = lambda[left_dag, right_dag](x) {
+                if (left_dag.passes(x)) {
+                    return right_dag.passes(x);
+                }
+                return false;
+            };
+
+            num_u = file.count(union);
+            num_i = file.count(intersection);
+            heuristic = ((4*num_u) + num_i);
+            bool was_inserted =
+                frontier_union_intersection.insert(
+                    [num_u, num_i, num_u + num_i, heuristic, "|", left_score, right_score, "@", i, j], // solution
+                    [0-heuristic, 0-num_u, 0-num_i, 0-(num_u + num_i)] // score
+                );
+
+            bool do_print = false;
+            if(do_print)
+            {
+                print("new");
+                print("combine scores: ", left_score, right_score);
+
+                if(was_inserted) {
+                    print("was inserted");
+                }
+                else {
+                    print("was not inserted");
+                }
+
+                print("print");
+                for(int i = 0;i<frontier_union_intersection.size();i++) {
+                    print(frontier_union_intersection[i]);
+                }
+            }
+        }
+
+        print("frontier at dag i", i);
+        for(int i = 0;i<frontier_union_intersection.size();i++) {
+            print(frontier_union_intersection[i]);
+        }
+    }
+
+    print("START for(int i = 0;i<frontier_union_intersection.size();i++)");
+    print("START print(frontier_union_intersection[i]);");
+
+    for(int i = 0;i<frontier_union_intersection.size();i++)
+    {
+        print(frontier_union_intersection[i]);
+    }
+
+    print("DONE print(frontier_union_intersection[i]);");
+
+    if(true)
+    {
+        ret_dags = [];
+        int best_tuple_id = 0-1;
+        int best_score = 0-1;
+        for(int i = 0;i<frontier_union_intersection.size();i++)
+        {
+            print("frontier_union_intersection[", i, "]:");
+            print(frontier_union_intersection[i]);
+            assert(frontier_union_intersection[0][7] == "@");
+            main_dag_id = frontier_union_intersection[0][8];
+            dual_dag_id = frontier_union_intersection[0][9];
+            best_score = local_dags[main_dag_id].first();
+            main_dag = local_dags[main_dag_id].second();
+            //print("best_score", best_score);
+
+            best_dual_score = local_dags[dual_dag_id].first();
+            best_dual_dag = local_dags[dual_dag_id].second();
+            //print("best_dual_score", best_dual_score);
+
+            comp_pred = composite_predicate.produce_replace(
+                "right_branch",
+                 best_dual_dag["sketch_main"]["composite_predicate"]
+            );
+
+            comp_pred = comp_pred.produce_replace(
+                "left_branch",
+                 main_dag["sketch_main"]["composite_predicate"]
+            );
+
+            resynth_cond = sketch_main__Wrapper.produce_replace(
+                "sketch_main",
+                sketch_main.produce_replace(
+                    "composite_predicate",
+                    comp_pred
+                )
+            );
+
+            file.relabel(resynth_cond);
+            ret_dags = best_effort_programs(
+                resynth_cond, file,
+                trials_mult, number_of_rows_per_trial,
+                timeout, file.size()-1, ret_dags);
+
+            if(ret_dags[0].first() > best_score)
+            {
+                best_score = ret_dags[0].first();
+                best_tuple_id = i;
+            }
+
+        }
+
+        print("FINAL PRINT");
+
+        for(int i = 0; i<ret_dags.size(); i++) {
+            print("count ", ret_dags[i].first(), "/", file.size(), "%",
+                ((float(100) * float(ret_dags[i].first())) / float(file.size())));
+        }
+
+        return_dag_score = ret_dags[0].first();
+        return_dag = ret_dags[0].second();
+
+        assert(return_dag_score == best_score);
+
+        print("--------- SUMM ---------");
+        print("return_dag_score", return_dag_score);
+        print("return_dag BooleanDAG::to_string");
+        print("--------- INIT ---------");
+        print(return_dag);
+        print("--------- DONE ---------");
+
+        return return_dag;
+    }
+    else
+    {
+        int num_rows_per_sample = 3*delta_rows;
+        int delta_num_rows_per_sample = 1;
+        int delta_num_trails = 2;
+
+        /*best_score_and_best_dag =
+            main_em_cond_branches_step(
+                best_score, main_dag, file, big_num_trials,
+                delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample);
+
+        best_score = best_score_and_best_dag.first();
+        main_dag = best_score_and_best_dag.second();*/
+
+        //--
+
+        file.relabel(main_dag);
+        passing_inputs_file = file.produce_filter(lambda[main_dag](x){
+            return main_dag.passes(x);});
+        failing_inputs_file = file.produce_filter(lambda[main_dag](x){
+            return not(main_dag.passes(x, false));});
+
+        print("passing_inputs_file.size()", passing_inputs_file.size());
+        print("failing_inputs_file.size()", failing_inputs_file.size());
+        assert((passing_inputs_file.size() + failing_inputs_file.size()) == file.size());
+
+        //--
+
+        _right_branch__Wrapper = sketch_main__Wrapper.produce_replace(
+            "sketch_main",
+            sketch_main.produce_replace(
+                "composite_predicate",
+                right_branch.deep_clone()
+            )
+        );
+        failing_inputs_file.relabel(_right_branch__Wrapper);
+        local_dags = best_effort_programs(
+            _right_branch__Wrapper, failing_inputs_file, small_num_trials, num_rows_per_sample, timeout, failing_inputs_file.size()-1, []);
+
+        best_dual_score = local_dags[0].first();
+        best_dual_dag = local_dags[0].second();
+
+        /*best_score_and_best_dag =
+            main_em_cond_branches_step(
+                best_dual_score, best_dual_dag, failing_inputs_file, big_num_trials,
+                delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample);
+
+        best_dual_score = best_score_and_best_dag.first();
+        best_dual_dag = best_score_and_best_dag.second();*/
+
+        //--
+
+        comp_pred = composite_predicate.produce_replace(
+            "right_branch",
+             best_dual_dag["sketch_main"]["composite_predicate"]
+        );
+
+        comp_pred = comp_pred.produce_replace(
+            "left_branch",
+             main_dag["sketch_main"]["composite_predicate"]
+        );
+
+        resynth_cond = sketch_main__Wrapper.produce_replace(
+            "sketch_main",
+            sketch_main.produce_replace(
+                "composite_predicate",
+                comp_pred
+            )
+        );
+
+        file.relabel(resynth_cond);
+        local_dags = best_effort_programs(
+            resynth_cond, file, big_num_trials, num_rows_per_sample, timeout, file.size()-1, []);
+
+        best_score = local_dags[0].first();
+        best_dag = local_dags[0].second();
+    }
+
+    return best_dag;
+}
+
+hypersketch main_em_cond_branches_step(best_score, current_dag, file, num_trials, delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample)
+{
+    int local_score = best_score;
+    all_dags = [];
+
+    best_dag = current_dag;
+
+
+    int resynth_attempt = 0;
+    int num_em_steps = 10;
+
+    for(int em_step = 0; em_step < num_em_steps; em_step ++)
+    {
+        int max_num_resynth_attempts = 4;
+
+        {
+
+            comp_pred = composite_predicate.produce_replace(
+                "right_branch",
+                 current_dag["sketch_main"]["composite_predicate"]["right_branch"]
+            );
+
+            comp_pred = comp_pred.produce_replace(
+                "left_branch",
+                 current_dag["sketch_main"]["composite_predicate"]["left_branch"]
+            );
+
+            resynth_cond = sketch_main__Wrapper.produce_replace(
+                "sketch_main",
+                sketch_main.produce_replace(
+                    "composite_predicate",
+                    comp_pred
+                )
+            );
+
+            num_trials = num_trials + delta_num_trails;
+            num_rows_per_sample = num_rows_per_sample+delta_num_rows_per_sample;
+
+            file.relabel(resynth_cond);
+            local_dags = best_effort_programs(resynth_cond, file, num_trials, num_rows_per_sample, timeout, local_score, []);
+
+            all_dags.append(local_dags);
+
+            {
+                if(best_score < local_dags[0].first())
+                {
+                    print("PREV BEST SCORE: ", best_score);
+                    best_score = local_dags[0].first();
+                    local_score = local_dags[0].first();
+                    current_dag = local_dags[0].second();
+                    best_dag = current_dag;
+                    print("NEW BEST SCORE: ", best_score);
+                    print("NEW FINAL DAG!!!");
+                }
+                else
+                {
+                    print("PREV BEST SCORE: ", best_score);
+                    print("PROPOSAL SCORE: ", local_dags[0].first());
+                    print("NO IMPROVEMENT #0");
+                    //current_dag = local_dags[0].second();
+                    //local_score = local_dags[0].first();
+                    resynth_attempt ++;
+                    print("FAILED TO FIND BETTER BY BEST EFFORT SYNTHESIS #ATTEMPT", resynth_attempt);
+                    if(resynth_attempt >= max_num_resynth_attempts)
+                    {
+                        print("TOO MANY ATTEMPTS #ATTEMPTS", resynth_attempt);
+                        print("RETURN WHAT YOU HAVE");
+                        //best score and final dag.
+
+                        ret = [pair<int, SketchFunction>(best_score, best_dag)];
+                        return ret[0];
+                    }
+                }
+            }
+        }
+
+        {
+
+            calc_composite_predicate =
+                lambda[current_dag](){
+                    comp_pred = composite_predicate.produce_replace(
+                        "condition",
+                        current_dag["sketch_main"]["composite_predicate"]["condition"]
+                    );
+
+                    comp_pred = comp_pred.produce_replace(
+                        "left_branch",
+                         current_dag["sketch_main"]["composite_predicate"]["left_branch"]
+                    );
+
+                    return comp_pred;
+                    assert(false);
+                };
+
+            _resynth_branches = sketch_main__Wrapper.produce_replace(
+                "sketch_main",
+                sketch_main.produce_replace(
+                    "composite_predicate",
+                    calc_composite_predicate()
+                )
+            );
+
+            num_trials = num_trials + delta_num_trails;
+            num_rows_per_sample = num_rows_per_sample+delta_num_rows_per_sample;
+
+            resynth_branches = _resynth_branches;
+            file.relabel(resynth_branches);
+            local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
+
+            all_dags.append(local_dags);
+
+            {
+                if(best_score < local_dags[0].first())
+                {
+                    print("PREV BEST SCORE: ", best_score);
+                    best_score = local_dags[0].first();
+                    local_score = local_dags[0].first();
+                    current_dag = local_dags[0].second();
+                    best_dag = current_dag;
+                    print("NEW BEST SCORE: ", best_score);
+                    print("NEW FINAL DAG!!!");
+                }
+                else
+                {
+                    print("PREV BEST SCORE: ", best_score);
+                    print("PROPOSAL SCORE: ", local_dags[0].first());
+                    print("NO IMPROVEMENT #0");
+                    //current_dag = local_dags[0].second();
+                    //local_score = local_dags[0].first();
+                    resynth_attempt ++;
+                    print("FAILED TO FIND BETTER BY BEST EFFORT SYNTHESIS #ATTEMPT", resynth_attempt);
+                    if(resynth_attempt >= max_num_resynth_attempts)
+                    {
+                        print("TOO MANY ATTEMPTS #ATTEMPTS", resynth_attempt);
+                        print("RETURN WHAT YOU HAVE");
+                        //best score and final dag.
+
+                        ret = [pair<int, SketchFunction>(best_score, best_dag)];
+                        return ret[0];
+                    }
+                }
+            }
+        }
+
+        {
+            calc_composite_predicate =
+                lambda[current_dag](){
+                    comp_pred = composite_predicate.produce_replace(
+                        "condition",
+                        current_dag["sketch_main"]["composite_predicate"]["condition"]
+                    );
+
+                    comp_pred = comp_pred.produce_replace(
+                        "right_branch",
+                         current_dag["sketch_main"]["composite_predicate"]["right_branch"]
+                    );
+
+                    return comp_pred;
+                    assert(false);
+                };
+
+
+            _resynth_branches = sketch_main__Wrapper.produce_replace(
+                "sketch_main",
+                sketch_main.produce_replace(
+                    "composite_predicate",
+                    calc_composite_predicate()
+                )
+            );
+
+            num_trials = num_trials + delta_num_trails;
+            num_rows_per_sample = num_rows_per_sample+delta_num_rows_per_sample;
+
+            resynth_branches = _resynth_branches;
+            file.relabel(resynth_branches);
+            local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
+
+            all_dags.append(local_dags);
+
+            {
+                if(best_score < local_dags[0].first())
+                {
+                    print("PREV BEST SCORE: ", best_score);
+                    best_score = local_dags[0].first();
+                    local_score = local_dags[0].first();
+                    current_dag = local_dags[0].second();
+                    best_dag = current_dag;
+                    print("NEW BEST SCORE: ", best_score);
+                    print("NEW FINAL DAG!!!");
+                }
+                else
+                {
+                    print("PREV BEST SCORE: ", best_score);
+                    print("PROPOSAL SCORE: ", local_dags[0].first());
+                    print("NO IMPROVEMENT #0");
+                    //current_dag = local_dags[0].second();
+                    //local_score = local_dags[0].first();
+                    resynth_attempt ++;
+                    print("FAILED TO FIND BETTER BY BEST EFFORT SYNTHESIS #ATTEMPT", resynth_attempt);
+                    if(resynth_attempt >= max_num_resynth_attempts)
+                    {
+                        print("TOO MANY ATTEMPTS #ATTEMPTS", resynth_attempt);
+                        print("RETURN WHAT YOU HAVE");
+                        //best score and final dag.
+
+                        ret = [pair<int, SketchFunction>(best_score, best_dag)];
+                        return ret[0];
+                    }
+                }
+            }
+        }
+    }
+
+    ret = [pair<int, SketchFunction>(best_score, best_dag)];
+    return ret[0];
+
+}
+
+hypersketch best_effort_programs(_harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold, old_ret_dags) {
+
+    timestamp();
+
+    print(
+        "|.hsk ENTERING best_effort_programs|",
+         "num_trials", num_trials,
+         "num_rows", num_rows,
+         "timeout_per_trial", timeout_per_trial,
+         "break_early_threshold", break_early_threshold
+    );
+
+    harness = _harness.deep_clone();
+
+	Solution best_solution;
+	int best_score = 0;
+
+    File subset_file;
+    Solution solution;
+    SketchFunction program;
+    int score;
+
+    ret_dags = [];
+    for(int trial_id = 0; trial_id<num_trials; trial_id++)
+	{
+		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
+		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch hypersketch on the harness
+		subset_file.clear();
+
+		//--{
+		    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+            int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
+		//--}
+        ret_dags.append(pair<int, SketchFunction>(score, program));
+        old_ret_dags.append(pair<int, SketchFunction>(score, program));
+		print(
+		    "trial", trial_id+1, "/", num_trials,
+		    "score", score, "/", file.size(), "%", ((float(100) * float(score)) / float(file.size())),
+            "dag.size", program.size());
+		if(score > best_score) // update the best_solution
+		{
+			best_solution = solution;
+			best_score = score;
+			if(best_score > break_early_threshold)
+			{
+			    trial_id = num_trials; //break
+			}
+		}
+	}
+
+	ret_dags.sort();
+	ret_dags.reverse();
+	old_ret_dags.sort();
+	old_ret_dags.reverse();
+
+	print("sorted dag scores:");
+	int sum_scores = 0;
+
+	for(int i = 0; i<ret_dags.size(); i++)
+	{
+	    print(
+	        "count ", ret_dags[i].first(), "/", file.size(), "%",
+	        ((float(100) * float(ret_dags[i].first())) / float(file.size())));
+        sum_scores = sum_scores + ret_dags[i].first();
+	}
+	print("Done sorted solution scores");
+
+	print("best_score = ", best_score);
+	print("average_score = ", float(sum_scores)/float(ret_dags.size()));
+
+    timestamp();
+
+    return old_ret_dags;
+}
+

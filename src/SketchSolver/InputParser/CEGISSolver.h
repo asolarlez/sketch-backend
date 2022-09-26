@@ -12,99 +12,119 @@
 #include <stack>
 #include <ctime>
 #include "FloatSupport.h"
-#include "CEGISFinder.h"
 #include "CEGISParams.h"
+#include "CEGISChecker.h"
+#include "CEGISFinder.h"
 
 using namespace MSsolverNS;
 
 class DagOptim;
 
+class ElapsedTime
+{
+    double find_time = -1;
+    double check_time = -1;
+    double total_time = -1;
 
-void printDiagnostics(SATSolver& mng, char c);
+public:
+    ElapsedTime() = default;
+    ElapsedTime(double _find_time, double _check_time, double _total_time):
+    find_time(_find_time), check_time(_check_time),total_time(_total_time) {}
 
+    string to_string() const {
+        return "FIND TIME " + std::to_string(find_time) + " CHECK TIME " + std::to_string(check_time) + "; TOTAL TIME " + std::to_string(total_time);
+    }
+};
+
+struct CEGISSolverResult
+{
+    bool success;
+    int num_counterexample_concretized_dags = -1;
+};
 
 class CEGISSolver
+
 {
-	FloatManager& floats;
-	HoleHardcoder& hcoder;
-	int curProblem; 
-	vector<BooleanDAG*> problems;
-	stack<BooleanDAG*> problemStack;
-	map<int, vector<VarStore> > expensives;
-	void pushProblem(BooleanDAG* p){		
-		problemStack.push(p);
-	}
-	BooleanDAG* getProblem(){
-		return problemStack.top();
-	}
-	void popProblem(){
-		BooleanDAG* t = problemStack.top();
-		problemStack.pop();
-		t->clear();
-		delete t;
-	}
-	int problemLevel(){
-		return problemStack.size();
-	}
 
 	CEGISFinderSpec* finder;
-	
+	CEGISChecker* checker;
 
-	
-	VarStore inputStore;
-	// vector<struct InputGen *> inputGens;
+	map<string, int> last_input;
 
-	CEGISparams params;
-	
-	
-	Checkpointer cpt;
+	HoleHardcoder& hc;
 
-	map<int, string> files;
-	vector<Tvalue> check_node_ids;
-	map<string, int> last_input;	
+    ElapsedTime last_elapsed_time;
+
 protected:
-	void declareControl(CTRL_node* cnode);
-	void declareInput(const string& cname, int size, int arrSz, OutType* otype);
-	bool solveCore();
-	//bool solveOptimization();
-	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);
-	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);
-	
 
-	bool check(VarStore& input, VarStore& controls);
-	lbool baseCheck(VarStore& controls, VarStore& input);
-	void setNewControls(VarStore& controls, SolverHelper& dirCheck);
-	
-	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);
-	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
+	FloatManager& floats;
+	CEGISParams params;
+
+	vector<BooleanDagLightUtility*> problems;
+    vector<File*> files;
+
+	void declareControl(CTRL_node* cnode);
+    CEGISSolverResult solveCore(unsigned long long find_solve_max_timeout_in_microseconds);
 
 	void normalizeInputStore();
-	void abstractProblem();
-	
-	void growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
+
+//-- internal wrappers arround the checker methods
+    BooleanDAG* getProblem()
+    {
+        return checker->getProblemDag();
+    }
+
+	bool problemStack_is_empty()
+	{
+		return checker->problemStack_is_empty();
+	}
+
+	vector<Tvalue>& get_check_node_ids()
+	{
+		return checker->get_check_node_ids();
+	}
+
 public:
-	
-	VarStore ctrlStore;	
 
-	CEGISSolver(CEGISFinderSpec* finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats);
+    void clear()
+    {
+        finder->clear();
+        checker->clear();
+        delete checker;
+
+        last_input.clear();
+    }
+
+	VarStore ctrlStore;
+    map<string, string> current_hole_name_to_original_hole_name;
+
+	CEGISSolver(CEGISFinderSpec* _finder, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
+	finder(_finder),
+	floats(_floats),
+	params(args),
+	checker(new CEGISChecker(args, _hc, _floats)),
+	hc(_hc)
+	{
+	//	cout << "miter:" << endl;
+	//	miter->lprint(cout);
+			
+	}
 	~CEGISSolver(void);
-	void addProblem(BooleanDAG* miter, const string& file);
+	void addProblem(BooleanDagLightUtility *harness, File *file);
 
 
-	virtual bool solve();
+    const ElapsedTime& get_last_elapsed_time()
+    {
+        return last_elapsed_time;
+    }
+
+	virtual CEGISSolverResult solve(unsigned long long find_solve_max_timeout_in_microseconds);
 	void print_control_map(ostream& out);
 	
 
 	bool solveFromCheckpoint(istream& in);
-	virtual void setCheckpoint(const string& filename);
-	
-	
-	
 
-	void redeclareInputs(BooleanDAG* dag, bool firstTime=false);
-	
-
-	void get_control_map(map<string, string>& values);
+	void get_control_map_as_map_str_str(map<string, string>& values);
 	void outputEuclid(ostream& fout);
 	void setup2QBF(ofstream& out);
 

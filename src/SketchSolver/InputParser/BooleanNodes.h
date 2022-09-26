@@ -41,7 +41,7 @@ typedef FastSet<bool_node> childset;
 
 extern const int UNINITIALIZED;
 
-//#define SCHECKMEM
+#define SCHECKMEM
 
 class OutType{
     public:
@@ -105,6 +105,14 @@ class bool_node{
     static int NEXT_GLOBAL_ID;
 #ifdef SCHECKMEM
 	static set<bool_node*> allocated;
+
+public:
+    static set<bool_node*> get_allocated()
+    {
+        return allocated;
+    }
+private:
+
 #endif
 	protected:
 	bool_node** parents;
@@ -112,14 +120,14 @@ class bool_node{
 	
 
     public:
-    typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
+    enum Type {NO_TYPE, AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} ;
 	typedef bool_node** parent_iter;
 
     const Type type;
     int depth;
   
 	inline bool_node* mother() const{
-		Assert(numparents >= 1, ";lkhyoyui");
+		AssertDebug(numparents >= 1, ";lkhyoyui");
 		return parents[0];
 	}
 	inline bool_node* father() const{
@@ -262,8 +270,8 @@ class bool_node{
             case ARR_CREATE: return "ARR_CREATE";
             case TUPLE_CREATE: return "TUPLE_CREATE";
             case TUPLE_R: return "TUPLE_R";
+            default: AssertDebug(false, "MISSING CASE IN get_tname.");
         }
-        //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
     }
 	string getSMTnode(OutType* ot_needed){
@@ -342,6 +350,7 @@ class bool_node{
             case ARR_CREATE: return "ARRC";
             case TUPLE_CREATE: return "TUPC";
             case TUPLE_R: return "TUPR";
+            default: AssertDebug(false, "MISSING CASE in get_smtop.");
         }
         //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
@@ -1237,6 +1246,7 @@ public:
 	}
 };
 
+class NodeEvaluator;
 /* Input nodes */
 class SRC_node: public INTER_node{
 public: 
@@ -1246,14 +1256,17 @@ public:
     bool ufun;
 
 private:
-	SRC_node() :INTER_node(SRC) { isTuple = false; }
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName), ufun(bn.ufun) { }
-	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1), ufun(false){
+    SRC_node() :INTER_node(SRC) { isTuple = false; }
+    SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName), ufun(bn.ufun) {}
+    SRC_node(const string& nm):INTER_node(SRC), arrSz(-1), ufun(false){
 		name = nm;
-		isTuple = false;
+    	isTuple = false;
 	}
 
 public:
+    NodeEvaluator* current_node_evaluator = nullptr;
+    int local_id_in_inputs = -1;
+
 	static inline SRC_node* create(){
 		return new SRC_node();
 	}
@@ -1312,6 +1325,12 @@ public:
 	}
 	virtual bool_node* clone(bool copyChildren = true){
         return new SRC_node(*this, copyChildren);};
+
+    virtual string mrprint()const{
+        stringstream str;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<< nbits << " | " << local_id_in_inputs;
+        return str.str();
+    }
 };
 
 /* Output Node */
@@ -1353,6 +1372,10 @@ class CTRL_node: public INTER_node{
 	int arrSz;
 	bool spConcretize;
 public:
+
+    NodeEvaluator* current_node_evaluator = nullptr;
+    int local_id_in_inputs = -1;
+
 	bool isFloat;
 	bool isTuple;
 	string tupleName;
@@ -1370,12 +1393,37 @@ private:
 	
 	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false), isSpecial(false), hasRange(false) {  this->kind = kind_;}
 	
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial), hasRange(bn.hasRange), low(bn.low), high(bn.high) {
-	
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial), hasRange(bn.hasRange), low(bn.low), high(bn.high), original_name(bn.original_name), source_dag_name(bn.source_dag_name){
 		this->kind = bn.kind; this->arrSz = bn.arrSz;
-
 	}
+
+    string original_name;
+    string source_dag_name;
+    bool has_new_name = false;
 public:
+    void save_dag_name_and_update_ctrl_name(const string& _dag_name, const string& _new_ctrl_name) {
+        assert(!has_new_name);
+        has_new_name = true;
+        set_dag_name(_dag_name);
+        name = _new_ctrl_name;
+    }
+
+    void set_dag_name(const string& _dag_name) {
+//        if (!source_dag_name.empty()) {
+//            assert(source_dag_name == _dag_name);
+//        }
+//        else {
+            source_dag_name = _dag_name;
+//        }
+        if(!original_name.empty()) {
+            assert(name.size() >= original_name.size());
+            assert(name.substr(0, original_name.size()) == original_name);
+        }
+        else {
+            original_name = name;
+        }
+    }
+
 	inline static CTRL_node* create(bool toMinimize = false){
 		return new CTRL_node(toMinimize);
 	}
@@ -1493,11 +1541,42 @@ public:
 	}
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits << " | " << local_id_in_inputs << endl;
         if (hasRange) {
             str << " " << low << " " << high;
         }
         return str.str();
+    }
+
+private:
+    bool is_pcond_active = true;
+public:
+
+    bool get_is_Pcond_active() {
+        return is_pcond_active;
+    }
+
+    void deactivate_pcond() {
+        assert(is_pcond_active);
+        is_pcond_active = false;
+    }
+    void activate_pcond() {
+        assert(!is_pcond_active);
+        is_pcond_active = true;
+    }
+
+    const string &get_original_name() const {
+        if(!original_name.empty()) {
+            return original_name;
+        }
+        else {
+            return name;
+        }
+    }
+
+    const string &get_source_dag_name() {
+        AssertDebug(!source_dag_name.empty(), "Need to add this for all ctrls.");
+        return source_dag_name;
     }
 };
 
@@ -1511,6 +1590,7 @@ class UFUN_node: public bool_node, public DllistNode{
 	static int CALLSITES;
 	static int FGID;
 	int nbits;
+    string original_ufname;
 	string ufname;
     string tupleName;
 	//string name;
@@ -1541,11 +1621,16 @@ class UFUN_node: public bool_node, public DllistNode{
 	  return parents[i + 1];
   }
 private:
-	UFUN_node(const string& p_ufname, int n_args) :bool_node(UFUN, n_args + 1), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), hardAssert(false), isDependent(false), replaceFun(true) {
+	UFUN_node(const string& p_ufname, int n_args):
+        bool_node(UFUN, n_args + 1),
+        ufname(p_ufname),
+        callsite(CALLSITES++),
+        ignoreAsserts(false), hardAssert(false), isDependent(false), replaceFun(true) {
 		nbits = 1;
 		uniquefid = FGID++;
 	}
-	UFUN_node(const UFUN_node& bn, bool copyChildren = true) : bool_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun) { }
+	UFUN_node(const UFUN_node& bn, bool copyChildren = true) :
+            bool_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), original_ufname(bn.original_ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun) { }
 
 public:
 
@@ -1568,7 +1653,10 @@ public:
 		return tupleName.substr(0, 5) == "_GEN_";
 	}
 
-    void modify_ufname(string& name) {
+    void modify_ufname(const string& name) {
+      if(original_ufname.empty()) {
+          original_ufname = ufname;
+      }
       ufname = name;
     }
     void makeDependent(){
@@ -1598,14 +1686,15 @@ public:
 		out<<" "<<mother()->get_name()<<" -> "<<get_name()<<"[style=dotted] ; "<<endl;
 	}
     
-	virtual bool_node* clone(bool copyChildren = true){UFUN_node* newNode = new UFUN_node(*this, copyChildren); newNode->set_tupleName(tupleName); return newNode; };
+	virtual bool_node* clone(bool copyChildren = true)
+    {UFUN_node* newNode = new UFUN_node(*this, copyChildren); newNode->set_tupleName(tupleName); return newNode; };
 	int get_callsite()const{ return callsite; }
 	int get_uniquefid()const{ return uniquefid; }
 	void set_uniquefid(){  uniquefid = ++FGID; }
 	int get_nbits() const { 
 		return nbits; 
 	}
-	const string& get_ufname() const { return ufname; }
+	const string& get_ufun_name() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
     void set_tupleName(const string& name){tupleName = name;}
     const string& getTupleName() const {return tupleName;}
@@ -1652,7 +1741,7 @@ public:
     }
 	virtual string lprint()const{
 		stringstream str;
-		str<<id<<"= "<<ufname.substr(0, min<int>(25,ufname.length() ))<<"#"<<fgid<<"["<<mother()->lid()<<"](";
+		str<<id<<"= "<<ufname <<"#"<<fgid<<"["<<mother()->lid()<<"](";
 		for(auto it = arg_begin(); it != arg_end(); ++it){
 		  	if(*it != NULL){
 		  		str<<(*it)->lid()<<", ";
@@ -1683,6 +1772,8 @@ public:
 		Assert(false,"There shouldn't be any UFUNs here");
 		return "";
 	}
+
+    const string &get_original_ufname();
 };
 
 
@@ -2099,13 +2190,10 @@ private:
 	typedef enum{Normal, Hard, Assume} AssertType;
 	AssertType assertType;
 	string msg;
-    
-    ASSERT_node ():bool_node(ASSERT, 1), assertType(Normal) { }
+
+    ASSERT_node ():bool_node(ASSERT, 1), assertType(Normal) {}
     ASSERT_node(const ASSERT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ assertType = bn.assertType;  msg = bn.msg; }
-    ASSERT_node(bool_node* parent): bool_node(ASSERT, 1)
-    {
-    	set_parent(0, parent);
-    }
+    ASSERT_node(bool_node* parent): bool_node(ASSERT, 1) {set_parent(0, parent);}
 public:
 	static inline ASSERT_node* create(){
 		return new ASSERT_node();
@@ -2135,6 +2223,8 @@ public:
 			case Normal: str<<id<<"= ASSERT "; break;
 			case Hard: str<<id<<"= HASSERT "; break;
 			case Assume: str<<id<<"= Assume "; break;
+            default:
+                Assert(false, "Missing CASE in lprint.");
 		}		
 		str<<mother()->lid()<<" : "<<msg;		
 		return str.str();
@@ -2179,6 +2269,7 @@ inline bool_node* newNode( bool_node::Type type, int size=0){
 		case bool_node::ARR_CREATE: return ARR_CREATE_node::create(size);
 		case bool_node::TUPLE_CREATE: return TUPLE_CREATE_node::create(size);
 		case bool_node::TUPLE_R: return TUPLE_R_node::create();
+        default: AssertDebug(false, "Missing CASE in newNode.");
 	}
 	return NULL;
 }

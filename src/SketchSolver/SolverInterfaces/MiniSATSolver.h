@@ -202,7 +202,7 @@ public:
 	 
 	 virtual bool ignoreOld();
 	 
-	 virtual SATSolver::SATSolverResult solve();
+	 virtual SATSolverResult solve(unsigned long long timeout_max_microseconds);
 	
 	 virtual void reset();
 	 virtual void retractAssumptions();

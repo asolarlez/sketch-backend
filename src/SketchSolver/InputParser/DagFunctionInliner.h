@@ -5,10 +5,14 @@
 #include "DagOptim.h"
 #include <cstring>
 #include <sstream>
+#include <utility>
+#include <utility>
 #include "CommandLineArgs.h"
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
+#include "NodeHardcoder.h"
 #include "HoleHardcoder.h"
+#include "DagFunctionToAssertion.h"
 
 
 class Caller{
@@ -38,7 +42,7 @@ class CallTreeTracker{
 	map<int, string> cname;
 
 	string funName(const UFUN_node& fun){
-		string s = fun.get_ufname().substr(0, 9);
+		string s = fun.get_ufun_name().substr(0, 9);
 		s += "_";
 		char tmpbo[256];
 		//itoa(fun.get_callsite(), tmpbo, 10);
@@ -90,7 +94,7 @@ public:
 				cout<<cname[(*it)->globalId]<<"[shape=record]"<<endl;
 				}else{
 					// UFUN_node* un = dynamic_cast<UFUN_node*>(*it);
-					// cout<<"couldn't find "<<un->get_ufname()<<" "<<un->globalId<<"  "<<un->get_callsite()<<endl;
+					// cout<<"couldn't find "<<un->get_ufun_name()<<" "<<un->globalId<<"  "<<un->get_callsite()<<endl;
 				}
 			}
 		}
@@ -221,7 +225,7 @@ protected:
 protected:
 	virtual void addChild(InlinerNode* parent, const UFUN_node& node) {
 		int id = nextfunid++;
-		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size() + 1, id, id);
+		funidmap.condAdd(node.get_ufun_name().c_str(), node.get_ufun_name().size() + 1, id, id);
 		InlinerNode* next = inodestore.newObj();
 		if (boundByCallsite) {
 			next->funid = node.get_callsite();
@@ -238,7 +242,7 @@ protected:
 
 	virtual void addChildWithLimit(InlinerNode* parent, const UFUN_node& node, int newLmt) {
 		int id = nextfunid++;
-		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size() + 1, id, id);
+		funidmap.condAdd(node.get_ufun_name().c_str(), node.get_ufun_name().size() + 1, id, id);
 		InlinerNode* next = inodestore.newObj();
 		if (boundByCallsite) {
 			next->funid = node.get_callsite();
@@ -341,13 +345,13 @@ public:
 			if (temp->funid == candidate->funid) {
 				cnt++;
 				if (cnt >= recLimit) {
-					// cout<<"Prevented "<<node.get_ufname()<<endl;
+					// cout<<"Prevented "<<node.get_ufun_name()<<endl;
 					return false;
 				}
 			}
 			temp = temp->parent;
 		}
-		//cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufname()<<endl;
+		//cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufun_name()<<endl;
 		return true;
 	}
 
@@ -360,7 +364,7 @@ public:
 				return false;
 			}else{
 				//if(!node.ignoreAsserts){
-					// cout<<"Inlining with true cond "<<node.get_ufname()<<endl;
+					// cout<<"Inlining with true cond "<<node.get_ufun_name()<<endl;
 					return true;
 				//}
 			}
@@ -413,7 +417,7 @@ public:
 			}
 		}
 
-		const string& s = node.get_ufname();
+		const string& s = node.get_ufun_name();
 		map<string, int>::iterator it = counts.find(s);
 		if(it != counts.end()){			
 			if(it->second < inlinebound){				
@@ -531,7 +535,7 @@ class ExclusiveInliner : public InlineControl{
 	set<string> funsToNotInline;
 	virtual void registerInline(UFUN_node& node){}
 	virtual bool checkInline(UFUN_node& node){
-		return funsToNotInline.count(node.get_ufname())==0;
+		return funsToNotInline.count(node.get_ufun_name()) == 0;
 	}
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
 		
@@ -579,7 +583,7 @@ public:
 		bool t1 = ocs.checkInline(node);
 		bool t2 = bci.checkInline(node);
 		/*if(!node.dependent()){
-			cout<<" node="<<node.get_ufname()<<" t1="<<(t1?"yes":"no")<<"  t2="<<(t2?"yes":"no")<<endl;
+			cout<<" node="<<node.get_ufun_name()<<" t1="<<(t1?"yes":"no")<<"  t2="<<(t2?"yes":"no")<<endl;
 		}*/		
 		return t1 && t2;
 	}
@@ -619,7 +623,7 @@ public:
 		
 	}
 	virtual bool checkInline(UFUN_node& node){
-		return (inlineAllFuns) ||  funsToInline.count(node.get_ufname())!=0;
+		return (inlineAllFuns) || funsToInline.count(node.get_ufun_name()) != 0;
 	}
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
 		
@@ -637,13 +641,15 @@ public:
 	void clear(){}
 };
 
-class DagFunctionInliner : public DagOptim
+class DagFunctionInliner : public virtual DagOptim
 {
 	
 	bool symbolicSolve;
 	
 	BooleanDAG& dag;
-	map<string, BooleanDAG*>& functionMap;
+protected:
+	const map<string, BooleanDAG*>& functionMap;
+private:
   map<string, map<string, string> > replaceMap;
   int replaceDepth; // TODO: in general we may need a map for this
 
@@ -670,11 +676,15 @@ class DagFunctionInliner : public DagOptim
   int spRandBias;
 	HoleHardcoder* hcoder;
 	const set<string>& pureFunctions;
-public:	
+public:
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm,	HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
+	DagFunctionInliner(
+            BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap,
+            FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize= false, InlineControl* ict= NULL,
+            bool p_onlySpRandomize= false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
+	bool process_and_return(BooleanDAG& bdag);
 		
 	virtual void visit( UFUN_node& node );
 	virtual void visit(CTRL_node& node);
@@ -697,6 +707,39 @@ public:
   }
 	
 	
+};
+
+class DagOneStepInlineAndConcretize : public DagFunctionInliner, public NodeHardcoder
+{
+    set<string> inlined_functions;
+    const BooleanDAG* const dag = nullptr;
+public:
+    DagOneStepInlineAndConcretize(
+            const VarStore &_ctrl_store,
+            const bool_node::Type tp,
+            BooleanDAG& _dag,
+            const map<string, BooleanDAG*>& p_functionMap,
+            map<string, map<string, string> > p_replaceMap,
+            FloatManager& fm,
+            HoleHardcoder* p_hcoder,
+            const set<string>& p_pureFunctions,
+            bool p_randomize= false,
+            InlineControl* ict= NULL,
+            bool p_onlySpRandomize= false,
+            int p_spRandBias = 1):
+            DagFunctionInliner(
+                    _dag, p_functionMap, std::move(p_replaceMap),
+                    fm, p_hcoder, p_pureFunctions, p_randomize,
+                    ict, p_onlySpRandomize, p_spRandBias),
+            NodeHardcoder(PARAMS->showInputs, _dag, _ctrl_store, tp, fm),
+            DagOptim(_dag, fm), dag(&_dag)
+            {}
+
+    void visit(CTRL_node& node) override;
+    void visit(SRC_node& node) override;
+    void visit(UFUN_node &node) override;
+
+    vector<string> * get_inlined_functions();
 };
 
 

@@ -107,7 +107,7 @@ public:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
 	bool	simplifyAndCompact();
-    lbool    solve        (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
+    lbool    solve        (const vec<Lit>& assumps, const unsigned long long max_allowed_microseconds = numeric_limits<unsigned long long>::max()); // Search for a model that respects a given set of assumptions.
     lbool    solve        ();                        // Search without assumptions.
     bool    okay         () const;                  // FALSE means solver is in a conflicting state
 

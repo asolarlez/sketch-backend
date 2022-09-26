@@ -1,0 +1,95 @@
+
+hypersketch best_effort_programs(
+    _harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold) {
+
+    timestamp();
+
+    print(
+        "|.hsk ENTERING best_effort_programs|",
+         "num_trials", num_trials,
+         "num_rows", num_rows,
+         "timeout_per_trial", timeout_per_trial,
+         "break_early_threshold", break_early_threshold
+    );
+
+    harness = _harness.deep_clone();
+
+	Solution best_solution;
+	int best_score = 0;
+
+    File subset_file;
+    Solution solution;
+    SketchFunction program;
+    int score;
+
+    ret_dags = [];
+    for(int trial_id = 0; trial_id<num_trials; trial_id++)
+	{
+		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
+		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch hypersketch on the harness
+		subset_file.clear();
+
+		//--{
+		    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
+            int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
+		//--}
+        ret_dags.append(pair<int, SketchFunction>(score, program));
+		print(
+		    "trial", trial_id+1, "/", num_trials,
+		    "score", score, "/", file.size(), "%", ((float(100) * float(score)) / float(file.size())),
+            "dag.size", program.size());
+		if(score > best_score) // update the best_solution
+		{
+			best_solution = solution;
+			best_score = score;
+			if(best_score > break_early_threshold)
+			{
+			    trial_id = num_trials; //break
+			}
+		}
+	}
+
+	ret_dags.sort();
+	ret_dags.reverse();
+
+	print("sorted dag scores:");
+	int sum_scores = 0;
+
+	for(int i = 0; i<ret_dags.size(); i++)
+	{
+	    print(
+	        "count ", ret_dags[i].first(), "/", file.size(), "%",
+	        ((float(100) * float(ret_dags[i].first())) / float(file.size())));
+        sum_scores = sum_scores + ret_dags[i].first();
+	}
+	print("Done sorted solution scores");
+
+	print("best_score = ", best_score);
+	print("average_score = ", float(sum_scores)/float(ret_dags.size()));
+
+    timestamp();
+
+    return ret_dags[0].second();
+}
+
+hypersketch main()
+{
+    file = File(file_name, sketch_main__Wrapper);
+    ret = sketch_main__Wrapper;
+    int mult = 1;
+    num_trials_s = [16, 128, 512];
+    num_rows_s = [60, 80, 100, 120];
+    for(int num_rows_s_i = 0; num_rows_s_i < num_rows_s.size(); num_rows_s_i++) {
+        int num_rows = num_rows_s[num_rows_s_i];
+        for(int num_trials_s_i = 0; num_trials_s_i < num_trials_s.size(); num_trials_s_i++) {
+            timeout_per_trial = 3;
+            //for(int ; timeout_per_trial < 3; timeout_per_trial++)
+            {
+                float_timeout_per_trial = float(timeout_per_trial);
+                ret = best_effort_programs(
+                    sketch_main__Wrapper, file, num_trials_s[num_trials_s_i], num_rows, float_timeout_per_trial, file.size());
+            }
+        }
+    }
+    return ret;
+}

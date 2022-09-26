@@ -42,3 +42,5 @@ stamp-h1
 src/SketchSolver/cegis
 src/SketchSolver/*.o
 src/SketchSolver/libcegis.a
+src/SketchSolver/*.o.tmp
+/cmake-build-debug

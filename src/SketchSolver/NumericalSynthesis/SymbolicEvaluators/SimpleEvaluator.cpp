@@ -5,7 +5,7 @@
 
 
 SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p) {
-	distances.resize(bdag.size(), NULL);
+	distances.resize(bdag.size(), 0.0);
     int nctrls = floatCtrls.size();
 	if (nctrls == 0) nctrls = 1;
 	ctrls = gsl_vector_alloc(nctrls);
@@ -150,7 +150,7 @@ void SimpleEvaluator::visit( ARRASS_node& node ) {
 }
 
 void SimpleEvaluator::visit( UFUN_node& node ) {
-	const string& name = node.get_ufname();
+	const string& name = node.get_ufun_name();
 	double m = d(node.arguments(0));
 	double d;
 	if (name == "_cast_int_float_math") {
@@ -232,6 +232,7 @@ double SimpleEvaluator::getBoolCtrlError(bool_node* node) {
     if (ival == DEFAULT_INPUT) {
     	return -1.0;
     }
+    return 0.0;
 }
 
 double SimpleEvaluator::getBoolExprError(bool_node* node) {

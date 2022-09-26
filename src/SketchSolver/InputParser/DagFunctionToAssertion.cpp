@@ -2,7 +2,7 @@
 
 
 
-DagFunctionToAssertion::DagFunctionToAssertion(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, FloatManager& fm):
+DagFunctionToAssertion::DagFunctionToAssertion(BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, FloatManager& fm):
 dag(p_dag), DagOptim(p_dag, fm),functionMap(p_functionMap) {
 	
 }
@@ -12,7 +12,7 @@ DagFunctionToAssertion::~DagFunctionToAssertion()
 }
 
 void DagFunctionToAssertion::visit( UFUN_node& node ){	
-	const string& name = node.get_ufname();
+	const string& name = node.get_ufun_name();
 	bool isUninterp = (functionMap.find(name) == functionMap.end());
 	if(!node.ignoreAsserts && !isUninterp ){
 		Dout(cout<<" terminating inlining "<<name<<endl);
@@ -28,7 +28,7 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		ASSERT_node* asn = ASSERT_node::create();
 		asn->mother() = nn;
 		string msg = "function was not inlined enough ";
-		msg += node.get_ufname();
+		msg += node.get_ufun_name();
 		asn->setMsg(msg);
 		asn->addToParents();
 		addNode(asn);

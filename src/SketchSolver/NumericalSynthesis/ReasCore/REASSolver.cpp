@@ -19,7 +19,7 @@ void REASSolver::addProblem(BooleanDAG* problem_){
    
     Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
-        vector<bool_node*>& ctrls = problem->getNodesByType(bool_node::CTRL);
+        auto ctrls = problem->getNodesByType(bool_node::CTRL);
         if(PARAMS->verbosity > 2){
             cout<<"  # OF CONTROLS:    "<< ctrls.size() <<endl;
         }

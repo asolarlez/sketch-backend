@@ -108,10 +108,10 @@ public:
                     total_dist += -dist;
                 }
 
-                /*if (dist < 0.1) {
+                if (dist < 0.1) {
                     string msg = p->eval->getAssertMsg(*it);
                     cout << "(" << msg << "," << -dist << "),"; 
-                } /
+                }
                 F[fcounter++] = dist;
                 for (int j = 0; j < *n; j++) {
                     G[gcounter++] = gsl_vector_get(grad, j);

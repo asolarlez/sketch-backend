@@ -1,0 +1,110 @@
+
+pragma options "--bnd-inline-amnt 2";
+pragma options "--bnd-arr-size 9";
+pragma options "--bnd-unroll-amnt 9";
+pragma options "--slv-lightverif";
+
+
+//-- generators begin --
+
+bit const_0(){
+    return 0;
+}
+
+bit const_1(){
+    return 1;
+}
+
+generator bit const_gen() {
+    return {| const_0() | const_1() |};
+}
+
+generator bit predicate0_gen() {
+    return const_gen();
+}
+
+generator bit literal_gen(int n, bit[n] bits)
+{
+    return {| bits[??(4)] | !bits[??(4)] |};
+}
+
+bit predicate1_gen(int n, bit[n] bits) {
+    return literal_gen(n, bits);
+}
+
+generator bit binop_gen(bit x, bit y)
+{
+    return {| !(x && y) | x ^ y | x || y | !(x || y) |};
+}
+
+bit predicate2_gen(int n, bit[n] bits) {
+    return binop_gen(literal_gen(n, bits), literal_gen(n, bits));
+}
+
+bit predicate3_gen(int n, bit[n] bits) {
+    return binop_gen(binop_gen(literal_gen(n, bits), literal_gen(n, bits)), literal_gen(n, bits));
+}
+
+generator bit predicate4_gen(int n, bit[n] bits) {
+    return binop_gen(binop_gen(literal_gen(n, bits), literal_gen(n, bits)), binop_gen(literal_gen(n, bits), literal_gen(n, bits)));
+}
+
+generator bit predicate6_gen(int n, bit[n] bits) {
+    return binop_gen(
+        binop_gen(
+            binop_gen(literal_gen(n, bits), literal_gen(n, bits)),
+            literal_gen(n, bits)
+        ),
+        binop_gen(
+            binop_gen(literal_gen(n, bits), literal_gen(n, bits)),
+            literal_gen(n, bits)
+        )
+    );
+}
+
+generator bit predicate8_gen(int n, bit[n] bits) {
+    return binop_gen(
+        binop_gen(
+            binop_gen(literal_gen(n, bits), literal_gen(n, bits)),
+            binop_gen(literal_gen(n, bits), literal_gen(n, bits))
+        ),
+        binop_gen(
+            binop_gen(literal_gen(n, bits), literal_gen(n, bits)),
+            binop_gen(literal_gen(n, bits), literal_gen(n, bits))
+        )
+    );
+}
+
+// -- generators end --
+
+bit condition(int n, bit[n] bits) { return predicate8_gen(n, bits);}
+//score(synth(predicate1^3)) = 268
+//score(synth(predicate2^3)) = 321
+//score(synth(predicate3^3)) = 326
+//score(synth(predicate4^3)) = 367
+//score(synth(predicate8^3)) =
+
+bit left_branch(int n, bit[n] bits) { return predicate8_gen(n, bits); }
+
+bit right_branch(int n, bit[n] bits) { return predicate8_gen(n, bits); }
+
+bit composite_predicate(int n, bit[n] bits) {
+    if(condition(n, bits)) {
+        return left_branch(n, bits);
+    }
+    else {
+        return right_branch(n, bits);
+    }
+}
+
+//--
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness void sketch_main(int n, bit[n] bits, bit out) {
+    assert(composite_predicate(n, bits) == out);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/uav_kg_big__as_bools.data")
+harness bit eval_program_main(int n, bit[n] bits, bit out) {
+    return composite_predicate(n, bits);
+}

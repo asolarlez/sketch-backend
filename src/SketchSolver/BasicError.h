@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <cassert>
 
 
 #define Dout( out )     /* out */
@@ -31,7 +32,8 @@ inline void Warning(const string& msg){
   std::cerr<<"WARNING:  "<<msg<<std::endl;
 }
 
-#define Assert( in, msg) if(!(in)){ stringstream mstr; mstr<<msg;  throw BasicError(mstr.str(), "Error"); }
+#define Assert( in, msg) if(!(in)){ stringstream mstr; mstr<<msg; throw BasicError(mstr.str(), "Error"); }
+#define AssertDebug( in, msg) if(!(in)){ cout<<(msg)<<endl; assert(false); }
 
 
 

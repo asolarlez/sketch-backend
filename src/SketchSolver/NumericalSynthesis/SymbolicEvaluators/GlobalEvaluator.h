@@ -6,7 +6,7 @@
 #include "VarStore.h"
 #include <map>
 #include "FloatSupport.h"
-#include <glpk.h>
+//#include <glpk.h>
 
 #include <iostream>
 #include <fstream>

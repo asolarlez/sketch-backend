@@ -7,14 +7,14 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
 noinst_LIBRARIES = libcegis.a
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -D_NOGSL -D_NOSNOPT -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/Samplers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include 
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++17 -D_NOGSL -D_NOSNOPT -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/Samplers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include
 #gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
 #igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 #snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
 #snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
 
-libcegis_a_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -Wno-narrowing  -D_NOGSL -D_NOSNOPT  -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/Samplers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include 
+libcegis_a_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++17 -Wno-narrowing  -D_NOGSL -D_NOSNOPT  -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/Samplers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include
 # -lgsl -lgslcblas -lsnopt_cpp
 libcegis_a_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.a ../MiniSat/libminisat.a
@@ -112,7 +112,35 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/HoleHardcoder.h			\
 	InputParser/guardedVal.h			\
     InputParser/FloatSupport.h 			\
-    InputParser/IntToFloatRewriteDag.h
+    InputParser/IntToFloatRewriteDag.h \
+    InputParser/CEGISChecker.h \
+    InputParser/CEGISFinder.h \
+    InputParser/CounterexampleFinder.h \
+    InputParser/solver_language_yacc.h \
+    InputParser/SolverLanguageLexAndYaccHeader.h \
+    InputParser/SolverLanguageYaccHeader.h \
+    InputParser/SketchFunction.h \
+    InputParser/ProgramEnvironment.h \
+    InputParser/File.h \
+    InputParser/GenericFile.h \
+    InputParser/BooleanDagLightUtility.h \
+    InputParser/BooleanDagUtility.h \
+    InputParser/FunctionMapTransformerLanguage.h \
+    InputParser/FunctionMap.h \
+    InputParser/FunctionMapTransformerLanguage.h \
+    InputParser/FunctionMapTransformerDag.h \
+    InputParser/function_map_transformer_language_yacc.h \
+    InputParser/SolverLanguage.h \
+    InputParser/SolverLanguagePrimitives.h \
+    InputParser/objP.h \
+    InputParser/BenchmarkScore.h \
+    InputParser/vectorized_interpreter_main.h \
+    InputParser/DagLikeProgramInterpreter.h \
+    InputParser/test_cases.h \
+    InputParser/FileForVecInterp.cpp \
+    InputParser/types.h \
+    InputParser/CEGISFinderBatchEnumeration.h \
+    InputParser/Frontier.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -168,7 +196,38 @@ libcegis_a_SOURCES =				\
 	InputParser/NodeVisitor.cpp		\
 	InputParser/SolveFromInput.cpp \
 	InputParser/NodeHardcoder.cpp  \
-	InputParser/Tvalue.cpp
+	InputParser/Tvalue.cpp \
+    InputParser/CEGISChecker.cpp \
+    InputParser/CEGISFinder.cpp \
+    InputParser/CounterexampleFinder.cpp \
+    InputParser/solver_language_yacc.cpp \
+    InputParser/SketchFunction.cpp \
+    InputParser/ProgramEnvironment.cpp \
+    InputParser/File.cpp \
+    InputParser/GenericFile.cpp \
+    InputParser/VarStore.cpp \
+    InputParser/SolverLanguageLexAndYaccHeader.cpp \
+    InputParser/SolverLanguageYaccHeader.cpp \
+    InputParser/BooleanDagLightUtility.cpp \
+    InputParser/BooleanDagUtility.cpp \
+    InputParser/FunctionMapTransformerLanguage.cpp \
+    InputParser/solver_language_lex.cpp \
+    InputParser/FunctionMap.cpp \
+    InputParser/FunctionMapTransformerLanguage.cpp \
+    InputParser/FunctionMapTransformerDag.cpp \
+    InputParser/function_map_transformer_language_yacc.cpp \
+    InputParser/SolverLanguage.cpp \
+    InputParser/SolverLanguagePrimitives.cpp \
+    InputParser/objP.cpp \
+    InputParser/BenchmarkScore.cpp \
+    InputParser/vectorized_interpreter_main.cpp \
+    InputParser/DagLikeProgramInterpreter.cpp  \
+    InputParser/test_cases.cpp \
+    InputParser/FileForVecInterp.cpp \
+    InputParser/types.cpp \
+    InputParser/CEGISFinderBatchEnumeration.cpp \
+    InputParser/Frontier.cpp
+
 
 
 
