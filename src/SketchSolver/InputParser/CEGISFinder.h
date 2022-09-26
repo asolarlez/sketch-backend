@@ -236,6 +236,7 @@ public:
 	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes)
 	{
 		//do nothing
+		return false;
 	}
 
 	void declareControl(CTRL_node* cnode)
