@@ -3,9 +3,11 @@
 //
 
 #include "BenchmarkScore.h"
+
 #include <iostream>
 #include <vector>
 #include <iomanip>
+#include <algorithm>
 
 map<string, BenchmarkScore> timestamp_counter = map<string, BenchmarkScore>();
 
