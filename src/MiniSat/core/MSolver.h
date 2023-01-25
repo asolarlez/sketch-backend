@@ -87,7 +87,7 @@ public:
 
     // Constructor/Destructor:
     //
-    Solver();
+    Solver(int seed = 91648253);
     ~Solver();
 	void dump();	
 	void getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline);

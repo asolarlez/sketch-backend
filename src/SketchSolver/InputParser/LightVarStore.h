@@ -165,7 +165,7 @@ public:
             bitsize += arrSize*tmp.element_size();
         }
     }
-    int getBitsize() const{
+    int get_bit_size() const{
         int ground_truth_bitsize = 0;
         for(int i = 0;i<objs.size();i++) {
             ground_truth_bitsize+=objs[i].get_size();

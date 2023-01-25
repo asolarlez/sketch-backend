@@ -61,7 +61,7 @@ SL::VarVal * HyperSketchState::eval(){
     auto end_eval = timestamp(start_of_run, "hypersketch::eval");
 
     auto elapsed = chrono::duration_cast<chrono::microseconds>(end_eval - start_of_run).count();
-    console_output << "BENCH[HyperSketchState::eval()]: " << elapsed/1000000 << " (s) ~ " << elapsed << " (us)" << endl;
+    console_output << "BENCH[HyperSketchState::eval()]: " << elapsed/1000 << " (s) ~ " << elapsed << " (us)" << endl;
 
     return var_val_ret;
 }

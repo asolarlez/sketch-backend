@@ -18,7 +18,7 @@ int CEGISChecker::valueForINode(INTER_node* inode, VarStore& values, int& nbits)
 // failing assertion and then based on its relative position on the DAG decides
 // to remove or keep the assertions following the failing assertion.
 void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
-	if(inputStore.getBitsize() == 0) return;
+	if(inputStore.get_bit_size() == 0) return;
 	BooleanDAG* dag = getProblemDag()->clone();
 	int orisize = dag->size();
 	
@@ -462,7 +462,7 @@ public:
 // and if there is a counter-example, it will be put to input
 BooleanDAG * CEGISChecker::check(VarStore& controls, VarStore& input){
 
-    if(problemStack.empty())
+    if(problem_stack.empty())
 	{
 		pushProblem((*problems.rbegin())->_clone());
 	}	
@@ -519,7 +519,7 @@ BooleanDAG * CEGISChecker::check(VarStore& controls, VarStore& input){
 				continue;
 			}
 			case CheckControl::DONE:{
-				clear_problemStack();
+				clear_problem_stack();
 				return nullptr; //no counterexample
 //				return false; //no counterexample
 			}

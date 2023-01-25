@@ -15,7 +15,10 @@ class File;
 
 namespace SolverLanguagePrimitives {
 
-    CEGISSolverResult solve(const SketchFunction* skfunc, const File* training_file, float timeout, const File* validation_file = nullptr);
+    CEGISSolverResult solve(
+            const SketchFunction* skfunc, const File* training_file,
+            const long long budget, float timeout_per_find,
+            const File* validation_file = nullptr, const int* seed = nullptr);
 
     class ProblemAE {
         const File *training_file = nullptr;
@@ -61,8 +64,8 @@ namespace SolverLanguagePrimitives {
     public:
         Solver_AE() = default;
         virtual CEGISSolverResult solve(
-                ProblemAE *problem,
-                const unsigned long long find_solve_max_timeout_in_microseconds) { assert(false); }
+                ProblemAE *problem, const long long _budget,
+                const long long find_solve_max_timeout_in_microseconds) { assert(false); }
         virtual string to_string() { assert(false); }
     };
 
@@ -88,9 +91,12 @@ namespace SolverLanguagePrimitives {
             return solver;
         }
 
-        WrapperAssertDAG(ProgramEnvironment* _env) :
+        WrapperAssertDAG(ProgramEnvironment* _env, const int* seed = nullptr) :
                 env(_env){
-            _pfind = ::SATSolver::solverCreate(env->params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
+            if(seed != nullptr) {
+                env->params.seed = *seed;
+            }
+            _pfind = ::SATSolver::solverCreate(env->params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG", env->params.seed);
             if (env->params.outputSat) {
                 _pfind->outputSAT();
             }
@@ -104,10 +110,10 @@ namespace SolverLanguagePrimitives {
         }
 
         HoleVarStore *recordSolution() {
-            return new HoleVarStore(solver->ctrlStore);
+            return new HoleVarStore(solver->ctrl_store);
         }
 
-        CEGISSolverResult solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) override;
+        CEGISSolverResult solve(ProblemAE *problem, const long long _budget, const long long find_solve_max_timeout_in_microseconds) override;
     };
 
     class WrapperBatchEvaluatorSolver : public Solver_AE {
@@ -138,10 +144,11 @@ namespace SolverLanguagePrimitives {
         }
 
         HoleVarStore *recordSolution() {
-            return new HoleVarStore(solver->ctrlStore);
+            return new HoleVarStore(solver->ctrl_store);
         }
 
-        CEGISSolverResult solve(ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds) override;
+        CEGISSolverResult solve(
+                ProblemAE *problem, const long long _budget, const long long find_solve_max_timeout_in_microseconds) override;
     };
 
 };

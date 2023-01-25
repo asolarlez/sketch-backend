@@ -61,7 +61,7 @@ public:
 	typedef enum {ABC, ABCLIGHT, ZCHAFF, MINI} SolverType;
 	typedef enum {FINDER, CHECKER} SolverMode;
 	
-	static SATSolver* solverCreate(SolverType t, SolverMode m, string name);
+	static SATSolver* solverCreate(SolverType t, SolverMode m, string name, int seed);
 
 	virtual bool isOK()=0;
 	virtual bool assertIfPossible(int a)=0;
@@ -72,6 +72,7 @@ public:
     }
 	virtual ~SATSolver(){};
     virtual void annotate(const string& msg)=0;
+    virtual bool contains_idx(int idx)=0;
     virtual void annotateInput(const string& name, int i, int sz)=0;
     virtual void addChoiceClause(int x, int a, int b, int c)=0;
     virtual void addXorClause(int x, int a, int b)=0;

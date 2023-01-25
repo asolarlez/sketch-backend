@@ -54,7 +54,7 @@ void CEGISSolver::addProblem(BooleanDagLightUtility *harness, const File *file){
 
     }
 
-	finder->updateCtrlVarStore(ctrlStore);	
+	finder->updateCtrlVarStore(ctrl_store);
 }
 
 CEGISSolver::~CEGISSolver(void)
@@ -83,69 +83,33 @@ void CEGISSolver::declareControl(CTRL_node* cnode){
 	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
 	finder->declareControl(cnode);
 
-    ctrlStore.newVar(cname, size, cnode->getOtype(), bool_node::CTRL, cnode->get_original_name(), cnode->get_source_dag_name());
+    ctrl_store.newVar(cname, size, cnode->getOtype(), bool_node::CTRL, cnode->get_original_name(), cnode->get_source_dag_name());
 }
 
-CEGISSolverResult CEGISSolver::solve(unsigned long long find_solve_max_timeout_in_microseconds, const File* validation_file){
-	if(problems.size()==0){
-		return CEGISSolverResult{true, 0};
-	}
-	Assert(problemStack_is_empty(), "A big bug");
+CEGISSolverResult CEGISSolver::solve(
+        const long long _budget, const long long find_solve_max_timeout_in_microseconds, const File* validation_file){
 
-	//**
-	//pushProblem((*problems.rbegin())->clone());
+    AssertDebug(validation_file == nullptr, "NOT TESTED");
+    auto timestep_init_solve = std::chrono::steady_clock::now();
 
-	if(PARAMS->verbosity > 1){
-		cout<<"inputSize = "<<checker->get_input_store().getBitsize()<<"\tctrlSize = "<<ctrlStore.getBitsize()<<endl;
-		cout<<"Random seeds = "<<params.nseeds<<endl;	
-	}
+    if(problems.empty()){
+        return CEGISSolverResult{true, 0};
+    }
 
-	ctrlStore.makeRandom();
-    if(PARAMS->verbosity >= 1)
-    {cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;}
-//        std::vector<int, std::allocator<int> > ctrlstore_serialized =
-//                    ctrlStore.serialize();
-//	cpt.checkpoint('c', ctrlstore_serialized);
-//	setNewControls(ctrlStore);	
-	
-	CEGISSolverResult solver_result_object = solveCore(find_solve_max_timeout_in_microseconds, validation_file);
-	//bool succeeded = solveOptimization();
-	
-	//**
-	//popProblem();
+    Assert(problem_stack_is_empty(), "A big bug");
 
-	return solver_result_object;
-}
+    if(PARAMS->verbosity > 1){
+        cout << "input_store.get_bit_size() = "<<checker->get_input_store().get_bit_size()<< endl;
+        cout << "ctrl_store.get_bits_size() = " << ctrl_store.get_bit_size() << endl;
+        cout<<"Random seeds = "<<params.nseeds<<endl;
+    }
 
-/*
-bool CEGISSolver::solveOptimization() {
-	timerclass ftimer("* FIND TIME");
-	timerclass ttimer("* TOTAL TIME");
-	ttimer.start();
-	
-	if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
-	ftimer.restart();
-	bool fail = false;
-	try{
-		fail = !find(checker->get_input_store(), ctrlStore, true);
-	}catch(BasicError& e){
-		fail = true;
-	}
-	
-	ttimer.stop();
-	if(!fail){
-		cout<<" *Reporting the minimum found so far"<<endl;
-	}else{
-		cout<<" *FAILED"<<endl;
-	}
-	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<" TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
-	dirFind.getMng().retractAssumptions();
-	return !fail;f
-}
-*/
+    ctrl_store.makeRandom();
+    if(PARAMS->verbosity >= 1) {
+        cout<<"!+";	ctrl_store.printBrief(cout); cout << endl;
+    }
 
-CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeout_in_microseconds, const File* validation_file){
-	int iterations = 0;
+    int iterations = 0;
 	bool fail = false;
     BooleanDAG* counterexample_concretized_dag = nullptr;
  	bool doMore=true;
@@ -180,9 +144,9 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
 		if(PARAMS->showControls){ print_control_map(cout); }
 
         { // Check
-			if(PARAMS->verbosity > 5){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
-			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
-                        std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
+			if(PARAMS->verbosity > 5){ cout<<"!+ ";ctrl_store.printBrief(cout); cout << endl;}
+			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrl_store.printContent(cout); cout << endl;}
+                        std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrl_store.serialize();
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
 			ctimer.restart();
 
@@ -198,12 +162,12 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
             }
 
             // save intermediate result
-            intermediate_solutions.push_back(new HoleVarStore(ctrlStore));
+            intermediate_solutions.push_back(new HoleVarStore(ctrl_store));
 
             // here perform validation test.
             if(validation_file != nullptr) {
                 auto start_validation = chrono::steady_clock::now();
-                auto dag = checker->get_main_problem()->produce_concretization(&ctrlStore, bool_node::CTRL);
+                auto dag = checker->get_main_problem()->produce_concretization(&ctrl_store, bool_node::CTRL);
                 dag->increment_shared_ptr();
                 int num_passing_inputs = dag->count_passing_inputs(validation_file);
                 dag->clear();
@@ -213,9 +177,10 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
             }
 
             auto start_check = chrono::steady_clock::now();
-            counterexample_concretized_dag = checker->check(ctrlStore);
+            counterexample_concretized_dag = checker->check(ctrl_store);
             cout << "time(check): " << elapsed_time(start_check) << " (us)" << endl;
 			doMore = counterexample_concretized_dag != nullptr;
+            cout << "doMore = " << doMore << endl;
             if(doMore)
             {
                 num_counterexample_concretized_dags+=1;
@@ -233,20 +198,20 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
 		else hasInputChanged = false;
 		
 		if (!doMore) {//To make sure the control store also fleshes out the expressions from custom Synthesizers before being copied
-			ctrlStore.finalizeSynthOutputs();
+			ctrl_store.finalizeSynthOutputs();
 		}
 		
 		// Minimization loop-- found a solution, but can i find a better solution?
 		if(PARAMS->minvarHole && !doMore && mhsizes.size() != 0){
 			// store the current solution
-			storePreviousSolution(checker->get_input_store(), ctrlStore);
+			storePreviousSolution(checker->get_input_store(), ctrl_store);
 			// optimization: only add inputs if the verification fails
-			if(finder->minimizeHoleValue(ctrlStore, mhnames, mhsizes))
+			if(finder->minimizeHoleValue(ctrl_store, mhnames, mhsizes))
 				doMore=true;
 			else{
 				doMore = false;
 				checker->get_input_store() = prevInputStore;
-				ctrlStore = prevCtrlStore;
+                ctrl_store = prevCtrlStore;
 			}
 		}
 
@@ -265,12 +230,12 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
 			try{
                 auto start_finder = std::chrono::steady_clock::now();
                 int dag_size = counterexample_concretized_dag->size();
-                int nctrlbs = ctrlStore.getBitsize();
+                int nctrlbs = ctrl_store.get_bit_size();
 
                 auto start_find = chrono::steady_clock::now();
                 SATSolverResult sat_solver_result_from_find =
                         finder->find(
-                                counterexample_concretized_dag, ctrlStore, hasInputChanged, find_solve_max_timeout_in_microseconds);
+                                counterexample_concretized_dag, ctrl_store, hasInputChanged, find_solve_max_timeout_in_microseconds);
                 cout << "time(find): " << elapsed_time(start_find) << " (us)" << endl;
 
                 switch (sat_solver_result_from_find) {
@@ -303,7 +268,7 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
                 }
 
                 assert(dag_size == counterexample_concretized_dag->size());
-                assert(nctrlbs == ctrlStore.getBitsize());
+                assert(nctrlbs == ctrl_store.get_bit_size());
 //                timestamp(start_finder,
 //                          "solve__f_"+std::to_string(counterexample_concretized_dag->get_dag_id_from_the_user())+
 //                          "__step_"+std::to_string(finder_step_id)+
@@ -401,7 +366,7 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
 			if(PARAMS->minvarHole && prevSolutionFound){
 				cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
 				checker->get_input_store() = prevInputStore;
-				ctrlStore = prevCtrlStore;
+                ctrl_store = prevCtrlStore;
 				fail = false;
 				break;
 			}
@@ -425,9 +390,9 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
     cout << "*" << last_elapsed_time.to_string() << endl;
 	finder->retractAssumptions();
 
-    checker->clear_problemStack();
+    checker->clear_problem_stack();
 
-    assert(checker->problemStack_is_empty());
+    assert(checker->problem_stack_is_empty());
 
     if(counterexample_concretized_dag != nullptr) {
         counterexample_concretized_dag->clear();
@@ -442,7 +407,7 @@ CEGISSolverResult CEGISSolver::solveCore(unsigned long long find_solve_max_timeo
     {
         assert(iterations == 1);
     }
-	return CEGISSolverResult{!fail, new HoleVarStore(ctrlStore), intermediate_solutions};
+	return CEGISSolverResult{!fail, new HoleVarStore(ctrl_store), intermediate_solutions};
 }
 
 void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
@@ -513,7 +478,7 @@ void CEGISSolver::print_control_map(ostream& out){
 }
 
 void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
-    values = ctrlStore.to_map_str_str(floats);
+    values = ctrl_store.to_map_str_str(floats);
 }
 
 // can remove

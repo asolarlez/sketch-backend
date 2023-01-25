@@ -255,6 +255,7 @@ File::Result File::parseFile(GenericFile *generic_file, FloatManager &floats, co
         }
         else if(ok == complete_row)
         {
+            cout << "new row:" << new_row->to_string() << endl;
             push_back(new_row);
         }
         else if(ok == end_of_file__empty_row)
