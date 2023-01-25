@@ -1,6 +1,6 @@
 
 //hypersketch
- _main()
+_main()
 {
 
     int rows_per_sample_mult = 3;

@@ -6,6 +6,7 @@ SEE binary_boolean_predicates_dsl.sk
 
 //----HyperSketch----
 
+//hypersketch
 main_baseline()
 {
     int trials_mult = 8;
@@ -54,6 +55,7 @@ main_baseline()
 }
 
 
+//hypersketch
 run_one_step_bottom_up(int trials_mult)
 {
     /*
@@ -360,6 +362,7 @@ run_one_step_bottom_up(int trials_mult)
 
 }
 
+//hypersketch
 main_plot_initial_timeout_vs_score()
 {
 
@@ -411,6 +414,7 @@ main_plot_initial_timeout_vs_score()
     return ret_dag;
 }
 
+//hypersketch
 main()
 {
     return main_plot_initial_timeout_vs_score();
@@ -692,6 +696,7 @@ main()
     return best_dag;
 }
 
+//hypersketch
 main_em_cond_branches_step(best_score, current_dag, file, num_trials, delta_num_trails, num_rows_per_sample, delta_num_rows_per_sample)
 {
     int local_score = best_score;
@@ -910,6 +915,7 @@ main_em_cond_branches_step(best_score, current_dag, file, num_trials, delta_num_
 
 }
 
+//hypersketch
 best_effort_programs(_harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold, old_ret_dags) {
 
     timestamp();

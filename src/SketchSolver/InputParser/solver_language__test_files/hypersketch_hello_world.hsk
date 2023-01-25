@@ -1,5 +1,5 @@
 //hypersketch
- main()
+main()
 {
     file = File(file_name, main_sk__Wrapper);
     solution = SATSolver(main_sk__Wrapper, file);

@@ -1,5 +1,5 @@
 //hypersketch
- get_score(SketchFunction harness, Solution solution, File file)
+get_score(SketchFunction harness, Solution solution, File file)
 {
     SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
     int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
@@ -8,7 +8,7 @@
 }
 
 //hypersketch
- best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
+best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
 	Solution best_solution;
 	int best_score = 0;
 
@@ -21,8 +21,7 @@
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
-		solution = SATSolver(harness5.deep_clone(), subset_file); // invoke the Sketch //hypersketch
- on the harness
+		solution = SATSolver(harness5.deep_clone(), subset_file); // invoke the Sketch hypersketch on the harness
 		subset_file.clear();
 		score = get_score(harness5, solution, file);
 		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());
@@ -59,7 +58,7 @@
 }
 
 //hypersketch
- main()
+main()
 {
     file = File(file_name, main_sk__Wrapper);
 

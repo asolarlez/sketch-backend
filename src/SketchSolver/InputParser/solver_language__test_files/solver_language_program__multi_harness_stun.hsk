@@ -145,8 +145,7 @@ harness void sketch_harness(InputType x, OutputType out) {
 
 //----HyperSketch----
 
-HyperSketch simple_//hypersketch
-(file_name){
+HyperSketch simple_hypersketch(file_name){
     harness = sketch_harness.clone();
     harness.replace('program', base_program.clone());
     lvl0_programs = best_effort(harness, file_name);
@@ -195,7 +194,7 @@ HyperSketch
 */
 
 //hypersketch
- concatenate(arr1, arr2)
+concatenate(arr1, arr2)
 {
     n = arr2.size();
     for(i = 0;i<n;i++)
@@ -205,7 +204,7 @@ HyperSketch
 }
 
 //hypersketch
- best_effort_programs(harness1, file, num_trials, num_rows_per_sample)
+best_effort_programs(harness1, file, num_trials, num_rows_per_sample)
 {
     solutions = best_effort_solutions(harness1, file, num_trials, num_rows_per_sample);
     programs = [];
@@ -217,14 +216,14 @@ HyperSketch
 }
 
 //hypersketch
- best_effort_synthesized_program(harness2, file, num_trials, num_rows_per_sample)
+best_effort_synthesized_program(harness2, file, num_trials, num_rows_per_sample)
 {
     return harness2.produce_executable(
         best_effort_synthesis(harness2, file, num_trials, num_rows_per_sample));
 }
 
 //hypersketch
- main()
+main()
 {
 
     //return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
@@ -239,7 +238,7 @@ HyperSketch
 }
 
 //hypersketch
- synthesize_composite_programs_from_parts(left_programs, right_programs, select_best, file_name, num_trials, num_rows_per_sample)
+synthesize_composite_programs_from_parts(left_programs, right_programs, select_best, file_name, num_trials, num_rows_per_sample)
 {
     seed_main_lvl1 = [];
 
@@ -321,7 +320,7 @@ HyperSketch
 }
 
 //hypersketch
- top_down_and_bottom_up_synthesis_sketch_main(with_printf)
+top_down_and_bottom_up_synthesis_sketch_main(with_printf)
 {
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
@@ -586,7 +585,7 @@ bit composite_predicate(x)
 
 
 //hypersketch
- recursive_program_constructor(int stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper)
+recursive_program_constructor(int stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper)
 {
 
     harness_levels = [];
@@ -655,7 +654,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- recursive_function_stun_for_benchmarking()
+recursive_function_stun_for_benchmarking()
 {
     local_sketch_main = sketch_main.deep_clone();
     local_sketch_main__Wrapper = sketch_main__Wrapper.produce_replace("sketch_main", local_sketch_main);
@@ -673,7 +672,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- recursive_function_stun()
+recursive_function_stun()
 {
 
     local_sketch_main = sketch_main.deep_clone();
@@ -800,7 +799,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- left_and_right_and_cond_synthesis_sketch_main()
+left_and_right_and_cond_synthesis_sketch_main()
 {
     //first sample base level
     //choose best
@@ -879,7 +878,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- get_score(SketchFunction harness3, Solution solution, File file)
+get_score(SketchFunction harness3, Solution solution, File file)
 {
     SketchFunction program = harness3.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
     int score2 = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
@@ -890,7 +889,7 @@ bit composite_predicate(x)
 /*
 
 //hypersketch
- Solution original_sketch_main()
+Solution original_sketch_main()
 {
     return beam_search_sketch_main();
     //return repeat_greedy_sketch_main();
@@ -898,7 +897,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- Solution beam_search_sketch_main()
+Solution beam_search_sketch_main()
 {
     string file_name = "uav_kg_big__as_bools.data";
 
@@ -1003,7 +1002,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- Solution repeat_greedy_sketch_main()
+Solution repeat_greedy_sketch_main()
 {
     string file_name = "/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
     File file = File(file_name, sketch_main_lvl2__Wrapper);
@@ -1027,7 +1026,7 @@ bit composite_predicate(x)
 */
 
 //hypersketch
- stun_main()
+stun_main()
 {
 	int num_trials = 20; //hyperparameter
 	int num_rows = 6; //hyperparameter
@@ -1084,7 +1083,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
+best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
 
 	Solution best_solution;
 	int best_score = 0;
@@ -1135,7 +1134,7 @@ bit composite_predicate(x)
 }
 
 //hypersketch
- best_effort_synthesis(SketchFunction harness6, File file, int num_trials, int num_rows) {
+best_effort_synthesis(SketchFunction harness6, File file, int num_trials, int num_rows) {
     vector<pair<int, Solution> > solutions = best_effort_solutions(harness6, file, num_trials, num_rows);
     int solutions_size = solutions.size();
     Solution ret = solutions.get(0).second();
@@ -1145,7 +1144,7 @@ bit composite_predicate(x)
 /*
 //subroutine to count the number of passing input-output examples.
 //hypersketch
- int count_passing_inputs(SketchFunction program, File file)
+int count_passing_inputs(SketchFunction program, File file)
 {
 	int score = 0;
 	int row_id = 0;

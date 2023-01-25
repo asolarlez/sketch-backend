@@ -81,8 +81,8 @@ harness void sketch_main(int n, bit[n] bits, bit out) {
 }
 */
 
-////hypersketch
-  main()
+//hypersketch
+main()
 {
     file = File(file_name);
     return SATSolver(sketch_main, file);
@@ -90,9 +90,7 @@ harness void sketch_main(int n, bit[n] bits, bit out) {
 
 
 
-// comparing ////hypersketch
-
- synthesis strategies vs sketchs solver on fully inlined trees.
+// comparing hypersketch synthesis strategies vs sketchs solver on fully inlined trees.
 
 // need a synthesis strategy synthesizing a program of size x.
 // need a pure sketch end-to-end space mirrored by the program space in the previous strategy.

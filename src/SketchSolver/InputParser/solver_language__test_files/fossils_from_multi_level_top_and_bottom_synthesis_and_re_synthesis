@@ -1,5 +1,6 @@
 
-Solver main_bot_top_one_step()
+//hypersketch
+main_bot_top_one_step()
 {
     // here you want:
     // start small;
@@ -58,7 +59,8 @@ Solver main_bot_top_one_step()
     //return sketch_main__Wrapper.produce_executable(current_dag.get_solution());
 }
 
-Solver best_effort_programs_always_and_sometimes_include(_harness, file_always, file_sometimes, num_trials, num_rows, break_early_threshold) {
+//hypersketch
+best_effort_programs_always_and_sometimes_include(_harness, file_always, file_sometimes, num_trials, num_rows, break_early_threshold) {
 
     print("|.hsk ENTERING best_effort_programs num_trials", num_trials, "num_rows_per_sample", num_rows);
 

@@ -1,6 +1,6 @@
 
 //hypersketch
- list_of_bits_to_int(list_of_bits)
+list_of_bits_to_int(list_of_bits)
 {
     int ret = 0;
     int pow = 1;
@@ -21,7 +21,7 @@
 }
 
 //hypersketch
- main()
+main()
 {
     file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs_3.txt", main_sk__Wrapper);
 
