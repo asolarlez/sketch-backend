@@ -1,5 +1,5 @@
 
-hypersketch _main()
+/*hypersketch*/ _main()
 {
 
     int rows_per_sample_mult = 3;
