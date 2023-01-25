@@ -4,7 +4,7 @@
 
 ### Sketch Set Up
 
-[//]: # (~~~)
+```
     mkdir sketch-source
     cd sketch-source
     git clone https://github.com/asolarlez/sketch-frontend.git   
@@ -20,7 +20,7 @@
     cd ../sketch-frontend
     make run-local-seq EXEC_ARGS="src/test/sk/seq/miniTest1.sk"
 
-[//]: # (~~~)
+```
 
 ### HyperSketch Set Up
 
