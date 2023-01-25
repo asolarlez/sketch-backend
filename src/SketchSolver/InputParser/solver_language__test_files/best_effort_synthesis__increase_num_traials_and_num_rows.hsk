@@ -1,5 +1,7 @@
 
-hypersketch best_effort_programs(
+////hypersketch
+
+ best_effort_programs(
     _harness, file, num_trials, num_rows, float timeout_per_trial, break_early_threshold) {
 
     timestamp();
@@ -26,14 +28,15 @@ hypersketch best_effort_programs(
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
-		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch hypersketch on the harness
+		solution = SATSolver(harness.deep_clone(), subset_file, timeout_per_trial); // invoke the Sketch //hypersketch
+ on the harness
 		subset_file.clear();
 
 		//--{
 		    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
             int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
 		//--}
-        ret_dags.append(pair<int, SketchFunction>(score, program));
+        ret_dags.push_back(pair<int, SketchFunction>(score, program));
 		print(
 		    "trial", trial_id+1, "/", num_trials,
 		    "score", score, "/", file.size(), "%", ((float(100) * float(score)) / float(file.size())),
@@ -72,7 +75,8 @@ hypersketch best_effort_programs(
     return ret_dags[0].second();
 }
 
-hypersketch main()
+//hypersketch
+ main()
 {
     file = File(file_name, sketch_main__Wrapper);
     ret = sketch_main__Wrapper;

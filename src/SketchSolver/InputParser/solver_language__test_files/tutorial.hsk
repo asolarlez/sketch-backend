@@ -1,4 +1,5 @@
-/*hypersketch best_effort_programs(harness, file, num_trials, num_rows, timeout) {
+/*//hypersketch
+ best_effort_programs(harness, file, num_trials, num_rows, timeout) {
     //timestamp("best_effort");
     timestamp();
 
@@ -10,7 +11,7 @@
         program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
         score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
 
-		ret_dags.append(pair<int, SketchFunction>(score, program));
+		ret_dags.push_back(pair<int, SketchFunction>(score, program));
 	}
 
 	ret_dags.sort();
@@ -21,7 +22,8 @@
     return ret_dags;
 }
 
-hypersketch main() {
+//hypersketch
+ main() {
     file = File(file_name, sketch_main__Wrapper);
     num_trials = 10;
     num_rows = 20;

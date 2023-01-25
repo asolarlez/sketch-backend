@@ -34,8 +34,8 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
 
     map<string, string> final_hole_values;
 
-    bool run_hsk_program = false;
-    bool run_hardcoded_synthesis_strategy = true;
+    bool run_hsk_program = true;
+    bool run_hardcoded_synthesis_strategy = false;
 
     if(run_hsk_program)
     {
