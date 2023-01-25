@@ -175,67 +175,6 @@ protected:
         return ret_dag;
     }
 
-//    Train of thought on
-//    Frontier<int, SketchFunction *>
-//    best_effort_frontier__3(const SketchFunction *harness, File *file, float budget) {
-    // init Finder
-//        CEGISFinderSpec* finder = CEGISFinder(..);
-    // initialize all example as persons
-    // programs are representatives
-    // each example wants to be represented by a program that represents as many other examples.
-    // Examples form a political party by passing though a synthesizers that returns a program.
-    // This program is the representative synthesized from the set of examples.
-    // This program is a representative of each example that passes though the program.
-
-    // Now there is a marketplace of examples and political parties.
-
-    // 3 meta-steps:
-    //      1. forming political parties
-    //          1.1. Forming political parties happens in the following way:
-    //              There is the empty political party.
-    //                  The empty political party opens a public auction for membership:
-    //                  the example that bids the most gets the membership.
-    //              After the political party has been updated
-    //              Synthesize a program for the political party.
-    //              See how many examples are represented.
-    //              year 1: each example gets 1 vote per program size budget, has to vote. highest scoring program wins.
-    //              year 2: each political party starts a new year recruitment process
-    //                  each party holds open auctions for membership, the highest bidding example wins
-    //                  each example gets a budget to spend on integrating with the political party.
-    //
-    //              For the ones that are not represented, can start their own
-    //      2. Examples voting for political parties
-    //      3. Most popular parties win, collect rewards,
-    //          and get to recruit more examples in their political parties.
-    //      The goal is to find a minimal program that represents as many examples.
-
-    //  while not all example in a political party:
-    //      get an example that is not represented by a
-
-    //  initially everyone gets a political party.
-    //  best political parties under particular program size merge etc.
-    //  example who's political parties don't make it, lose funding, and join another political party.
-    //  maintain a tree of lineage, and have recursive fontiers
-    //      this is important because locally compentitive branches might not be globally competitive, but the
-    //      mother ship can handle them financially because it has earned by being
-
-
-    // scheduling goes best-first, but amount of time is aways failry delegated,
-    // what does fair mean? equal spacing per rep; as new samples get taken, and as the frontiers get updated,
-    // the time allocation dynamically changes based on representation, but there is always fair distribution of the remaining time,
-    // and the original time distribution is also maintained.
-
-    // how do you budget all of this?
-    // say you have 100 seconds?
-    // just run the synthesis process for 100 seconds and cut it.
-    // but how do you decide which syntheis step to run next?
-    // highest biding (political party, new member)-pair;
-    // how to set timeout?
-    // have a learnable grid (with monotonicity properties) budget[size][acc], which is how much budget
-    // you will give for a particular solution. the better the solution, the more budget;
-    // as a meta-level you want to meta-learn a synthesizer that can find solution within the minimal budget.
-
-
     string frontier_to_string(const Frontier<int, SketchFunction *>& frontier, const string& label = "") {
         string ret;
         if(label != "") {
