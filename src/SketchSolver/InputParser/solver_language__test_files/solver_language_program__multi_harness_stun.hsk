@@ -1,4 +1,197 @@
+/*
 
+int program_lvl0(int x)
+{
+    return program_generator(x);
+}
+
+bit top_condition(int x)
+{
+    return predicate_generator(x);
+}
+
+int composite_predicate_left(int x)
+{
+    return composite_predicate(x);
+}
+
+int composite_predicate_right(int x)
+{
+    return composite_predicate(x);
+}
+
+int composite_predicate(int x)
+{
+    if(??) {
+        if(condition(x)) {
+            return composite_predicate_left(x);
+        }
+        else {
+            return composite_predicate_right(x);
+        }
+    }
+    else {
+        return program_lvl0(x);
+    }
+}
+
+int dummy_program(int x) {return 1;}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+harness int eval_program_main(int x, int out)
+{
+    return dummy_program(x);
+}
+
+@FromFile("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data")
+harness void sketch_main(int x, int out)
+{
+    assert(composite_predicate(x) == out);
+}
+
+*/
+
+/*
+
+//-------------------------------------------
+//------------RECURSIVE TREE----------------
+
+//todo
+
+//-------------------------END RECURSIVE TREE -------------------------
+//---------------------------------------------------------------------
+
+*/
+
+/*
+
+//--concrete sketch for predicates over bitvectors--
+
+//Space of predicates
+
+InputType  = int num_bits, bit[num_bits] bits;
+OutputType = bit;
+
+generator OutputType
+
+generator bit base_program_generator(int num_bits, bit[num_bits] bits, int depth)
+{
+
+    int arity = {|0|1|2|};
+
+    if(arity == 2) {
+        bit left_bit = base_program_generator(num_bits, bits, depth-1);
+        bit right_bit = base_program_generator(num_bits, bits, depth-1);
+        return {| (left_bit && right_bit) | (left_bit || right_bit) |};
+    }
+    else if(arity == 1) {
+        bit operand = base_program_generator(num_bits, bits, depth-1);
+        return !operand;
+    }
+    else{
+        assert(arity == 0);
+        return bits[??];
+    }
+
+}
+
+bit base_program(int num_bits, bit[num_bits] bits) {
+    int max_depth = 2; //hyperparameter
+    return base_program_generator(num_bits, bits, max_depth);
+}
+
+bit predicate(int x) {
+    int max_depth = 2; //hyperparameter
+    return base_program_generator(num_bits, bits, max_depth);
+}
+
+*/
+
+/*
+
+//--abstract-sketch--
+
+InputType = //USER DEFINED;
+OutputType = //USER DEFINED;
+
+OutputType base_program(InputType x) {
+    //USER DEFINED
+}
+
+bit predicate(InputType x) {
+    //USER DEFINED
+}
+
+bit condition(InputType x);
+
+OutputType if_true_branch(InputType x);
+
+OutputType if_false_branch(InputType x);
+
+OutputType composite_program(InputType x) {
+    if(condition(x)) {
+        return if_true_branch(x);
+    }
+    else {
+        return if_false_branch(x);
+    }
+}
+
+int program(int x);
+
+harness void sketch_harness(InputType x, OutputType out) {
+    assert(program(x) == out);
+}
+
+//----HyperSketch----
+
+HyperSketch simple_hypersketch(file_name){
+    harness = sketch_harness.clone();
+    harness.replace('program', base_program.clone());
+    lvl0_programs = best_effort(harness, file_name);
+    //base_solution has type vector<pair<int, Sketch> >
+
+    lvl1_programs = [];
+    for(int i = 0; i<lvl0_programs.size();i++) {
+        for(int j = i+1;j<lvl0_programs.size();j++){
+
+            program_i = lvl0_programs[i].second;
+            program_j = lvl0_programs[j].second;
+
+            lvl1_program = composite_program.clone();
+            lvl1_program.replace('condition', predicate.clone());
+            lvl1_program.replace('if_true_branch', program_i);
+            lvl1_program.replace('if_true_branch', program_j);
+
+            lvl1_programs += best_effort(lvl1_program, file_name);
+        }
+    }
+
+    return max(lvl1_programs+lvl0_programs).second;
+}
+
+HyperSketch best_effort(sketch, file_name){
+
+    num_trials = 10; //hyperparameter
+    num_rows_per_trial = 6; //hyperparameter
+
+    file = File(file_name);
+
+    solutions = [];
+    for(int i = 0; i<num_trials; i++) {
+        subfile = file.sample(num_rows_per_trial);
+        solution = SATSolver(sketch, subfile);
+        executable = sketch.produce_executable(solution)
+        score = executable.count_num_passing_inputs(file);
+        solutions.push_back((score, executable));
+    }
+
+    return solutions;
+}
+
+HyperSketch
+
+*/
 
 /*hypersketch*/ concatenate(arr1, arr2)
 {
@@ -684,14 +877,16 @@ bit composite_predicate(x)
 
 /*
 
-/*hypersketch*/ Solution original_sketch_main()
+//hypersketch
+Solution original_sketch_main()
 {
     return beam_search_sketch_main();
     //return repeat_greedy_sketch_main();
     //return stun_main();
 }
 
-/*hypersketch*/ Solution beam_search_sketch_main()
+//hypersketch
+Solution beam_search_sketch_main()
 {
     string file_name = "uav_kg_big__as_bools.data";
 
@@ -795,7 +990,8 @@ bit composite_predicate(x)
     return ret_solution;
 }
 
-/*hypersketch*/ Solution repeat_greedy_sketch_main()
+//hypersketch
+Solution repeat_greedy_sketch_main()
 {
     string file_name = "/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/zig_zag.data";
     File file = File(file_name, sketch_main_lvl2__Wrapper);
@@ -815,6 +1011,8 @@ bit composite_predicate(x)
 
     return sol;
 }
+
+*/
 
 /*hypersketch*/ stun_main()
 {

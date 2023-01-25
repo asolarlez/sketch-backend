@@ -92,7 +92,7 @@
 		always_subset = file_always.produce_subset_file(subfile_always_size);
 		for(int i = 0;i<always_subset.size();i++)
 		{
-		    subset_file.append(always_subset[i]);
+		    subset_file.push_back(always_subset[i]);
 		}
 		solution = SATSolver(harness.deep_clone(), subset_file); // invoke the Sketch Solver on the harness
 		subset_file.clear();
@@ -103,7 +103,7 @@
 		    int score_sometimes = program.vectorized_count_passing_inputs(file_sometimes);
 		    int score = score_always+score_sometimes;
 		//--}
-        ret_dags.append(pair<int, SketchFunction>(score, program));
+        ret_dags.push_back(pair<int, SketchFunction>(score, program));
 		print(
 		    "trial", trial_id+1, "/", num_trials,
 		    "score_always", score_always, "/", file_always.size(), "%", ((float(100) * float(score_always)) / float(file_always.size())),

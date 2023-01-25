@@ -370,7 +370,7 @@ SEE binary_boolean_predicates_dsl.sk
     int p = 1;
     for(int i = 0;i<8;i++)
     {
-        trial_mults.append(trial_mult*p);
+        trial_mults.push_back(trial_mult*p);
         p = p * 2;
     }
 
@@ -382,7 +382,7 @@ SEE binary_boolean_predicates_dsl.sk
     {
         print("running with trial_mults", trial_mults[i]);
         best_score_and_dag = run_one_step_bottom_up(trial_mults[i]);
-        all_best_dags.append(best_score_and_dag);
+        all_best_dags.push_back(best_score_and_dag);
         print("done running; results:");
         print(trial_mults[i], "->", best_score_and_dag);
         if(best_score < best_score_and_dag.first())
@@ -733,7 +733,7 @@ SEE binary_boolean_predicates_dsl.sk
             file.relabel(resynth_cond);
             local_dags = best_effort_programs(resynth_cond, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
-            all_dags.append(local_dags);
+            all_dags.push_back(local_dags);
 
             {
                 if(best_score < local_dags[0].first())
@@ -801,7 +801,7 @@ SEE binary_boolean_predicates_dsl.sk
             file.relabel(resynth_branches);
             local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
-            all_dags.append(local_dags);
+            all_dags.push_back(local_dags);
 
             {
                 if(best_score < local_dags[0].first())
@@ -869,7 +869,7 @@ SEE binary_boolean_predicates_dsl.sk
             file.relabel(resynth_branches);
             local_dags = best_effort_programs(resynth_branches, file, num_trials, num_rows_per_sample, timeout, local_score, []);
 
-            all_dags.append(local_dags);
+            all_dags.push_back(local_dags);
 
             {
                 if(best_score < local_dags[0].first())
@@ -943,8 +943,8 @@ SEE binary_boolean_predicates_dsl.sk
 		    SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
             int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
 		//--}
-        ret_dags.append(pair<int, SketchFunction>(score, program));
-        old_ret_dags.append(pair<int, SketchFunction>(score, program));
+        ret_dags.push_back(pair<int, SketchFunction>(score, program));
+        old_ret_dags.push_back(pair<int, SketchFunction>(score, program));
 		print(
 		    "trial", trial_id+1, "/", num_trials,
 		    "score", score, "/", file.size(), "%", ((float(100) * float(score)) / float(file.size())),

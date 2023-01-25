@@ -23,7 +23,7 @@
 		subset_file.clear();
 		score = get_score(harness5, solution, file);
 		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());
-		solutions.append(pair<int, Solution>(score, solution));
+		solutions.push_back(pair<int, Solution>(score, solution));
 		if(score > best_score) // update the best_solution
 		{
 			best_solution = solution;

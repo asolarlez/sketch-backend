@@ -16,7 +16,7 @@
             for(int j = 0;j<8;j++) {
                 file_i.set(j, 2, i.get_bit(j));
             }
-            files.append(file_i);
+            files.push_back(file_i);
         }
     }
 
@@ -35,7 +35,7 @@
         print(files[i]);
         print("passing:", result);
         print("---------------------------------------");
-        fs.append(new_dag);
+        fs.push_back(new_dag);
         int sum = 0;
         for(int i = 0;i<result.size();i++)
         {

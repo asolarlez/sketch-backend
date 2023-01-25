@@ -45,18 +45,18 @@
                 source_total_func_ij = File();
                 for(int k = 0;k<8;k++) {
                     if(input_masks[j][k] == 1) {
-                        partial_func_ij.append(file_0[k]);
+                        partial_func_ij.push_back(file_0[k]);
                         int meta_example_id = meta_example_size;
                         meta_example_size = meta_example_size + 1;
                         partial_func_ij.set(meta_example_id, 2, i.get_bit(k));
                     }
-                    source_total_func_ij.append(file_0[k]);
+                    source_total_func_ij.push_back(file_0[k]);
                     source_total_func_ij.set(k, 2, i.get_bit(k));
                 }
-                partial_funcs_files.append(partial_func_ij);
-                source_total_funcs_files.append(source_total_func_ij);
-                original_total_func_of_partial_func.append(i);
-                input_mask_ids.append(j);
+                partial_funcs_files.push_back(partial_func_ij);
+                source_total_funcs_files.push_back(source_total_func_ij);
+                original_total_func_of_partial_func.push_back(i);
+                input_mask_ids.push_back(j);
 
 /*
                 print("num_partial_funcs", num_partial_funcs);
@@ -101,18 +101,18 @@
         for(int j = 0; j<8;j++) {
             // print("source_total_funcs_files[i][j]", source_total_funcs_files[i][j]);
             synthesizer_meta_example = [];
-            //synthesizer_meta_example.append(9);
-            //synthesizer_meta_example.append("{");
-            synthesizer_meta_example.append(input_mask_id.get_bit(0));
-            synthesizer_meta_example.append(input_mask_id.get_bit(1));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(0, 2));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(1, 2));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(2, 2));
-            synthesizer_meta_example.append(partial_funcs_files[i].get(3, 2));
-            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 0));
-            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 1));
-            synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 2));
-            //synthesizer_meta_example.append("}");
+            //synthesizer_meta_example.push_back(9);
+            //synthesizer_meta_example.push_back("{");
+            synthesizer_meta_example.push_back(input_mask_id.get_bit(0));
+            synthesizer_meta_example.push_back(input_mask_id.get_bit(1));
+            synthesizer_meta_example.push_back(partial_funcs_files[i].get(0, 2));
+            synthesizer_meta_example.push_back(partial_funcs_files[i].get(1, 2));
+            synthesizer_meta_example.push_back(partial_funcs_files[i].get(2, 2));
+            synthesizer_meta_example.push_back(partial_funcs_files[i].get(3, 2));
+            synthesizer_meta_example.push_back(source_total_funcs_files[i].get(j, 1, 0));
+            synthesizer_meta_example.push_back(source_total_funcs_files[i].get(j, 1, 1));
+            synthesizer_meta_example.push_back(source_total_funcs_files[i].get(j, 1, 2));
+            //synthesizer_meta_example.push_back("}");
 
             // | output
             out_bit = 0;
@@ -132,22 +132,22 @@
 
                 while(meta_example_input_as_an_int >= meta_inputs_to_meta_outputs.size())
                 {
-                    meta_inputs_to_meta_outputs.append([]);
+                    meta_inputs_to_meta_outputs.push_back([]);
                 }
 
                 assert((meta_example_input_as_an_int < meta_inputs_to_meta_outputs.size()));
-                meta_inputs_to_meta_outputs[meta_example_input_as_an_int].append(out_bit);
+                meta_inputs_to_meta_outputs[meta_example_input_as_an_int].push_back(out_bit);
             }
 
             synthesizer_meta_example = [9, "{"] + synthesizer_meta_example + ["}"];
 
-            synthesizer_meta_example.append(out_bit);
+            synthesizer_meta_example.push_back(out_bit);
             print("synthesizer_meta_example", synthesizer_meta_example);
-            final_dataset.append(synthesizer_meta_example);
+            final_dataset.push_back(synthesizer_meta_example);
         }
 
         print("---------------------------------------");
-        fs.append(new_dag);
+        fs.push_back(new_dag);
 
         int sum = 0;
         for(int i = 0;i<result_train.size();i++)
