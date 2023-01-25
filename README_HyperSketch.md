@@ -101,7 +101,7 @@ bits.data:
 
 intarray_synth.sk:
 ```
-bit op(int x0, int x1) {
+int op(int x0, int x1) {
     return {| x0 + x1 | x0 - x1 |};
 }
 @FromFile("ints.data")
