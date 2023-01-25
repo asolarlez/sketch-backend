@@ -96,8 +96,7 @@ best_effort_programs_always_and_sometimes_include(_harness, file_always, file_so
 		{
 		    subset_file.push_back(always_subset[i]);
 		}
-		solution = SATSolver(harness.deep_clone(), subset_file); // invoke the Sketch //hypersketch
-on the harness
+		solution = SATSolver(harness.deep_clone(), subset_file); // invoke the Sketch Solver on the harness
 		subset_file.clear();
 
 		//--{

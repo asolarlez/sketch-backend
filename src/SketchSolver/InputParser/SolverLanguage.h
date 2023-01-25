@@ -195,53 +195,7 @@ protected:
 
         Frontier<int, SketchFunction *> ret_frontier = Frontier<int, SketchFunction *>(2);
 
-        // init Finder
-//        CEGISFinderSpec* finder = CEGISFinder(..);
-        // initialize all example as persons
-        // programs are representatives
-        // each example wants to be represented by a program that represents as many other examples.
-        // Examples form a political party by passing though a synthesizers that returns a program.
-        // This program is the representative synthesized from the set of examples.
-        // This program is a representative of each example that passes though the program.
-
-        // Now there is a marketplace of examples and political parties.
-
-        // 3 meta-steps:
-        //      1. forming political parties
-        //          1.1. Forming political parties happens in the following way:
-        //              There is the empty political party.
-        //                  The empty political party opens a public auction for membership:
-        //                  the example that bids the most gets the membership.
-        //              After the political party has been updated
-        //              Synthesize a program for the political party.
-        //              See how many examples are represented.
-        //              year 1: each example gets 1 vote per program size budget, has to vote. highest scoring program wins.
-        //              year 2: each political party starts a new year recruitment process
-        //                  each party holds open auctions for membership, the highest bidding example wins
-        //                  each example gets a budget to spend on integrating with the political party.
-        //
-        //              For the ones that are not represented, can start their own
-        //      2. Examples voting for political parties
-        //      3. Most popular parties win, collect rewards,
-        //          and get to recruit more examples in their political parties.
-        //      The goal is to find a minimal program that represents as many examples.
-
-        //  while not all example in a political party:
-        //      get an example that is not represented by a
-
-        //  initially everyone gets a political party.
-        //  best political parties under particular program size merge etc.
-        //  example who's political parties don't make it, lose funding, and join another political party.
-
-        // how do you budget all of this?
-        // say you have 100 seconds?
-        // just run the synthesis process for 100 seconds and cut it.
-        // but how do you decide which syntheis step to run next?
-        // highest biding (political party, new member)-pair;
-        // how to set timeout?
-        // have a learnable grid (with monotonicity properties) budget[size][acc], which is how much budget
-        // you will give for a particular solution. the better the solution, the more budget;
-        // as a meta-level you want to meta-learn a synthesizer that can find solution within the minimal budget.
+        // representative CEGIS initial train of thought was here.
 
         return ret_frontier;
     }
@@ -288,48 +242,6 @@ public:
         }
 
         {
-            //int num_trials = 1000;
-            //int num_rows = 12;
-            //float timeout = float(1);
-            //
-            //frontier:
-            //-296 81
-            //-293 65
-            //-278 59
-            //-275 57
-            //-274 50
-            //-273 45
-            //-271 37
-            //-270 34
-            //-245 33
-            //-224 19
-
-            //int num_trials = 2;
-            //int num_rows = 120;
-            //float timeout = float(100);
-            //frontier:
-            //-284 91
-            //-282 85
-            //-273 80
-            //-269 78
-            //-268 71
-            //-249 69
-            //-235 55
-            //-204 38
-
-            //int num_trials = 10;
-            //int num_rows = 120;
-            //float timeout = float(5);
-            //frontier:
-            //-303 90
-            //-294 85
-            //-284 81
-            //-269 78
-            //-268 71
-            //-260 39
-            //-218 33
-
-
             int num_trials = 6;
             int num_rows = 120;
             float timeout = float(2);
