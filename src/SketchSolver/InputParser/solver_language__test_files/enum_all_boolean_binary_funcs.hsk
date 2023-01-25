@@ -1,5 +1,6 @@
 
-hypersketch main()
+//hypersketch
+main()
 {
     return synthesize_meta_dataset_over_3_bit_fs();
     //return scaling_of_training_io_examples_on_best_effort();
@@ -7,7 +8,8 @@ hypersketch main()
 
 // -----
 
-hypersketch list_of_bits_to_int(list_of_bits)
+//hypersketch
+list_of_bits_to_int(list_of_bits)
 {
     int ret = 0;
     int pow = 1;
@@ -27,7 +29,8 @@ hypersketch list_of_bits_to_int(list_of_bits)
     return ret;
 }
 
-hypersketch synthesize_meta_dataset_over_3_bit_fs()
+//hypersketch
+synthesize_meta_dataset_over_3_bit_fs()
 {
     file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs_3.txt", main_sk__Wrapper);
 
@@ -53,18 +56,18 @@ hypersketch synthesize_meta_dataset_over_3_bit_fs()
                 source_total_func_ij = File();
                 for(int k = 0;k<8;k++) {
                     if(input_masks[j][k] == 1) {
-                        partial_func_ij.append(file_0[k]);
+                        partial_func_ij.push_back(file_0[k]);
                         int meta_example_id = meta_example_size;
                         meta_example_size = meta_example_size + 1;
                         partial_func_ij.set(meta_example_id, 2, i.get_bit(k));
                     }
-                    source_total_func_ij.append(file_0[k]);
+                    source_total_func_ij.push_back(file_0[k]);
                     source_total_func_ij.set(k, 2, i.get_bit(k));
                 }
-                partial_funcs_files.append(partial_func_ij);
-                source_total_funcs_files.append(source_total_func_ij);
-                original_total_func_of_partial_func.append(i);
-                input_mask_ids.append(j);
+                partial_funcs_files.push_back(partial_func_ij);
+                source_total_funcs_files.push_back(source_total_func_ij);
+                original_total_func_of_partial_func.push_back(i);
+                input_mask_ids.push_back(j);
 
 /*
                 print("num_partial_funcs", num_partial_funcs);
@@ -134,18 +137,18 @@ hypersketch synthesize_meta_dataset_over_3_bit_fs()
             for(int j = 0; j<8;j++) {
                 // print("source_total_funcs_files[i][j]", source_total_funcs_files[i][j]);
                 synthesizer_meta_example = [];
-                //synthesizer_meta_example.append(9);
-                //synthesizer_meta_example.append("{");
-                synthesizer_meta_example.append(input_mask_id.get_bit(0));
-                synthesizer_meta_example.append(input_mask_id.get_bit(1));
-                synthesizer_meta_example.append(partial_funcs_files[i].get(0, 2));
-                synthesizer_meta_example.append(partial_funcs_files[i].get(1, 2));
-                synthesizer_meta_example.append(partial_funcs_files[i].get(2, 2));
-                synthesizer_meta_example.append(partial_funcs_files[i].get(3, 2));
-                synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 0));
-                synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 1));
-                synthesizer_meta_example.append(source_total_funcs_files[i].get(j, 1, 2));
-                //synthesizer_meta_example.append("}");
+                //synthesizer_meta_example.push_back(9);
+                //synthesizer_meta_example.push_back("{");
+                synthesizer_meta_example.push_back(input_mask_id.get_bit(0));
+                synthesizer_meta_example.push_back(input_mask_id.get_bit(1));
+                synthesizer_meta_example.push_back(partial_funcs_files[i].get(0, 2));
+                synthesizer_meta_example.push_back(partial_funcs_files[i].get(1, 2));
+                synthesizer_meta_example.push_back(partial_funcs_files[i].get(2, 2));
+                synthesizer_meta_example.push_back(partial_funcs_files[i].get(3, 2));
+                synthesizer_meta_example.push_back(source_total_funcs_files[i].get(j, 1, 0));
+                synthesizer_meta_example.push_back(source_total_funcs_files[i].get(j, 1, 1));
+                synthesizer_meta_example.push_back(source_total_funcs_files[i].get(j, 1, 2));
+                //synthesizer_meta_example.push_back("}");
 
                 // | output
                 out_bit = 0;
@@ -165,27 +168,27 @@ hypersketch synthesize_meta_dataset_over_3_bit_fs()
 
                     while(meta_example_input_as_an_int >= meta_inputs_to_meta_outputs.size())
                     {
-                        meta_inputs_to_meta_outputs.append([0, 0]);
-                        input_was_printed.append(0);
+                        meta_inputs_to_meta_outputs.push_back([0, 0]);
+                        input_was_printed.push_back(0);
                     }
 
                     assert((meta_example_input_as_an_int < meta_inputs_to_meta_outputs.size()));
 
                     meta_inputs_to_meta_outputs[meta_example_input_as_an_int][out_bit].add(1);
 
-                    meta_input_as_int_per_meta_example.append(meta_example_input_as_an_int);
+                    meta_input_as_int_per_meta_example.push_back(meta_example_input_as_an_int);
                 }
 
                 synthesizer_meta_example = [9, "{"] + synthesizer_meta_example + ["}"];
 
-                synthesizer_meta_example.append(out_bit);
+                synthesizer_meta_example.push_back(out_bit);
                 print("synthesizer_meta_example", synthesizer_meta_example);
-                final_dataset.append(synthesizer_meta_example);
+                final_dataset.push_back(synthesizer_meta_example);
             }
         }
 
         print("---------------------------------------");
-        fs.append(new_dag);
+        fs.push_back(new_dag);
         print("elapsed_time");
         timestamp();
         print("---------------------------------------");
@@ -290,7 +293,8 @@ hypersketch synthesize_meta_dataset_over_3_bit_fs()
 // -------------
 
 
-hypersketch get_score(SketchFunction harness, Solution solution, File file)
+//hypersketch
+get_score(SketchFunction harness, Solution solution, File file)
 {
     SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
     int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
@@ -298,7 +302,8 @@ hypersketch get_score(SketchFunction harness, Solution solution, File file)
     return score;
 }
 
-hypersketch best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
+//hypersketch
+best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
 
     print("best_effort_solutions", "file.size", file.size(), "num_traials", num_trials, "num_rows", num_rows);
 
@@ -318,7 +323,7 @@ hypersketch best_effort_solutions(SketchFunction harness5, File file, int num_tr
 		subset_file.clear();
 		score = get_score(harness5, solution, file);
 		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());
-		solutions.append(pair<int, Solution>(score, solution));
+		solutions.push_back(pair<int, Solution>(score, solution));
 		if(score > best_score) // update the best_solution
 		{
 			best_solution = solution;
@@ -350,7 +355,8 @@ hypersketch best_effort_solutions(SketchFunction harness5, File file, int num_tr
     return solutions;
 }
 
-hypersketch scaling_of_training_io_examples_on_best_effort()
+//hypersketch
+scaling_of_training_io_examples_on_best_effort()
 {
     file = File(file_name, main_sk__Wrapper);
 
