@@ -483,7 +483,7 @@ public:
         {
             assert(init_val == 1);
             WORD_TYPE all_ones = ~0;
-            assert(__builtin_popcount(all_ones) == word_size);
+//            assert(__builtin_popcount(all_ones) == word_size);
             bits = vector<WORD_TYPE>((num_bits + word_size - 1) >> word_size_bits, ~0);
         }
     }

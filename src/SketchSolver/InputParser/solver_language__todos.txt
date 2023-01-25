@@ -106,6 +106,7 @@ Light tasks:
 
 Necessary
 1. Complete language
+    refactor hypersketch annotation as @hypersketch.
     DONE Remove ; at the end of {} blocks
     DONE Add {} block
     DONE: complete if - else block.
