@@ -1,4 +1,5 @@
-/*hypersketch*/ main()
+//hypersketch
+main()
 {
     file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs_3.txt", main_sk__Wrapper);
     files = [];

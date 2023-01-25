@@ -1,4 +1,5 @@
-/*/*hypersketch*/ best_effort_programs(harness, file, num_trials, num_rows, timeout) {
+/*//hypersketch
+best_effort_programs(harness, file, num_trials, num_rows, timeout) {
     //timestamp("best_effort");
     timestamp();
 
@@ -21,7 +22,8 @@
     return ret_dags;
 }
 
-/*hypersketch*/ main() {
+//hypersketch
+main() {
     file = File(file_name, sketch_main__Wrapper);
     num_trials = 10;
     num_rows = 20;

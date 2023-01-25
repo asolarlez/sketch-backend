@@ -1,5 +1,6 @@
 
-/*hypersketch*/ main()
+//hypersketch
+main()
 {
     return synthesize_meta_dataset_over_3_bit_fs();
     //return scaling_of_training_io_examples_on_best_effort();
@@ -7,7 +8,8 @@
 
 // -----
 
-/*hypersketch*/ list_of_bits_to_int(list_of_bits)
+//hypersketch
+list_of_bits_to_int(list_of_bits)
 {
     int ret = 0;
     int pow = 1;
@@ -27,7 +29,8 @@
     return ret;
 }
 
-/*hypersketch*/ synthesize_meta_dataset_over_3_bit_fs()
+//hypersketch
+synthesize_meta_dataset_over_3_bit_fs()
 {
     file_0 = File("/Users/klimentserafimov/CLionProjects/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/inputs_3.txt", main_sk__Wrapper);
 
@@ -290,7 +293,8 @@
 // -------------
 
 
-/*hypersketch*/ get_score(SketchFunction harness, Solution solution, File file)
+//hypersketch
+get_score(SketchFunction harness, Solution solution, File file)
 {
     SketchFunction program = harness.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
     int score = program.vectorized_count_passing_inputs(file); // count how many input-output examples are solved with this solution
@@ -298,7 +302,8 @@
     return score;
 }
 
-/*hypersketch*/ best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
+//hypersketch
+best_effort_solutions(SketchFunction harness5, File file, int num_trials, int num_rows) {
 
     print("best_effort_solutions", "file.size", file.size(), "num_traials", num_trials, "num_rows", num_rows);
 
@@ -314,7 +319,7 @@
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
-		solution = SATSolver(harness5.deep_clone(), subset_file); // invoke the Sketch /*hypersketch*/ on the harness
+		solution = SATSolver(harness5.deep_clone(), subset_file); // invoke the Sketch hypersketch on the harness
 		subset_file.clear();
 		score = get_score(harness5, solution, file);
 		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());
@@ -350,7 +355,8 @@
     return solutions;
 }
 
-/*hypersketch*/ scaling_of_training_io_examples_on_best_effort()
+//hypersketch
+scaling_of_training_io_examples_on_best_effort()
 {
     file = File(file_name, main_sk__Wrapper);
 
