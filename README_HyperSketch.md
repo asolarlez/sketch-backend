@@ -4,7 +4,7 @@
 
 ### Sketch Set Up
 
-[//]: # (~~~)
+```
     mkdir sketch-source
     cd sketch-source
     git clone https://github.com/asolarlez/sketch-frontend.git   
@@ -20,7 +20,7 @@
     cd ../sketch-frontend
     make run-local-seq EXEC_ARGS="src/test/sk/seq/miniTest1.sk"
 
-[//]: # (~~~)
+```
 
 ### HyperSketch Set Up
 
@@ -83,7 +83,7 @@ we will have two running examples of sketches:
 bitarray_synth.sk:
 ```
 bit op(bit x0, bit x1) {
-    return {| !(n0 && x1) | !(x0 || x1) | }
+    return {| !(x0 && x1) | !(x0 || x1) |};
 }
 @FromFile("bits.data")
 harness void sketch_main(int n, bit[n] bits, bit out) {
@@ -101,8 +101,8 @@ bits.data:
 
 intarray_synth.sk:
 ```
-bit op(int x0, int x1) {
-    return {| x0 + x1 | x0 - x1 | }
+int op(int x0, int x1) {
+    return {| x0 + x1 | x0 - x1 |};
 }
 @FromFile("ints.data")
 harness void sketch_main(int n, int[n] ints, int out) {
