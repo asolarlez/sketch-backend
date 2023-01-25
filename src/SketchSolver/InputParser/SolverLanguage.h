@@ -188,6 +188,37 @@ protected:
         ret_frontier.clear();
         return ret_dag;
     }
+
+    Frontier<int, SketchFunction *>
+    best_effort_frontier__3(const SketchFunction *harness, File *file, float budget) {
+        auto init_timestamp = chrono::steady_clock::now();
+
+        Frontier<int, SketchFunction *> ret_frontier = Frontier<int, SketchFunction *>(2);
+
+        // representative CEGIS initial train of thought was here.
+
+        return ret_frontier;
+    }
+
+    SketchFunction * main__best_effort_frontier__3(const SketchFunction *harness, File* file, float budget) {
+        Frontier<int, SketchFunction *> ret_frontier =
+                best_effort_frontier__3(
+                        harness, file, budget);
+
+        cout << "frontier: " << endl;
+        for (int i = 0; i < ret_frontier.size(); i++) {
+            std::vector<int> score = ret_frontier[i].first;
+            for (int j = 0; j < score.size(); j++) {
+                cout << score[j] << " ";
+            }
+            cout << endl;
+        }
+
+        SketchFunction* ret_dag = ret_frontier[0].second;
+        ret_dag->increment_shared_ptr();
+        ret_frontier.clear();
+        return ret_dag;
+    }
 };
 
 class HyperSketchHarness: private HyperSketchPrograms
@@ -201,17 +232,27 @@ public:
             file_name(std::move(_file_name)), sketch_main__Wrapper(_sketch_main__Wrapper) {}
 
     SketchFunction* main() {
+        {
+            SketchFunction *harness = sketch_main__Wrapper;
+            File *file = new File(file_name, harness);
 
-        int num_trials = 100;
-        int num_rows = 40;
-        float timeout = float(3);
+            float budget = float(30);
 
-        SketchFunction* harness = sketch_main__Wrapper;
-        File *file = new File(file_name, harness);
+            return main__best_effort_frontier__3(harness, file, budget);
+        }
 
-        return main__best_effort_frontier__2(harness, file, num_trials, num_rows, timeout);
-        return main__best_effort_frontier(harness, file, num_trials, num_rows, timeout);
-        return main__best_effort_programs(harness, file, num_trials, num_rows, timeout);
+        {
+            int num_trials = 6;
+            int num_rows = 120;
+            float timeout = float(2);
+
+            SketchFunction *harness = sketch_main__Wrapper;
+            File *file = new File(file_name, harness);
+
+            return main__best_effort_frontier__2(harness, file, num_trials, num_rows, timeout);
+            return main__best_effort_frontier(harness, file, num_trials, num_rows, timeout);
+            return main__best_effort_programs(harness, file, num_trials, num_rows, timeout);
+        }
     }
 };
 
@@ -318,8 +359,7 @@ public:
                 var_val_ret->clear_assert_0_shared_ptrs();
                 state->clear();
 
-                if(save_and_test_fmtl_program)
-                {
+                if(save_and_test_fmtl_program) {
 
                     function_map.print();
 
@@ -341,8 +381,8 @@ public:
 
                     cout << "FROM FMTL" << endl;
                     cout << "HERE " << concretized_function_from_fmtl->get_dag()->get_name() << endl;
-                    cout << "count\t" << num_passing_inputs << " / " << file_from_fmtl->size() << " ("
-                         << 100.0 * (float) num_passing_inputs / file_from_fmtl->size() << " %)" << endl;
+                    cout << "count\t" << num_passing_inputs << " / " << file_from_fmtl->size()
+                        << " (" << 100.0 * (float) num_passing_inputs / file_from_fmtl->size() << " %)" << endl;
 
                     file_from_fmtl->clear();
 
