@@ -83,7 +83,7 @@ we will have two running examples of sketches:
 bitarray_synth.sk:
 ```
 bit op(bit x0, bit x1) {
-    return {| !(n0 && x1) | !(x0 || x1) |};
+    return {| !(x0 && x1) | !(x0 || x1) |};
 }
 @FromFile("bits.data")
 harness void sketch_main(int n, bit[n] bits, bit out) {
