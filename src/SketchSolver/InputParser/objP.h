@@ -332,7 +332,7 @@ public:
         ret += "}";
         return ret;
     }
-
+//
     BitMetaVector_rep_VectorInt(int _num_vectors, int _num_bits_per_vector):
             num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
         assert(num_bits_per_vector <= max_num_bits);

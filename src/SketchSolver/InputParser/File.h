@@ -144,6 +144,7 @@ public:
 
         int inputId = 0;
 
+//        cout << "anew" << endl;
         int at_ch_id = 0;
         char ch = 0;
 
@@ -197,10 +198,10 @@ public:
                         }
                         cerr << endl;
                         throw BasicError(string("file parsing error"), "name");
-
                     }
                     if (arrit == nullptr) {
-                        prevArrit->makeArr(prevArrit->get_index(), prevArrit->get_index() + 2);
+                        int prev_arrit_id = prevArrit->get_index();
+                        prevArrit->makeArr(prev_arrit_id, prev_arrit_id + 2);
                         arrit = prevArrit->get_next();
                         ((SRC_node*)inputNodes[inputId])->arrSz++;
                     }
@@ -209,6 +210,7 @@ public:
                     outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
 //                    cout << "[" << (int)outOfRange <<"]'" << endl;
                     prevArrit = arrit;
+//                    cout << "i" << arrit->get_index() << endl;
                     arrit = arrit->get_next();
                 }
                 if(outOfRange)
@@ -277,14 +279,14 @@ public:
                         } else {
                             hasCaptured = false;
                             cur = cur * 10 + (ch - '0');
+//                            cout << "[NUM: " << cur << "]" << endl;
                         }
                     } else if (ch == '.') {
                         isFloat = true;
                         floatVal = (double) cur;
                         cur = 10;
                     } else {
-                        Assert(false, "UNKNOWN CHARACTER <" << ch
-                                                            << "> IN LINE: " + _line << "\n");
+                        Assert(false, "UNKNOWN CHARACTER <" << ch << "> IN LINE: " + _line << "\n");
                     }
                     break;
                 }
@@ -292,24 +294,9 @@ public:
             if (outOfRange) {
                 return more_bits;
             }
-//        assert(!in.eof());
             assert(at_ch_id < _line.size());
             ch = _line[at_ch_id++];
-//        in.get(ch);
-//            cout << ch << "("<<(int)ch<<")'''";
-//        if (in.eof())
-//            if(at_ch_id == _line.size())
-//            {
-//                regval();
-//                assert(!outOfRange);
-//                if(vsi == inputs->end()){
-//                    return complete_row;
-//                }
-//                else {
-//                    AssertDebug(false, "INCOMPLETE LINE: " + _line);
-//                    return incomplete_row;
-//                }
-//            }
+//            cout << ch << "_";
         }
         regval();
 

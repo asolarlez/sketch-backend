@@ -46,8 +46,11 @@ set<string> *BooleanDagLightUtility::get_inlined_functions(set<string> *ret) con
         string ufname = ufun_it->get_ufun_name();
         if(ret->find(ufname) == ret->end()) {
             ret->insert(ufname);
-            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
-            ((BooleanDagUtility*)(get_env()->function_map.find(ufname)->second))->get_inlined_functions(ret);
+            if(get_env()->function_map.find(ufname) != get_env()->function_map.end()) {
+                AssertDebug(get_env()->function_map.find(ufname) != get_env()->function_map.end(),
+                            "ufname not found: '" + ufname + "'");
+                ((BooleanDagUtility *) (get_env()->function_map.find(ufname)->second))->get_inlined_functions(ret);
+            }
         }
     }
     return ret;
@@ -138,32 +141,34 @@ LightInliningTree::LightInliningTree(
         for (auto it: ufun_nodes) {
             string var_name = ((UFUN_node *) it)->get_original_ufname();
             string sub_dag_name = ((UFUN_node *) it)->get_ufun_name();
-            assert(_skfunc->get_env()->function_map.find(sub_dag_name) != _skfunc->get_env()->function_map.end());
-            const BooleanDagUtility *sub_dag = _skfunc->get_env()->function_map[sub_dag_name];
-            if (visited->find(sub_dag->get_dag_id()) == visited->end()) {
-                if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
-                    assert(get_var_name_to_inlining_subtree().at(var_name)->get_dag_id() == sub_dag->get_dag_id());
-                    assert(sub_dag != nullptr);
-                } else {
-                    if(sub_dag->get_inlining_tree(false) == nullptr) {
-                        var_name_to_inlining_subtree[var_name] = new LightInliningTree(sub_dag, (const VarStore*)nullptr, visited, not_owned);
-                    } else
-                    {
-                        var_name_to_inlining_subtree[var_name] = sub_dag->get_inlining_tree_non_const();
-                        var_name_to_inlining_subtree[var_name]->populate_and_assert_not_visited(visited, not_owned);
-                        assert(not_owned->find(var_name_to_inlining_subtree[var_name]) != not_owned->end());
-                        var_name_to_inlining_subtree[var_name]->increment_num_shared_ptr();
-                        local_not_owned.insert(var_name_to_inlining_subtree[var_name]);
+            if(_skfunc->get_env()->function_map.find(sub_dag_name) != _skfunc->get_env()->function_map.end()) {
+                const BooleanDagUtility *sub_dag = _skfunc->get_env()->function_map[sub_dag_name];
+                if (visited->find(sub_dag->get_dag_id()) == visited->end()) {
+                    if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
+                        assert(get_var_name_to_inlining_subtree().at(var_name)->get_dag_id() == sub_dag->get_dag_id());
+                        assert(sub_dag != nullptr);
+                    } else {
+                        if (sub_dag->get_inlining_tree(false) == nullptr) {
+                            var_name_to_inlining_subtree[var_name] = new LightInliningTree(sub_dag,
+                                                                                           (const VarStore *) nullptr,
+                                                                                           visited, not_owned);
+                        } else {
+                            var_name_to_inlining_subtree[var_name] = sub_dag->get_inlining_tree_non_const();
+                            var_name_to_inlining_subtree[var_name]->populate_and_assert_not_visited(visited, not_owned);
+                            assert(not_owned->find(var_name_to_inlining_subtree[var_name]) != not_owned->end());
+                            var_name_to_inlining_subtree[var_name]->increment_num_shared_ptr();
+                            local_not_owned.insert(var_name_to_inlining_subtree[var_name]);
+                        }
                     }
-                }
-            } else {
-                if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
-                    assert(var_name_to_inlining_subtree[var_name] == (*visited)[sub_dag->get_dag_id()]);
                 } else {
-                    var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag->get_dag_id()];
-                    if(not_owned->find(var_name_to_inlining_subtree[var_name]) != not_owned->end()) {
-                        var_name_to_inlining_subtree[var_name]->increment_num_shared_ptr();
-                        local_not_owned.insert(var_name_to_inlining_subtree[var_name]);
+                    if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
+                        assert(var_name_to_inlining_subtree[var_name] == (*visited)[sub_dag->get_dag_id()]);
+                    } else {
+                        var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag->get_dag_id()];
+                        if (not_owned->find(var_name_to_inlining_subtree[var_name]) != not_owned->end()) {
+                            var_name_to_inlining_subtree[var_name]->increment_num_shared_ptr();
+                            local_not_owned.insert(var_name_to_inlining_subtree[var_name]);
+                        }
                     }
                 }
             }

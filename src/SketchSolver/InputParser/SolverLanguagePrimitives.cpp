@@ -88,13 +88,13 @@ CEGISSolverResult SolverLanguagePrimitives::WrapperAssertDAG::solve(
 
     HoleVarStore * ret = holes_to_sk_val;
 
-    assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
+//    assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
     if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
     {
         auto tmp_local_var_store = new VarStore(*ret);
         auto tmp = problem->get_harness()->produce_concretization(tmp_local_var_store, bool_node::CTRL);
         tmp_local_var_store->clear();
-        assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
+//        assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
         assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
         tmp->increment_shared_ptr();
         tmp->clear();

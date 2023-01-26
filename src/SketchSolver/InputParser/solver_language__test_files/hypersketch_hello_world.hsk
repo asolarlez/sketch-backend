@@ -1,8 +1,8 @@
 //hypersketch
 main()
 {
-    file = File(file_name, main_sk__Wrapper);
-    solution = SATSolver(main_sk__Wrapper, file);
-    ret = main_sk__Wrapper.produce_executable(solution);
+    file = File(file_name, sketch_main__Wrapper);
+    solution = SATSolver(sketch_main__Wrapper, file);
+    ret = sketch_main__Wrapper.produce_executable(solution);
     return ret;
 }

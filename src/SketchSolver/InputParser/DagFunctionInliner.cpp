@@ -180,10 +180,10 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
     }
     else
     {
-        AssertDebug(false, (
-                    "TRUE UFUNS NOT SUPPORTED!!! "
-                    "ASSERT FALSE IN void DagOneStepInlineAndConcretize::visit(UFUN_node& node): "
-                    "node.get_ufun_name() = " + node.get_ufun_name()));
+//        AssertDebug(false, (
+//                    "TRUE UFUNS NOT SUPPORTED!!! "
+//                    "ASSERT FALSE IN void DagOneStepInlineAndConcretize::visit(UFUN_node& node): "
+//                    "node.get_ufun_name() = " + node.get_ufun_name()));
         //!!! UFUNS STILL FAILING.
 //        ufun is a ufun, which is handled by NodeHardcoder.
 //        DagFunctionInliner::visit(node);

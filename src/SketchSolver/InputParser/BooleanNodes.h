@@ -1281,6 +1281,10 @@ public:
 		return arrSz;
 	}
 	void setArr(int sz){
+        if(sz == 32)
+        {
+            cout << "AHA" << endl;
+        }
 		arrSz = sz;
 		if(sz>=0){
 			if(otype == OutType::INT){

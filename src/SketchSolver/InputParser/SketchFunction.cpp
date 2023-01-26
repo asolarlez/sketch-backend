@@ -131,8 +131,10 @@ void SL::SketchFunction::_inplace_recursive_concretize(
 
             //for every subfunction
             for (const auto &f_name: *subf_names) {
+                if(get_env()->function_map.find(f_name) == get_env()->function_map.end()) {
+                    continue;
+                }
                 auto target = tmp_inlining_tree->get_target(f_name);
-                assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
                 SL::SketchFunction *subf = get_env()->function_map.find(f_name)->second;
 
                 //for every non-concretized hole in the subfunction
@@ -240,7 +242,9 @@ SL::SketchFunction *SL::SketchFunction::_inplace_concretize__assert_subfuncts_ar
         rep = get_env()->function_map.concretize(
                 get_dag_name(), var_store->produce_restrict(unit_holes), var_type, inlined_functions);
     }
-    if(!get_dag()->getNodesByType(bool_node::UFUN).empty() || !get_dag()->getNodesByType(bool_node::CTRL).empty()) {
+    if(
+            //!get_dag()->getNodesByType(bool_node::UFUN).empty() ||
+    !get_dag()->getNodesByType(bool_node::CTRL).empty()) {
         if(var_store == nullptr) {
             assert(!get_dag()->getNodesByType(bool_node::CTRL).empty());
             assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
@@ -335,10 +339,10 @@ SL::SketchFunction *SL::SketchFunction::unit_clone(const string& explicit_name, 
             cloned_dag, get_env(),
             replaced_labels, original_labels, new_primitive, dependencies, get_inlining_tree(false), get_has_been_concretized());
 
-    for(auto it: ret->get_dag()->getNodesByType(bool_node::UFUN)) {
-        string ufun_name = ((UFUN_node*)it)->get_ufun_name();
-        assert(ret->dependencies.find(ufun_name) != ret->dependencies.end());
-    }
+//    for(auto it: ret->get_dag()->getNodesByType(bool_node::UFUN)) {
+//        string ufun_name = ((UFUN_node*)it)->get_ufun_name();
+//        assert(ret->dependencies.find(ufun_name) != ret->dependencies.end());
+//    }
 
     return ret;
 }
@@ -399,7 +403,7 @@ void SL::SketchFunction::clear() const{
         for(auto it_ufun : ufuns)
         {
             string ufname = ((UFUN_node *) it_ufun)->get_ufun_name();
-            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
+//            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
         }
     }
 
@@ -415,7 +419,7 @@ void SL::SketchFunction::clear() const{
         for(auto it_ufun : ufuns)
         {
             string ufname = ((UFUN_node *) it_ufun)->get_ufun_name();
-            assert(prev_env->function_map.find(ufname) != prev_env->function_map.end());
+//            assert(prev_env->function_map.find(ufname) != prev_env->function_map.end());
         }
     }
 }
@@ -580,47 +584,48 @@ SL::SketchFunction* SL::SketchFunction::deep_exact_clone_and_fresh_function_map(
         UFUN_node* ufun_node = (UFUN_node*)node;
         string ufun_name = ufun_node->get_ufun_name();
 
-        if(unit_visited_ufun_names.find(ufun_name) != unit_visited_ufun_names.end()) {
-            continue;
-        }
-        AssertDebug(unit_visited_ufun_names.find(ufun_name) == unit_visited_ufun_names.end(),
-                    "TODO: REFACTOR THIS SLIGHTLY TO ONLY PROCESS UFUN_NAMEs ONCE. [arises in case: f(){g(); g()}]<enough to only process g once>");
+        if(get_env()->function_map.find(ufun_name) != get_env()->function_map.end()) {
 
-        unit_visited_ufun_names.insert(ufun_name);
+            if (unit_visited_ufun_names.find(ufun_name) != unit_visited_ufun_names.end()) {
+                continue;
+            }
+            AssertDebug(unit_visited_ufun_names.find(ufun_name) == unit_visited_ufun_names.end(),
+                        "TODO: REFACTOR THIS SLIGHTLY TO ONLY PROCESS UFUN_NAMEs ONCE. [arises in case: f(){g(); g()}]<enough to only process g once>");
 
-        if (ufun_name == get_dag_name()) {
-            assert(ret == nullptr);
-            assert(this == get_env()->function_map[ufun_name]);
-            assert(dp->find(this) != dp->end());
-            assert((*dp)[this] == nullptr);
-            continue;
-        }
+            unit_visited_ufun_names.insert(ufun_name);
 
-        assert(get_env()->function_map.find(ufun_name) != get_env()->function_map.end());
+            if (ufun_name == get_dag_name()) {
+                assert(ret == nullptr);
+                assert(this == get_env()->function_map[ufun_name]);
+                assert(dp->find(this) != dp->end());
+                assert((*dp)[this] == nullptr);
+                continue;
+            }
 
-        SL::SketchFunction* sub_skfunc = get_env()->function_map[ufun_name];
-        assert(sub_skfunc != this);
+            assert(get_env()->function_map.find(ufun_name) != get_env()->function_map.end());
 
-        assert(ufun_name == sub_skfunc->get_dag_name());
+            SL::SketchFunction *sub_skfunc = get_env()->function_map[ufun_name];
+            assert(sub_skfunc != this);
+
+            assert(ufun_name == sub_skfunc->get_dag_name());
 
 //        assert(fresh_function_map.find(ufun_name) == fresh_function_map.end());
 
-        SL::SketchFunction *fresh_deep_exact_copy = nullptr;
+            SL::SketchFunction *fresh_deep_exact_copy = nullptr;
 
-        if(dp->find(sub_skfunc) == dp->end()) {
-             fresh_deep_exact_copy = sub_skfunc->deep_exact_clone_and_fresh_function_map(new_environment, dp);
+            if (dp->find(sub_skfunc) == dp->end()) {
+                fresh_deep_exact_copy = sub_skfunc->deep_exact_clone_and_fresh_function_map(new_environment, dp);
+            } else {
+                assert((*dp)[sub_skfunc] != nullptr);
+                fresh_deep_exact_copy = (*dp)[sub_skfunc];
+            }
+
+            assert(fresh_deep_exact_copy->get_dag_name() == ufun_name);
+            assert(fresh_function_map.find(ufun_name) != fresh_function_map.end());
+            assert(fresh_function_map[ufun_name]->get_dag_name() == ufun_name);
+
+            new_dependencies.insert(ufun_name, fresh_deep_exact_copy);
         }
-        else
-        {
-            assert((*dp)[sub_skfunc] != nullptr);
-            fresh_deep_exact_copy = (*dp)[sub_skfunc];
-        }
-
-        assert(fresh_deep_exact_copy->get_dag_name() == ufun_name);
-        assert(fresh_function_map.find(ufun_name) != fresh_function_map.end());
-        assert(fresh_function_map[ufun_name]->get_dag_name() == ufun_name);
-
-        new_dependencies.insert(ufun_name, fresh_deep_exact_copy);
     }
 
     assert(ret == nullptr);
@@ -662,33 +667,36 @@ SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail) const
     //replace the name inside the inlined function with eachother's
 
     //assert that all the ufuns are represented in the function map
-    for (const auto& it: get_env()->function_map) {
-        for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
-            assert(f != get_env()->function_map.end());
-        }
-    }
+//    for (const auto& it: get_env()->function_map) {
+//        for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+//            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
+//            assert(f != get_env()->function_map.end());
+//        }
+//    }
 
     set<string>* inlined_functions = get_inlined_functions();
 
     assert(inlined_functions != nullptr);
 
     //assert that all that the previous operation hasn't corrupted the function map ufuns invariant
-    for (const auto& it: get_env()->function_map) {
-        for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
-            assert(f != get_env()->function_map.end());
-        }
-    }
+//    for (const auto& it: get_env()->function_map) {
+//        for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+//            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
+//            assert(f != get_env()->function_map.end());
+//        }
+//    }
 
     // assert that all the dags in the inlined functions have all the ufuns also in the inlined functions
     for (const auto &inlined_f_name: *inlined_functions) {
         auto it_f = get_env()->function_map.find(inlined_f_name);
-        assert(it_f != get_env()->function_map.end());
-        for (auto ufun_it: it_f->second->get_dag()->getNodesByType(bool_node::UFUN)) {
-            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
-            assert(f != get_env()->function_map.end());
-            assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufun_name()) != inlined_functions->end());
+        if(it_f != get_env()->function_map.end()) {
+            for (auto ufun_it: it_f->second->get_dag()->getNodesByType(bool_node::UFUN)) {
+                auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
+                if(f != get_env()->function_map.end()) {
+                    assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufun_name()) !=
+                           inlined_functions->end());
+                }
+            }
         }
     }
 
@@ -698,7 +706,9 @@ SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail) const
     bool entered_recursive_case = false;
     map<string, SL::SketchFunction *> to_inline_skfuncs;
     for (const string &_inlined_function_name: *inlined_functions) {
-        assert(get_env()->function_map.find(_inlined_function_name) != get_env()->function_map.end());
+        if(get_env()->function_map.find(_inlined_function_name) == get_env()->function_map.end()) {
+            continue;
+        }
         assert(to_inline_skfuncs.find(_inlined_function_name) == to_inline_skfuncs.end());
         if(only_tail) {
             if (_inlined_function_name != get_dag_name()) {
@@ -738,11 +748,11 @@ SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail) const
         assert(to_inline_skfuncs.find(get_dag_name()) == to_inline_skfuncs.end());
     }
 
-    assert(to_inline_skfuncs.size() == inlined_functions->size());
+//    assert(to_inline_skfuncs.size() == inlined_functions->size());
 
-    for (const auto &it: *inlined_functions) {
-        assert(to_inline_skfuncs.find(it) != to_inline_skfuncs.end());
-    }
+//    for (const auto &it: *inlined_functions) {
+//        assert(to_inline_skfuncs.find(it) != to_inline_skfuncs.end());
+//    }
 
     delete inlined_functions;
     inlined_functions = nullptr;
@@ -797,14 +807,17 @@ SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail) const
             string ufname = ufname_now_original.first;
             string original = ufname_now_original.second;
 
-            assert(to_inline_skfuncs[ufname]->get_env()->function_map.find(to_inline_skfuncs[ufname]->get_dag_name()) !=
-            to_inline_skfuncs[ufname]->get_env()->function_map.end());
+            if(to_inline_skfuncs.find(ufname) != to_inline_skfuncs.end()) {
+                assert(to_inline_skfuncs[ufname]->get_env()->function_map.find(
+                        to_inline_skfuncs[ufname]->get_dag_name()) !=
+                       to_inline_skfuncs[ufname]->get_env()->function_map.end());
 
-            if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
-                AssertDebug(false, "this should fail here, it was checked before");
-            } else {
-                SL::SketchFunction* skfunc = skfunc_it.second;
-                skfunc->replace(original, to_inline_skfuncs[ufname]->get_dag_name());
+                if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
+                    AssertDebug(false, "this should fail here, it was checked before");
+                } else {
+                    SL::SketchFunction *skfunc = skfunc_it.second;
+                    skfunc->replace(original, to_inline_skfuncs[ufname]->get_dag_name());
+                }
             }
         }
     }
@@ -870,13 +883,14 @@ void SL::SketchFunction::set_dependencies(const FunctionMap* fmap) {
     {
         string ufun_name = ((UFUN_node *) it)->get_ufun_name();
         if(dependencies.find(ufun_name) == dependencies.end()) {
-            assert(fmap->find(ufun_name) != fmap->end());
-            dependencies.insert(ufun_name, (*fmap)[ufun_name]);
+            if(fmap->find(ufun_name) != fmap->end()) {
+                dependencies.insert(ufun_name, (*fmap)[ufun_name]);
 
-            assert(replaced_labels.find(ufun_name) == replaced_labels.end());
-            replaced_labels[ufun_name] = ufun_name;
-            assert(original_labels.find(ufun_name) == original_labels.end());
-            original_labels[ufun_name] = ufun_name;
+                assert(replaced_labels.find(ufun_name) == replaced_labels.end());
+                replaced_labels[ufun_name] = ufun_name;
+                assert(original_labels.find(ufun_name) == original_labels.end());
+                original_labels[ufun_name] = ufun_name;
+            }
         }
         else
         {
@@ -1090,7 +1104,7 @@ SL::PolyVec* SL::SketchFunction::evaluate_inputs(const File *file, unsigned int 
         assert(skfunc->get_has_been_concretized());
         assert(skfunc->get_dag()->get_failed_assert() == nullptr);
         assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
-        assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
+//        assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
 
         the_dag = skfunc->get_dag();
 

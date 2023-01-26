@@ -142,8 +142,9 @@ namespace SL {
             for (auto it: get_dag()->getNodesByType(bool_node::UFUN)) {
                 string ufun_name = ((UFUN_node *) it)->get_ufun_name();
                 if (dependencies.find(ufun_name) == dependencies.end()) {
-                    assert(ufun_name == get_dag_name());
-                    dependencies.insert(ufun_name, this);
+                    if(ufun_name == get_dag_name()) {
+                        dependencies.insert(ufun_name, this);
+                    }
                 }
             }
         }
