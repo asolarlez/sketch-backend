@@ -8,7 +8,7 @@ long long LightInliningTree::global_clear_id = 0;
 bool BooleanDagLightUtility::new_way = false;
 
 
-bool BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0()
+bool BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0() const
 {
     assert(shared_ptr == 0);
     size_t prev_num = BooleanDAG::get_allocated().size();
@@ -29,7 +29,7 @@ bool BooleanDagLightUtility::get_has_been_concretized() const {
 #include "File.h"
 #include "SolverLanguageLexAndYaccHeader.h"
 
-int BooleanDagLightUtility::count_passing_inputs(const File *file) {
+int BooleanDagLightUtility::count_passing_inputs(const File *file) const {
     int ret = 0;
     for(int i = 0;i<file->size();i++) {
         bool passes = SketchFunctionEvaluator::new_passes(this, file->at(i))->get_bool(true, false);

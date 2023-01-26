@@ -12,7 +12,7 @@ class BooleanDagUtility: public BooleanDagLightUtility {
 
     ProgramEnvironment* original_program_env = nullptr;
 
-    LightInliningTree* inlining_tree = nullptr;
+    mutable LightInliningTree* inlining_tree = nullptr;
 
     VarStore* var_store_used_for_concretization = nullptr;
 
@@ -70,11 +70,11 @@ public:
         return BooleanDagLightUtility::clear(inlining_tree);
     }
 
-    bool soft_clear() {
+    bool soft_clear() const {
         return BooleanDagLightUtility::soft_clear(inlining_tree);
     }
 
-    virtual bool soft_clear_assert_num_shared_ptr_is_0() override
+    virtual bool soft_clear_assert_num_shared_ptr_is_0() const override
     {
         assert(inlining_tree == nullptr);
         return BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0();

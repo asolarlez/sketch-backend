@@ -1360,7 +1360,7 @@ SL::VarVal *SL::FunctionCall::eval(SketchFunction*& skfunc, StateType *state, co
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
                 HoleVarStore *var_store = var_val_sol->get_hole_var_store();
-                SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
+                SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL);
                 var_val_sol->decrement_shared_ptr();
                 if(params.size() == 2) {
                     int dag_id_from_the_user = params[1]->eval(state)->get_int();

@@ -847,9 +847,9 @@ public:
 
     }
 
-    virtual bool soft_clear_assert_num_shared_ptr_is_0();
+    virtual bool soft_clear_assert_num_shared_ptr_is_0() const;
 
-    virtual int count_passing_inputs(const File *file);
+    virtual int count_passing_inputs(const File *file) const;
 
     virtual void clear(LightInliningTree*& inlining_tree) {
         if(soft_clear(inlining_tree)){
@@ -867,7 +867,7 @@ public:
         clear(tmp);
     }
 
-    virtual bool soft_clear(LightInliningTree*& inlining_tree)
+    virtual bool soft_clear(LightInliningTree*& inlining_tree) const
     {
         decrement_shared_ptr_wo_clear();
 
@@ -904,7 +904,7 @@ public:
         shared_ptr++;
     }
 
-    void decrement_shared_ptr_wo_clear() {
+    void decrement_shared_ptr_wo_clear() const {
 //        if(get_dag()->get_dag_id() == 306)
 //        {
 //            cout << "here " << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;

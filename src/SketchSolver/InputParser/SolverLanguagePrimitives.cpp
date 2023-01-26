@@ -283,7 +283,7 @@ CEGISSolverResult SolverLanguagePrimitives::solve(
     bool concretize_after_solving = true;
     if(concretize_after_solving) {
         //make sure produce_concretize-s
-        SketchFunction *to_test = skfunc->produce_concretization(sol, bool_node::CTRL);
+        const SketchFunction *to_test = skfunc->produce_concretization(sol, bool_node::CTRL);
         to_test->increment_shared_ptr();
         to_test->clear();
     }

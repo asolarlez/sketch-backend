@@ -10,11 +10,15 @@
 const bool rename_holes = true;
 
 
-SL::SketchFunction *SL::SketchFunction::produce_concretization(
-        const VarStore* _var_store, const bool_node::Type var_type,
-        const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) const {
+SL::SketchFunction *SL::SketchFunction::produce_concretization_nonconst(
+        const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone) {
 
-    assert(do_clone || do_deep_clone_tail);
+    assert(do_clone == false);
+
+    const bool do_deep_clone_tail = false;
+    const bool do_recursive_concretize = true;
+
+//    assert(do_clone || do_deep_clone_tail);
     assert(do_recursive_concretize);
 
     VarStore* var_store = nullptr;
@@ -22,20 +26,8 @@ SL::SketchFunction *SL::SketchFunction::produce_concretization(
         var_store = new VarStore(*_var_store, true);
     }
 
-    SL::SketchFunction* ret = nullptr;
-
-    if(do_clone) {
-        assert(do_deep_clone_tail);
-        ret = deep_clone();
-
-    }
-    else {
-        AssertDebug(false, "TODO: create a separate function stack for inplace concretization (when you dont clone)");
-//        ret = this;
-//        if (do_deep_clone_tail) {
-//            deep_clone_tail();
-//        }
-    }
+    SL::SketchFunction* ret = this;
+    assert(!do_deep_clone_tail);
 
     assert(ret != nullptr);
     ret->increment_shared_ptr();
@@ -49,6 +41,55 @@ SL::SketchFunction *SL::SketchFunction::produce_concretization(
 
     if(var_store != nullptr) {
         var_store->clear();
+    }
+
+//    if(!do_clone)
+//    {
+//        AssertDebug(false, "TODO: create a separate function stack for inplace concretization (when you dont clone)");
+//    }
+
+    return ret;
+
+}
+
+
+SL::SketchFunction *SL::SketchFunction::produce_concretization(
+        const VarStore* _var_store, const bool_node::Type var_type) const {
+
+    const bool do_clone = true;
+    const bool do_deep_clone_tail = true;
+    const bool do_recursive_concretize = true;
+
+    assert(do_clone || do_deep_clone_tail);
+    assert(do_recursive_concretize);
+
+    VarStore* var_store = nullptr;
+    if(_var_store != nullptr) {
+        var_store = new VarStore(*_var_store, true);
+    }
+
+    SL::SketchFunction* ret = nullptr;
+
+    assert(do_deep_clone_tail);
+    ret = deep_clone();
+
+    assert(ret != nullptr);
+    ret->increment_shared_ptr();
+
+    if(ret->get_inlining_tree(false) != nullptr) {
+        assert(ret->get_inlining_tree()->get_dag_id() == ret->get_dag_id());
+    }
+    ret->_inplace_recursive_concretize(var_store, var_type, do_recursive_concretize);
+
+    ret->decrement_shared_ptr_wo_clear();
+
+    if(var_store != nullptr) {
+        var_store->clear();
+    }
+
+    if(!do_clone)
+    {
+        AssertDebug(false, "TODO: create a separate function stack for inplace concretization (when you dont clone)");
     }
 
     return ret;
@@ -302,7 +343,7 @@ SL::SketchFunction *SL::SketchFunction::unit_clone(const string& explicit_name, 
     return ret;
 }
 
-void SL::SketchFunction::core_clear(const string& dag_name)
+void SL::SketchFunction::core_clear(const string& dag_name) const
 {
     assert(local_clear_id == global_clear_id);
 
@@ -320,7 +361,7 @@ void SL::SketchFunction::core_clear(const string& dag_name)
 
 long long SL::SketchFunction::global_clear_id = 0;
 
-bool SL::SketchFunction::_clear()
+bool SL::SketchFunction::_clear() const
 {
     if(local_clear_id != global_clear_id) {
         local_clear_id = global_clear_id;
@@ -349,7 +390,7 @@ bool SL::SketchFunction::_clear()
     }
 }
 
-void SL::SketchFunction::clear(){
+void SL::SketchFunction::clear() const{
 
     //assert invariant
     for(const auto& sk_it : get_env()->function_map)
@@ -847,7 +888,7 @@ void SL::SketchFunction::set_dependencies(const FunctionMap* fmap) {
     }
 }
 
-vector<string> SL::SketchFunction::get_unit_holes() {
+vector<string> SL::SketchFunction::get_unit_holes() const {
     vector<string> ret = vector<string>();
     for (auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
         if (it->get_name() != "#PC") {
@@ -857,7 +898,7 @@ vector<string> SL::SketchFunction::get_unit_holes() {
     return ret;
 }
 
-const map<string, string> &SL::SketchFunction::get_unit_ufuns_map() {
+const map<string, string> &SL::SketchFunction::get_unit_ufuns_map() const {
     return replaced_labels;
 }
 
@@ -893,7 +934,7 @@ const map<string, string> &SL::SketchFunction::get_unit_ufuns_map() {
 
 #include <chrono>
 
-int SL::SketchFunction::count_passing_inputs(const File *file) {
+int SL::SketchFunction::count_passing_inputs(const File *file) const {
     SL::PolyVec* passing_inputs_bitvector = evaluate_inputs(file);
     vector<bool> bitvector = passing_inputs_bitvector->to_vector_bool();
     passing_inputs_bitvector->clear();
@@ -1025,7 +1066,7 @@ using namespace filesystem;
 //}
 
 
-SL::PolyVec* SL::SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) {
+SL::PolyVec* SL::SketchFunction::evaluate_inputs(const File *file, unsigned int repeat) const {
     auto start = chrono::steady_clock::now();
     for(int i = 0;i<repeat;i++)
     {

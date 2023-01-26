@@ -35,7 +35,7 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
     map<string, string> final_hole_values;
 
     bool run_hsk_program = true;
-    bool run_hardcoded_synthesis_strategy = false;
+    bool run_hardcoded_synthesis_strategy = !run_hsk_program;
 
     if(run_hsk_program)
     {
@@ -247,15 +247,18 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
         function_map.soft_clear_transformer();
     }
 
-    ofstream fout_by_name("hypersketch_perf_report__sorted_by_name.bench");
-    fout_by_name << performance_summary_to_string() << endl;
-    fout_by_name.flush();
-    fout_by_name.close();
+    bool report_bench = false;
+    if(report_bench) {
+        ofstream fout_by_name("hypersketch_perf_report__sorted_by_name.bench");
+        fout_by_name << performance_summary_to_string() << endl;
+        fout_by_name.flush();
+        fout_by_name.close();
 
-    ofstream fout_by_min("hypersketch_perf_report__sorted_by_min.bench");
-    fout_by_min << performance_summary_to_string(true) << endl;
-    fout_by_min.flush();
-    fout_by_min.close();
+        ofstream fout_by_min("hypersketch_perf_report__sorted_by_min.bench");
+        fout_by_min << performance_summary_to_string(true) << endl;
+        fout_by_min.flush();
+        fout_by_min.close();
+    }
 
     return final_hole_values;
 }

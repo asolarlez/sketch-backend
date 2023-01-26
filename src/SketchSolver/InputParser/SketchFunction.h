@@ -28,7 +28,7 @@ namespace SL {
         map<string, string> replaced_labels;
         map<string, string> original_labels;
 
-        class Dependencies : private map<string, SketchFunction *> {
+        class Dependencies :  private map<string, SketchFunction *> {
 
         public:
             Dependencies() = default;
@@ -83,12 +83,12 @@ namespace SL {
 
         Dependencies dependencies;
 
-        long long local_clear_id = -1;
+        mutable long long local_clear_id = -1;
 
         const FMTL::TransformPrimitive *rep = nullptr;
         const FMTL::TransformPrimitive *mirror_rep = nullptr;
 
-        void core_clear(const string &dag_name);
+        void core_clear(const string &dag_name) const;
 
     public:
 
@@ -148,7 +148,7 @@ namespace SL {
             }
         }
 
-        SketchFunction *produce_executable() const {
+        SketchFunction *produce_executable() {
             // inline, and then assert that everything has been concretized and inlined.
             bool_node::Type var_type = bool_node::CTRL;
             SketchFunction *ret = produce_concretization(nullptr, var_type);
@@ -174,13 +174,12 @@ namespace SL {
 
         SketchFunction *make_executable(const VarStore* var_store = nullptr) {
             bool_node::Type var_type = bool_node::CTRL;
-            return produce_concretization(var_store, var_type, false);
+            return produce_concretization_nonconst(var_store, var_type, false);
         }
 
-        SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL,
-                                               bool do_clone = true,
-                                               const bool do_deep_clone = true,
-                                               const bool do_recursive_concretize = true) const;
+        SketchFunction *produce_concretization_nonconst(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL, const bool do_clone = true);
+
+        SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL) const;
 
         void _inplace_recursive_concretize(VarStore *var_store, const bool_node::Type var_type,
                                            bool do_recursive_concretize);
@@ -203,15 +202,15 @@ namespace SL {
 
         void deep_clone_tail() const;
 
-        void clear() override;
+        void clear() const;
 
-        bool _clear();
+        bool _clear() const;
 
         VarStore *get_solution();
 
         void concretize(const VarStore *local_solution) {
             auto prev_num_dags_size = BooleanDAG::get_allocated().size();
-            produce_concretization(local_solution, bool_node::CTRL, false);
+            produce_concretization_nonconst(local_solution, bool_node::CTRL, false);
             assert(prev_num_dags_size == BooleanDAG::get_allocated().size());
         }
 
@@ -241,15 +240,15 @@ namespace SL {
 
         void set_dependencies(const FunctionMap *fmap);
 
-        vector<string> get_unit_holes();
+        vector<string> get_unit_holes() const;
 
-        const map<string, string> &get_unit_ufuns_map();
+        const map<string, string> &get_unit_ufuns_map() const;
 
 //    bool has_unit_self_loop() const;
 
-        int count_passing_inputs(const File *file) override;
+        int count_passing_inputs(const File *file) const override ;
 
-        SL::PolyVec *evaluate_inputs(const File *file, unsigned int repeat = 0);
+        SL::PolyVec *evaluate_inputs(const File *file, unsigned int repeat = 0) const;
 
         void set_dag_id_from_the_user(int dag_id_from_user_id);
 
