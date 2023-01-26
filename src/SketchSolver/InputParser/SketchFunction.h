@@ -174,10 +174,10 @@ namespace SL {
 
         SketchFunction *make_executable(const VarStore* var_store = nullptr) {
             bool_node::Type var_type = bool_node::CTRL;
-            return produce_concretization_nonconst(var_store, var_type, false);
+            return inplace_concretize(var_store, var_type, false);
         }
 
-        SketchFunction *produce_concretization_nonconst(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL, const bool do_clone = true);
+        SketchFunction *inplace_concretize(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL, const bool do_clone = true);
 
         SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type = bool_node::CTRL) const;
 
@@ -210,7 +210,7 @@ namespace SL {
 
         void concretize(const VarStore *local_solution) {
             auto prev_num_dags_size = BooleanDAG::get_allocated().size();
-            produce_concretization_nonconst(local_solution, bool_node::CTRL, false);
+            inplace_concretize(local_solution, bool_node::CTRL, false);
             assert(prev_num_dags_size == BooleanDAG::get_allocated().size());
         }
 

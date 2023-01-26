@@ -10,7 +10,7 @@
 const bool rename_holes = true;
 
 
-SL::SketchFunction *SL::SketchFunction::produce_concretization_nonconst(
+SL::SketchFunction *SL::SketchFunction::inplace_concretize(
         const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone) {
 
     assert(do_clone == false);

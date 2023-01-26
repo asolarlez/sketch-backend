@@ -830,7 +830,7 @@ SL::SketchFunction *TransformPrimitive::reconstruct_sketch_function(const Functi
             assert(var_store != nullptr);
             const bool_node::Type *bool_node_type = get_concretization_type();
             assert((*bool_node_type) == bool_node::CTRL);
-            ret->produce_concretization_nonconst(var_store, *bool_node_type, false);
+            ret->inplace_concretize(var_store, *bool_node_type, false);
             ret->set_mirror_rep(this);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 
