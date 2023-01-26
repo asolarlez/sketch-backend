@@ -13,9 +13,9 @@
     bash autogen.sh
     ./configure
     make -j16
-    <if fail due to C++17 not allowing 'register' specifier>
-    grep -ilr 'register ' * | xargs -I@ sed -i '' 's/register //g' @
-    make -j16
+    <if [ fail due to C++17 not allowing 'register' specifier ] do>
+        grep -ilr 'register ' * | xargs -I@ sed -i '' 's/register //g' @
+        make -j16
     <endif>
     cd ../sketch-frontend
     make run-local-seq EXEC_ARGS="src/test/sk/seq/miniTest1.sk"
@@ -24,14 +24,7 @@
 
 ### HyperSketch Set Up
 
-Manually:
-
-    goto src/SketchSolver/InputParser/CommandLineArgs.h and change
-    [[ string hypersketch_file_path = "" ]] 
-    ->
-    [[ string hypersketch_file_path = "my-hypersketch.hsk" ]]
-
-then in the command line:
+In the command line:
     
     make -j2
 
@@ -139,7 +132,8 @@ SATSolver(SketchFunction, File).
 
 my-hypersketch.hsk:
 ```
-hypersketch main() {
+//hypersketch 
+main() {
     print("Hello World!!!");
     file = File(file_name, sketch_main__Wrapper);
     solution = SATSolver(sketch_main__Wrapper, file);
@@ -151,7 +145,7 @@ hypersketch main() {
 Now we are ready to call Sketch. Run:
 
 ``
-  make run-local-seq EXEC_ARGS="bitarray_synth.sk"
+  make run-local-seq EXEC_ARGS="bitarray_synth.sk --slv-hypersketch my-hypersketch.hsk"
 ``
 
 Sketch should quickly output in the terminal code similar to the following (the followign code was manually styled):
