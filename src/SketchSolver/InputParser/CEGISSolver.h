@@ -39,12 +39,11 @@ public:
 struct CEGISSolverResult
 {
     bool success;
-    int num_counterexample_concretized_dags = -1;
+    HoleVarStore* final_ctrl_var_store;
+    vector<HoleVarStore*> intermediate_solutions;
 };
 
-class CEGISSolver
-
-{
+class CEGISSolver {
 
 	CEGISFinderSpec* finder;
 	CEGISChecker* checker;
@@ -61,22 +60,25 @@ protected:
 	CEGISParams params;
 
 	vector<BooleanDagLightUtility*> problems;
-    vector<File*> files;
+    vector<const File*> files;
 
 	void declareControl(CTRL_node* cnode);
-    CEGISSolverResult solveCore(unsigned long long find_solve_max_timeout_in_microseconds);
 
-	void normalizeInputStore();
 
 //-- internal wrappers arround the checker methods
-    BooleanDAG* getProblem()
+    const BooleanDAG* getProblemDAG()
     {
         return checker->getProblemDag();
     }
 
-	bool problemStack_is_empty()
+    BooleanDagLightUtility* getProblem()
+    {
+        return checker->getProblem();
+    }
+
+	bool problem_stack_is_empty()
 	{
-		return checker->problemStack_is_empty();
+		return checker->problem_stack_is_empty();
 	}
 
 	vector<Tvalue>& get_check_node_ids()
@@ -95,7 +97,7 @@ public:
         last_input.clear();
     }
 
-	VarStore ctrlStore;
+	VarStore ctrl_store;
     map<string, string> current_hole_name_to_original_hole_name;
 
 	CEGISSolver(CEGISFinderSpec* _finder, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
@@ -103,29 +105,26 @@ public:
 	floats(_floats),
 	params(args),
 	checker(new CEGISChecker(args, _hc, _floats)),
-	hc(_hc)
-	{
-	//	cout << "miter:" << endl;
-	//	miter->lprint(cout);
-			
-	}
+	hc(_hc) {}
+
 	~CEGISSolver(void);
-	void addProblem(BooleanDagLightUtility *harness, File *file);
+	void addProblem(BooleanDagLightUtility *harness, const File *file);
 
-
-    const ElapsedTime& get_last_elapsed_time()
-    {
+    const ElapsedTime& get_last_elapsed_time() {
         return last_elapsed_time;
     }
 
-	virtual CEGISSolverResult solve(unsigned long long find_solve_max_timeout_in_microseconds);
+	virtual CEGISSolverResult solve(
+            const long long _budget = numeric_limits<unsigned long long>::max(),
+            const long long find_solve_max_timeout_in_microseconds = numeric_limits<unsigned long long>::max(),
+            const File* validation_file = nullptr);
+
 	void print_control_map(ostream& out);
-	
 
 	bool solveFromCheckpoint(istream& in);
 
 	void get_control_map_as_map_str_str(map<string, string>& values);
-	void outputEuclid(ostream& fout);
+//	void outputEuclid(ostream& fout);
 	void setup2QBF(ofstream& out);
 
 

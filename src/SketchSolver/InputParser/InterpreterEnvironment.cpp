@@ -99,7 +99,7 @@ public:
 
 InterpreterEnvironment::~InterpreterEnvironment(void)
 {
-	for (map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it) {
+	for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
 		it->second->clear();
 	}
 	if (bgproblem != NULL) {
@@ -268,7 +268,11 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		{
 			if (params.verbosity > 3) { cout << " Inlining functions in the sketch." << endl; }
 			try {
-				doInline(*sketch, functionMap, inlineAmnt, replaceMap);
+                map<string, const BooleanDAG*> constdagmap;
+                for(auto it : functionMap) {
+                    constdagmap[it.first] = it.second;
+                }
+				doInline(*sketch, constdagmap, inlineAmnt, replaceMap);
 			}catch (BadConcretization& bc) {
 				sketch->clear();
 				spec->clear();
@@ -284,7 +288,11 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		{
 			if (params.verbosity > 3) { cout << " Inlining functions in the spec." << endl; }
 			try {
-				doInline(*spec, functionMap, inlineAmnt, replaceMap);
+                map<string, const BooleanDAG*> constdagmap;
+                for(auto it : functionMap) {
+                    constdagmap[it.first] = it.second;
+                }
+				doInline(*spec, constdagmap, inlineAmnt, replaceMap);
 			} catch (BadConcretization& bc) {
                 assert(false);
 				sketch->clear();
@@ -471,7 +479,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 //}
 
 void InterpreterEnvironment::doInline(
-        BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
+        BooleanDAG& dag, map<string, const BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
 	TheBestInliner fin(steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -887,7 +895,7 @@ int InterpreterEnvironment::doallpairs() {
 				auto tohardcode = holesToHardcode[i];
 				for (auto holes = tohardcode.begin(); holes != tohardcode.end(); ++holes) {
 					Tvalue& tv = finder->getControl(*holes);
-					auto val = solver->ctrlStore[*holes];
+					auto val = solver->ctrl_store[*holes];
 					hardcoder.settleHole(*holes, val);
 					if (tv.isSparse()) {
 						for (int idx = 0; idx < tv.size(); ++idx) {
@@ -1001,7 +1009,8 @@ SATSolverResult InterpreterEnvironment::run_hypersketch(int inlineAmnt, const st
 //    string hypersketch_file_name = "solver_language_program__multi_harness_stun.txt";
 
     assert(currentControls.empty());
-    currentControls = solver_language.eval(params.hypersketch_file_path, program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+    currentControls = solver_language.eval(params.hypersketch_file_path, program_env.function_map, file_name, floats,
+                                           params, hardcoder);
 
     for(const auto& it: program_env.function_map) {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.
@@ -1043,7 +1052,8 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
 
     if (params.outputEuclid) {
         ofstream fout("bench.ucl");
-        solver->outputEuclid(fout);
+        Assert(false, "outputEuclid depreciated, but probably not hard to bring back.")
+//        solver->outputEuclid(fout);
     }
 
     if (params.output2QBF) {
@@ -1055,16 +1065,16 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
     }
 
     if (harness->get_dag()->useSymbolic()) {
-        DeductiveSolver deductive(harness->get_dag(), this->floats);
+        DeductiveSolver deductive(harness->get_dag__non_const(), this->floats);
         deductive.symbolicSolve(*this->finder);
 
 
-        solver->ctrlStore.synths.clear();
+        solver->ctrl_store.synths.clear();
         auto end = this->finder->get_sins().end();
         for (auto it = this->finder->get_sins().begin(); it != end; ++it) {
-            solver->ctrlStore.synths[it->first] = it->second;
+            solver->ctrl_store.synths[it->first] = it->second;
         }
-        solver->ctrlStore.finalizeSynthOutputs();
+        solver->ctrl_store.finalizeSynthOutputs();
         recordSolution();
         return SAT_SATISFIABLE;
     }
@@ -1073,7 +1083,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
     int solveCode = 0;
     try {
 
-        solveCode = solver->solve(numeric_limits<unsigned long long>::max()).success;
+        solveCode = solver->solve().success;
         if (solveCode || !hasGoodEnoughSolution) {
             recordSolution();
         }
@@ -1189,7 +1199,8 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
 
 	if (params.outputEuclid) {
 		ofstream fout("bench.ucl");
-		solver->outputEuclid(fout);
+        Assert(false, "outputEuclid, but easily fixable.")
+//		solver->outputEuclid(fout);
 	}
 
 	if (params.output2QBF) {
@@ -1205,12 +1216,12 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
 		deductive.symbolicSolve(*this->finder);	
 		
 
-		solver->ctrlStore.synths.clear();
+		solver->ctrl_store.synths.clear();
 		auto end = this->finder->get_sins().end();
 		for (auto it = this->finder->get_sins().begin(); it != end; ++it) {
-			solver->ctrlStore.synths[it->first] = it->second;
+			solver->ctrl_store.synths[it->first] = it->second;
 		}
-		solver->ctrlStore.finalizeSynthOutputs();
+		solver->ctrl_store.finalizeSynthOutputs();
 		recordSolution();
 		return SAT_SATISFIABLE;
 	}

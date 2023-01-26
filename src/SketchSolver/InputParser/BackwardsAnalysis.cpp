@@ -477,7 +477,7 @@ void BackwardsAnalysis::visit( ARRASS_node& node ){
 }
 
 
-void BackwardsAnalysis::process(BooleanDAG& bdag){
+void BackwardsAnalysis::process(BooleanDAG &bdag){
 	dagsizeSet(bdag.size());
 	int i=0;
 	
@@ -510,7 +510,7 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 
 	i=0;
 	//cout << "reverse begin" << endl;
-	for(BooleanDAG::reverse_iterator node_it = bdag.rbegin(); node_it != bdag.rend(); ++node_it, ++i){
+	for(auto node_it = bdag.rbegin(); node_it != bdag.rend(); ++node_it, ++i){
 		//cout << "i=" << i;
 		bool_node* node = (*node_it);
 		//cout << "node: " << node->id << endl;

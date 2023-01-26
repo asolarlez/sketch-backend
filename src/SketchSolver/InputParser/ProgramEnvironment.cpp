@@ -5,7 +5,7 @@
 #include "ProgramEnvironment.h"
 #include "SketchFunction.h"
 
-void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pureFuns) {
+void findPureFuns(const map<string, const BooleanDAG *> &functionMap, set<string> &pureFuns) {
 
     for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
         auto ctrlvec = it->second->getNodesByType(bool_node::CTRL);
@@ -23,7 +23,7 @@ void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pur
         other = pureFuns;
         for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
             assert(functionMap.find(*it) != functionMap.end());
-            BooleanDAG* bd = functionMap.at(*it);
+            const BooleanDAG* bd = functionMap.at(*it);
 
             auto ufvec = bd->getNodesByType(bool_node::UFUN);
             for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {

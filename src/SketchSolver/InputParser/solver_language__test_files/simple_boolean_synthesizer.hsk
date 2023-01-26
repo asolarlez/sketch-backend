@@ -81,7 +81,8 @@ harness void sketch_main(int n, bit[n] bits, bit out) {
 }
 */
 
-hypersketch main()
+//hypersketch
+main()
 {
     file = File(file_name);
     return SATSolver(sketch_main, file);

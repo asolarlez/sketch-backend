@@ -273,7 +273,7 @@ void GradientAnalyzer::visit( TUPLE_R_node& node) {
 }
 
 void GradientAnalyzer::run() {
-    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+    for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
         cout << (*node_it)->lprint() << endl;
         (*node_it)->accept(*this);
         //cout << gsl_vector_get(eval->getGrad(*node_it), 2) << endl;

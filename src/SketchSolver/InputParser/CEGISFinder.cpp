@@ -42,7 +42,7 @@ SATSolverResult CEGISFinder::find(
     else
     {
         //claim: solution is already optimal.
-        AssertDebug(false, "INVESTIGATE");
+        AssertDebug(false, "TODO: INVESTIGATE");
         return SAT_SATISFIABLE;
     }
 
@@ -114,8 +114,14 @@ SATSolverResult CEGISFinder::find(
 		int cnt = dirFind.getArrSize(cname);
 		Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
 		for(int i=0; i<cnt; ++i){
-			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
-			it->set_bit(i, (val==1) ? 1 : 0);
+            auto idx = dirFind.getArr(cname, i);
+            if(mngFind.contains_idx(idx)){
+                int val = mngFind.getVarVal(idx);
+                it->set_bit(i, (val==1) ? 1 : 0);
+            }
+            else {
+                it->set_bit(i, 0);
+            }
 		}
 	}
 

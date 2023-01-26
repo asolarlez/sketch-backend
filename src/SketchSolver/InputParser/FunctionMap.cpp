@@ -5,15 +5,23 @@
 #include "FunctionMap.h"
 #include "SketchFunction.h"
 
-const map<string, BooleanDAG *> * FunctionMap::to_boolean_dag_map() const{
-    auto ret = new map<string, BooleanDAG*>();
+const map<string, const BooleanDAG *> * FunctionMap::to_boolean_dag_map() const{
+    auto ret = new map<string, const BooleanDAG*>();
     for(auto it:*this) {
         (*ret)[it.first] = it.second->get_dag();
     }
     return ret;
 }
 
-void FunctionMap::populate_boolean_dag_map(map<string, BooleanDAG*>& boolean_dag_map) const {
+const map<string, BooleanDAG *> * FunctionMap::to_boolean_dag_map__non_const() const{
+    auto ret = new map<string, BooleanDAG*>();
+    for(auto it: *this) {
+        (*ret)[it.first] = it.second->get_dag__non_const();
+    }
+    return ret;
+}
+
+void FunctionMap::populate_boolean_dag_map(map<string, const BooleanDAG*>& boolean_dag_map) const {
     for(auto it:*this) {
         boolean_dag_map[it.first] = it.second->get_dag();
     }

@@ -28,7 +28,7 @@ int TOTBUFFERS = 0;
 
 void NodesToSolver::process(BooleanDAG& bdag){
 	int i=0;
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
+	for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		(*node_it)->accept(*this);
@@ -77,7 +77,7 @@ void advanceToEndIdx(size_t& iend, int cidx, const gvvec&tv){
 
 
 
-bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray){
+bool NodesToSolver::createConstraints(BooleanDAG &dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray){
 	//timerclass timer("defineProblem");
 		//timer.start();
 	bool stoppedEarly;
@@ -3089,20 +3089,20 @@ void NodesToSolver::doNonBoolArrAcc(const Tvalue& mval, vector<Tvalue>& choices,
 
 
 
-void NodesToSolver::process(BooleanDAG& bdag){
+void NodesToSolver::process(BooleanDAG &bdag){
 	int i=0;
 		tmpdag = &bdag;
 	stopAddingClauses = false;
 	bool isNegated = dir.getMng().isNegated();
   // Preprocess synth ufun nodes to create tmp out variables
-  for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
+  for (auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
     bool_node* node = *node_it;
     if (node->type == INTER_node::UFUN) {
       preprocessUfun((*dynamic_cast<UFUN_node*>(node)));
     }
   }
   
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
+	for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;

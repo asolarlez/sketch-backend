@@ -374,7 +374,7 @@ public:
 	vector<bool_node*> unknowns;
 
 
-	DeductiveSolver(BooleanDAG* _dag, FloatManager& fm) :dopt(*_dag, fm), dag(_dag), floats(fm) {
+	DeductiveSolver(BooleanDAG* _dag, FloatManager& fm) : dopt(DagOptim(*_dag, fm)), dag(_dag), floats(fm) {
 
 	}
 

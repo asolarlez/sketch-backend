@@ -26,7 +26,7 @@ class NodeSlicer :
 		slice.push_back(&n);
 	}
 public:
-	NodeSlicer(map<string, BooleanDAG*>& functionMap_p, VarStore& inputs_p, BooleanDAG& bdag_p, FloatManager& _floats);
+	NodeSlicer(map<string, BooleanDAG*>& functionMap_p, VarStore& inputs_p, const BooleanDAG &bdag_p, FloatManager& _floats);
 	~NodeSlicer(void);
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );
@@ -49,7 +49,7 @@ public:
 	virtual void visit( ACTRL_node& node );
 	virtual void visit( ASSERT_node &node);	
 
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 
 	bool isInfluential(const string& name){
 		return influential.count(name)>0;

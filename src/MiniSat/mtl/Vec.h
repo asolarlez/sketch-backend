@@ -130,17 +130,13 @@ public:
     T&       last  (void)              { return data[sz-1]; }
 
     // Vector interface:
-    const T& operator [] (int index) const  { 
-#ifdef _DEBUG
+    const T& operator [] (int index) const  {
 		assert( index >= 0 && index < sz );
-#endif
         assert(data != nullptr);
 		return data[index]; 
 	}
-    T&       operator [] (int index)        { 
-#ifdef _DEBUG
+    T&       operator [] (int index)        {
 		assert( index >= 0 && index < sz );
-#endif
         assert(data != nullptr);
 		return data[index]; }
 	T* begin(){ return data; }

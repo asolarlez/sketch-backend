@@ -186,7 +186,7 @@ public:
 
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0), floats(p.epsilon) {
 
-		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
+		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName(), p.seed);
 		if (p.outputSat) {
 			_pfind->outputSAT();
 		}
@@ -239,7 +239,7 @@ public:
 		delete _pfind;
 		delete solver;
         //delete reasSolver;
-		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
+		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName(), params.seed);
 		finder = new SolverHelper(*_pfind);
 		finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.setSolver(finder);
@@ -356,7 +356,7 @@ public:
   
 	BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt);
 
-	void doInline(BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int i, map<string, map<string, string> > replaceMap);
+	void doInline(BooleanDAG& dag, map<string, const BooleanDAG*>& functionMap, int i, map<string, map<string, string> > replaceMap);
 
 	vector<vector<string> > holesToHardcode;
 

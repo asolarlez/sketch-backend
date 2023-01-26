@@ -35,7 +35,7 @@ class NodeVisitor{
 	protected:
 	virtual void visitBool(bool_node& node );
 	bool_node* rvalue;
-	BooleanDAG* tmpdag;
+	const BooleanDAG* tmpdag;
 	public:
 	
 	
@@ -69,7 +69,7 @@ class NodeVisitor{
 	virtual void visit( TUPLE_CREATE_node &node);
 	virtual void visit( TUPLE_R_node &node);
     
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 };
 
 

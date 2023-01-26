@@ -42,14 +42,14 @@ class CEGISChecker
         if(assert_concretized) {
             assert(p->get_dag()->getNodesByType(bool_node::CTRL).size() == 0);
         }
-		problemStack.push(p);
+		problem_stack.push(p);
 	}
 	int problemLevel(){
-		return (int) problemStack.size();
+		return (int) problem_stack.size();
 	}
 	void popProblem(){
-        BooleanDagLightUtility* t = problemStack.top();
-		problemStack.pop();
+        BooleanDagLightUtility* t = problem_stack.top();
+		problem_stack.pop();
 		t->clear();
 	}
 
@@ -58,9 +58,9 @@ class CEGISChecker
 
 //--moved from protected;
 
-	stack<BooleanDagLightUtility*> problemStack;
+	stack<BooleanDagLightUtility*> problem_stack;
 
-	map<int, File*> files;
+	map<int, const File*> files;
 
 	int curProblem; 
 
@@ -71,7 +71,7 @@ class CEGISChecker
 
 	vector<Tvalue> check_node_ids;
 
-    BooleanDAG* check(VarStore& controls, VarStore& input);
+    BooleanDAG * check(VarStore& controls, VarStore& input);
 
     VarStore input_store;
 
@@ -79,8 +79,8 @@ public:
 
     void clear()
     {
-        clear_problemStack();
-        assert(problemStack.empty());
+        clear_problem_stack();
+        assert(problem_stack.empty());
 
         files.clear();
 
@@ -91,9 +91,9 @@ public:
     }
 
 
-    void clear_problemStack()
+    void clear_problem_stack()
     {
-        while(!problemStack.empty())
+        while(!problem_stack.empty())
         {
             popProblem();
         }
@@ -104,21 +104,30 @@ public:
         return input_store;
     }
 
-    BooleanDAG* getProblemDag(){
-        assert(!problemStack.empty());
-        return problemStack.top()->get_dag();
+    BooleanDAG* getProblemDag__non_const(){
+        assert(!problem_stack.empty());
+        return problem_stack.top()->get_dag__non_const();
     }
 
+    const BooleanDAG* getProblemDag(){
+        assert(!problem_stack.empty());
+        return problem_stack.top()->get_dag();
+    }
 
     BooleanDagLightUtility* getProblem(){
-        assert(!problemStack.empty());
-        return problemStack.top();
+        assert(!problem_stack.empty());
+        return problem_stack.top();
+    }
+
+    BooleanDagLightUtility* get_main_problem(){
+        assert(!problems.empty());
+        return problems[0];
     }
 
     BooleanDagLightUtility* getHarness()
     {
-        assert(!problemStack.empty());
-        return problemStack.top();
+        assert(!problem_stack.empty());
+        return problem_stack.top();
     }
 
 	CEGISChecker(CommandLineArgs& args,  HoleHardcoder& hc, FloatManager& _floats):
@@ -131,11 +140,11 @@ public:
     }
 
 
-	void addProblem(BooleanDagLightUtility *harness, File *file);
+	void addProblem(BooleanDagLightUtility *harness, const File *file);
 
-	bool problemStack_is_empty()
+	bool problem_stack_is_empty()
 	{
-		return problemStack.empty();
+		return problem_stack.empty();
 	}
 
 

@@ -58,10 +58,10 @@ void DeriveImplications::visit( ASSERT_node &node){
 }
 
 
-void DeriveImplications::process(BooleanDAG& bdag){
+void DeriveImplications::process(BooleanDAG &bdag){
 	int i=0;
 	tmpdag = &bdag;
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
+	for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		(*node_it)->accept(*this);

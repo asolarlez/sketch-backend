@@ -482,7 +482,7 @@ double GlobalEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& inputValue
 	inputValues = inputValues_p;
 	errorGrad = errorGrad_p;
 	error = 0;
-  for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+  for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
     (*node_it)->accept(*this);
 		ValuesList& vl = getvalues(*node_it);
 		cout << (*node_it)->lprint() << endl;
@@ -494,7 +494,7 @@ double GlobalEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& inputValue
 	cout << "Processing asserts" << endl;
 	vector<Region*> trueRegions;
 	bool first = true;
-	for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
+	for (auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
 		bool_node* n = *node_it;
 		if (n->type == bool_node::ASSERT) {
 			vector<Region*> newTrueRegions;

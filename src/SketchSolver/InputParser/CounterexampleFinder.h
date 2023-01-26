@@ -24,7 +24,7 @@ class CounterexampleFinder :
 		influences.resize(bdag.size());
 		int bssize = inputs->getIntsize();
 		map<string, vector<UFUN_node*> > ufmap;
-		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+		for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 			bool_node* cur = (*node_it);
 			if(cur->type == bool_node::SRC){
 				SRC_node* src = dynamic_cast<SRC_node*>(cur);	
@@ -119,7 +119,7 @@ public:
 		failedAssert = false;
 		int bdsz = bdag.size();
 		auto ctrls = bdag.getNodesByType(bool_node::CTRL);
-		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){		
+		for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){		
 			(*node_it)->accept(*this);
 
 			if(failedHAssert){
@@ -205,7 +205,7 @@ public:
 		return (failedAssert && !failedHAssert) ? FOUND : NOTFOUND;
 	}
 
-	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, float sparseArray_p, FloatManager& _floats):
+	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, const BooleanDAG& bdag_p, float sparseArray_p, FloatManager& _floats):
             NodeEvaluator(bdag_p, _floats), sparseArray(sparseArray_p)
 	{
 	}

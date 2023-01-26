@@ -49,11 +49,14 @@ public:
 
 extern map<string, BenchmarkScore> timestamp_counter;
 
-std::chrono::steady_clock::time_point timestamp(std::chrono::steady_clock::time_point  prev_timestamp, const string& name);
+std::chrono::steady_clock::time_point timestamp(std::chrono::steady_clock::time_point prev_timestamp, const string& name);
 
 string performance_summary_to_string(bool sort_by_min = false);
 
 void print_performance_summary(ofstream& fout);
 
+long long elapsed_time(std::chrono::steady_clock::time_point prev_timestamp);
+
+string elapsed_time_as_str(string label, std::chrono::steady_clock::time_point prev_timestamp);
 
 #endif //EXAFUNCTIONGRAPHEXECUTOR_BENCHMARKSCORE_H

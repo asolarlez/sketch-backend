@@ -15,9 +15,9 @@
 void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
 
 //MODIFIES InputStore
-void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false);
+void redeclareInputs(VarStore & inputStore, const BooleanDAG *dag, bool firstTime= false);
 
-void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
+void redeclareInputsAndAngelics(VarStore & inputStore, const BooleanDAG* dag);
 
 class BooleanDagLightUtility;
 
@@ -91,12 +91,12 @@ public:
 
     explicit File(std::mt19937 _generator): generator(_generator){}
 
-    File(const BooleanDagLightUtility *harness, const string& file_name, bool_node::Type var_type = bool_node::SRC);
-    File(const string& file_name, const BooleanDagLightUtility *harness, bool_node::Type var_type = bool_node::SRC);
+    File(BooleanDagLightUtility *harness, const string& file_name, bool_node::Type var_type = bool_node::SRC);
+    File(const string& file_name, BooleanDagLightUtility *harness, bool_node::Type var_type = bool_node::SRC);
 
-    void init(const BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
+    void init(BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
 
-    File(const BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
+    File(BooleanDagLightUtility *harness, GenericFile* generic_file, bool_node::Type var_type = bool_node::SRC);
 
     void push_back(VarStore* to_insert) {
         vector<VarStore*>::push_back(to_insert);
@@ -104,7 +104,7 @@ public:
 
     explicit File(const VarStore& _controls)
     {
-        const int num_bits = _controls.getBitsize();
+        const int num_bits = _controls.get_bit_size();
 
         assert(num_bits <= 16); // otherwise too many inputs.
         for(int _i = 0; _i < (1<<num_bits); _i++)
@@ -144,6 +144,7 @@ public:
 
         int inputId = 0;
 
+//        cout << "anew" << endl;
         int at_ch_id = 0;
         char ch = 0;
 
@@ -197,10 +198,10 @@ public:
                         }
                         cerr << endl;
                         throw BasicError(string("file parsing error"), "name");
-
                     }
                     if (arrit == nullptr) {
-                        prevArrit->makeArr(prevArrit->get_index(), prevArrit->get_index() + 2);
+                        int prev_arrit_id = prevArrit->get_index();
+                        prevArrit->makeArr(prev_arrit_id, prev_arrit_id + 2);
                         arrit = prevArrit->get_next();
                         ((SRC_node*)inputNodes[inputId])->arrSz++;
                     }
@@ -209,6 +210,7 @@ public:
                     outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
 //                    cout << "[" << (int)outOfRange <<"]'" << endl;
                     prevArrit = arrit;
+//                    cout << "i" << arrit->get_index() << endl;
                     arrit = arrit->get_next();
                 }
                 if(outOfRange)
@@ -277,14 +279,14 @@ public:
                         } else {
                             hasCaptured = false;
                             cur = cur * 10 + (ch - '0');
+//                            cout << "[NUM: " << cur << "]" << endl;
                         }
                     } else if (ch == '.') {
                         isFloat = true;
                         floatVal = (double) cur;
                         cur = 10;
                     } else {
-                        Assert(false, "UNKNOWN CHARACTER <" << ch
-                                                            << "> IN LINE: " + _line << "\n");
+                        Assert(false, "UNKNOWN CHARACTER <" << ch << "> IN LINE: " + _line << "\n");
                     }
                     break;
                 }
@@ -292,24 +294,9 @@ public:
             if (outOfRange) {
                 return more_bits;
             }
-//        assert(!in.eof());
             assert(at_ch_id < _line.size());
             ch = _line[at_ch_id++];
-//        in.get(ch);
-//            cout << ch << "("<<(int)ch<<")'''";
-//        if (in.eof())
-//            if(at_ch_id == _line.size())
-//            {
-//                regval();
-//                assert(!outOfRange);
-//                if(vsi == inputs->end()){
-//                    return complete_row;
-//                }
-//                else {
-//                    AssertDebug(false, "INCOMPLETE LINE: " + _line);
-//                    return incomplete_row;
-//                }
-//            }
+//            cout << ch << "_";
         }
         regval();
 
@@ -338,18 +325,20 @@ public:
         }
     }
 
-    File *produce_subset_file(int num_rows) {
-        if(false) {
-            //DEBUG VERSION TO SEE WHICH IDs ARE CHOSEN
+    File *produce_subset_file(int num_rows, vector<int>* _sample_ids = nullptr) {
+        if(_sample_ids != nullptr) {
+            assert(_sample_ids->empty());
             vector<int> ids;
             for (int i = 0; i < size(); i++) {
                 ids.push_back(i);
             }
-            vector<int> sample_ids;
+            vector<int>& sample_ids = *_sample_ids;
             sample(ids.begin(), ids.end(), back_inserter(sample_ids),
                    num_rows, generator);
             File *new_file = new File(generator);
-
+            for(int i = 0;i<sample_ids.size();i++) {
+                new_file->push_back((*this)[sample_ids[i]]->clone());
+            }
 #ifdef CHECK_FILE_INVARIANT
             new_file->used = vector<int>(new_file->size(), 0);
 #endif
@@ -421,6 +410,6 @@ public:
     int count(function<bool(const VarStore *)> function1);
 };
 
-VarStore* string_to_var_store(const string& _line, const BooleanDagLightUtility *skfunc, bool_node::Type var_type = bool_node::SRC);
+VarStore* string_to_var_store(const string& _line, BooleanDagLightUtility *skfunc, bool_node::Type var_type = bool_node::SRC);
 
 #endif //SKETCH_SOURCE_FILE_H

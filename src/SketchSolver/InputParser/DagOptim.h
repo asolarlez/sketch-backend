@@ -466,7 +466,7 @@ public:
 	map<string, UFUN_node*> callMap;
     map<int, UFUN_node*> combinedFunCallMap;
 
-	DagOptim(BooleanDAG& dag, FloatManager& fm);
+	DagOptim(BooleanDAG &dag, FloatManager& fm);
 	virtual ~DagOptim();
 	
 	bool_node* quickcse(int idmom, int idpop, bool_node::Type t){
@@ -536,7 +536,7 @@ public:
 
 	virtual void visit( ASSERT_node &node);	
 	virtual void visit( DST_node& node );
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 	virtual  CONST_node* getCnode(int c);
 	virtual  CONST_node* getCnode(bool val); 
 	virtual  CONST_node* getCnode(double c);

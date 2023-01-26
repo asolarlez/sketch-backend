@@ -432,6 +432,17 @@ namespace FMTL {
 
         bool contains_only_necessary();
 
+        int num_not_erased()
+        {
+            int _num_not_erased = 0;
+            for (TransformPrimitive *it: program) {
+                if (!it->get_is_erased()) {
+                    _num_not_erased+=1;
+                }
+            }
+            return _num_not_erased;
+        }
+
         void print_not_erased() {
             cout << "print_not_erased(){" << endl;
             for (TransformPrimitive *it: program) {

@@ -16,7 +16,7 @@ namespace FMTL{
         SL::CodeBlock* root = nullptr;
         FunctionMap& source_function_map;
         ProgramEnvironment* env = nullptr;
-        map<SketchFunction*, SketchFunction*>* meta_map_dp = new map<SketchFunction*, SketchFunction*>();
+        map<const SketchFunction*, SketchFunction*>* meta_map_dp = new map<const SketchFunction*, SketchFunction*>();
     public:
         explicit FunctionMapTransformerState(FunctionMap& _source_function_map);
 
@@ -61,7 +61,7 @@ namespace FMTL{
 
         ProgramEnvironment *get_env();
 
-        map<SketchFunction *, SketchFunction *> *get_meta_map_dp();
+        map<const SketchFunction *, SketchFunction *> *get_meta_map_dp();
     };
 
     void parse_function_map_transformer_program(FunctionMapTransformerState* _state, string hypersketch_file);

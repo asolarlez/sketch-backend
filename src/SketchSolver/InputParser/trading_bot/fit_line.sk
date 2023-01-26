@@ -1,0 +1,29 @@
+pragma options "--fe-fpencoding TO_BACKEND";
+pragma options "--bnd-arr-size 4";
+pragma options "--bnd-unroll-amnt 4";
+// pragma options "--be:numericalsolver";
+
+
+int predict(int x) {
+    return 2;
+    //return (float)x*?? + ??;
+}
+
+harness void sketch_main() {
+    int n = 4;
+    int[n] close = { 1, 1, 1, 1 };
+    int[n] _diffs = { ??, ??, ??, ?? };
+    int err = 0;
+    bit print_diff = 1;
+    int train_n = 4;
+    for(int i = 0; i<train_n; i++) {
+        int diff = close[i] - predict(i);
+        //if(print_diff) {
+        //    assert(_diffs[i] == diff);
+        // }
+        err += diff;
+    }
+    //int _err = ??;
+    //assert(_err == err);
+    assert(err < 10);
+}

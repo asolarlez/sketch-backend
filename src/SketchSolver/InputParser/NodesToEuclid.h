@@ -25,7 +25,7 @@ public:
 	};
 	
 	
-	void process(BooleanDAG& bdag){
+	void process(BooleanDAG &bdag){
 		out<<"MODEL "<<prefix<<endl;
 		out<<"CONTROL "<<endl;
 		out<<"EXTVAR"<<endl;
@@ -52,7 +52,7 @@ public:
 		out<<"DEFINE"<<endl;
 		
 		int i=0;
-		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
+		for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 			try{
 			//if(i>1000){ cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl; }
 			(*node_it)->accept(*this);

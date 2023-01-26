@@ -439,13 +439,13 @@ void DagElimUFUN::visit( UFUN_node& node ){
 }
 
 
-void DagElimUFUN::process(BooleanDAG& dag){
-	dagsize = dag.size();
+void DagElimUFUN::process(BooleanDAG &bdag){
+	dagsize = bdag.size();
 	int k=0;
 	// Dout( dag.print(cout) );
 
-	for(int i=0; i<dag.size(); ++i ){
-		bool_node* nn = dag[i];
+	for(int i=0; i < bdag.size(); ++i ){
+		bool_node* nn = bdag[i];
 		if(nn->type == bool_node::UFUN){
 			UFUN_node* uf = (UFUN_node*)nn;
 			for(auto it = uf->arg_begin(); it != uf->arg_end(); ++it){
@@ -458,18 +458,18 @@ void DagElimUFUN::process(BooleanDAG& dag){
 
 
 	Dout( cout<<" BEFORE PROCESS "<<endl );
-	for(int i=0; i<dag.size(); ++i ){
+	for(int i=0; i < bdag.size(); ++i ){
 		// Get the code for this node.
-		dag[i]->accept(*this);
+		bdag[i]->accept(*this);
 		bool_node* node = rvalue;
-		if( dag[i] != node ){
-			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
-			dag.replace(i, node);
+		if(bdag[i] != node ){
+			Dout(cout << "replacing " << bdag[i]->get_name() << " -> " << node->get_name() << endl );
+			bdag.replace(i, node);
 		}
 	}
-	dag.addNewNodes(newnodes);
+	bdag.addNewNodes(newnodes);
 	newnodes.clear();
-	dag.removeNullNodes();
+	bdag.removeNullNodes();
     
     
     
@@ -479,7 +479,7 @@ void DagElimUFUN::process(BooleanDAG& dag){
      dag.cleanup(false);
      */
 	Dout( cout<<" AFTER PROCESS "<<endl );
-	Dout( dag.print(cout) );	
+	Dout(bdag.print(cout) );
 	Dout(cout<<" end ElimFun "<<endl);
 }
 

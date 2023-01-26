@@ -77,16 +77,16 @@ generator bit predicate8_gen(int n, bit[n] bits) {
 
 // -- generators end --
 
-bit condition(int n, bit[n] bits) { return predicate8_gen(n, bits);}
+bit condition(int n, bit[n] bits) { return predicate4_gen(n, bits);}
 //score(synth(predicate1^3)) = 268
 //score(synth(predicate2^3)) = 321
 //score(synth(predicate3^3)) = 326
 //score(synth(predicate4^3)) = 367
 //score(synth(predicate8^3)) =
 
-bit left_branch(int n, bit[n] bits) { return predicate8_gen(n, bits); }
+bit left_branch(int n, bit[n] bits) { return predicate4_gen(n, bits); }
 
-bit right_branch(int n, bit[n] bits) { return predicate8_gen(n, bits); }
+bit right_branch(int n, bit[n] bits) { return predicate4_gen(n, bits); }
 
 bit composite_predicate(int n, bit[n] bits) {
     if(condition(n, bits)) {
