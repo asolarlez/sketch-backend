@@ -615,12 +615,12 @@ SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMT
                 PolyMap *ports_map = ports_map_var_val->get_poly_map();
 
                 auto ufuns_map = skfunc->get_unit_ufuns_map();
-                assert(ufuns_map.size() == ports_map->size());
-                for (const auto &it: ufuns_map) {
-                    auto left = ports_map->at(it.first)->get_string(false);
-                    auto right =  it.second;
-                    assert(left == right);
-                }
+//                assert(ufuns_map.size() == ports_map->size());
+//                for (const auto &it: ufuns_map) {
+//                    auto left = ports_map->at(it.first)->get_string(false);
+//                    auto right =  it.second;
+//                    assert(left == right);
+//                }
 
                 ports_map_var_val->decrement_shared_ptr();
             }

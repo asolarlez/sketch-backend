@@ -996,6 +996,10 @@ void ReplacePrimitive::pretty_print(string& ret, map<string, string>* holes_to_v
     root_dag_reps.at(assign_map.begin()->second)->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
     ret += function_name + ".replace(" + "\"" + assign_map.begin()->first + "\"" + ", " + assign_map.begin()->second + ");" + "\n";
 
+    cout << "ReplacePrimitive::pretty_print" << endl;
+    cout << ret << endl;
+    cout << "---" << endl;
+
     assert(running_assignment_map->find(function_name) != running_assignment_map->end());
     assert(assign_map.size() == 1);
     assert(running_assignment_map->at(function_name).find(assign_map.begin()->first) != running_assignment_map->at(function_name).end());
@@ -1052,7 +1056,10 @@ void ConcretizePrimitive::pretty_print(string& ret, map<string, string>* holes_t
     {
         var_store_str = "{}";
     }
+    cout << "ConcretizePrimitive::pretty_print" << endl;
     ret += function_name + ".inplace_unit_concretize(" + var_store_str + ");" + "\n";
+    cout << ret << endl;
+    cout << "----" << endl;
 }
 
 void
@@ -1085,8 +1092,13 @@ InitPrimitive::pretty_print(string& ret, map<string, string>* holes_to_values, c
         }
 
         if(print_parent) {
-            auto next = root_dag_reps.at(val_name);
-            next->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
+            if(root_dag_reps.find(val_name) != root_dag_reps.end()) {
+                auto next = root_dag_reps.at(val_name);
+                next->pretty_print(ret, holes_to_values, fmt, running_assignment_map, visited);
+            }
+            else {
+                ret += "// function name '" + val_name + "' not found;\n";
+            }
         }
         else {
             ret += "//" + var_name + " -> " + val_name + " superseded in " + function_name + "\n";
@@ -1142,6 +1154,10 @@ void ClonePrimitive::pretty_print(string& ret, map<string, string>* holes_to_val
     }
     hole_renaming_map_str += "}";
 
+    //here
     main_parent->pretty_print(ret, holes_to_values,  fmt, running_assignment_map, visited);
     ret += function_name + " = " + main_parent->get_function_name() + ".unit_clone(" + "\"" + function_name + "\"" + ", " + hole_renaming_map_str + ");" + "\n";
+    cout << "ClonePrimitive::pretty_print" << endl;
+    cout << ret << endl;
+    cout << "---" << endl;
 }
