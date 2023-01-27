@@ -227,8 +227,8 @@ main()
 {
 
     //return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
-    //return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
-    return recursive_function_stun();
+    return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
+    //return recursive_function_stun();
     //return recursive_function_stun_for_benchmarking();
 
 

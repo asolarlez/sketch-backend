@@ -584,48 +584,55 @@ SL::VarVal* SL::FunctionCall::eval_global<FMTL::FunctionMapTransformerState>(FMT
 
             string skfunc_name_var_val = params[0]->eval(state)->get_string(true, false);
 
-            SketchFunction* skfunc =
-                    state->get_source_skfunc(skfunc_name_var_val)->
-                    deep_exact_clone_and_fresh_function_map(state->get_env(), state->get_meta_map_dp());
+            if(state->has_source_skfunc(skfunc_name_var_val)) {
 
-            assert(skfunc_name_var_val == skfunc->get_dag_name());
+                SketchFunction *skfunc = nullptr;
+
+                skfunc = state->get_source_skfunc(skfunc_name_var_val)->
+                        deep_exact_clone_and_fresh_function_map(state->get_env(), state->get_meta_map_dp());
+
+                assert(skfunc_name_var_val == skfunc->get_dag_name());
 
 //            state->function_map.insert(skfunc_name_var_val, skfunc);
 
-            assert(state->function_map.find(skfunc->get_dag_name()) != state->function_map.end());
+                assert(state->function_map.find(skfunc->get_dag_name()) != state->function_map.end());
 
-            { // assert holes invariant
-                VarVal *holes_vec_var_val = params[1]->eval(state);
-                holes_vec_var_val->increment_shared_ptr();
-                PolyVec *holes = holes_vec_var_val->get_poly_vec();
+                { // assert holes invariant
+                    VarVal *holes_vec_var_val = params[1]->eval(state);
+                    holes_vec_var_val->increment_shared_ptr();
+                    PolyVec *holes = holes_vec_var_val->get_poly_vec();
 
-                vector<string> hole_names = skfunc->get_unit_holes();
-                assert(hole_names.size() == holes->size());
-                for (int i = 0; i < hole_names.size(); i++) {
-                    string predicted_hole_name = holes->at(i)->get_string(false);
-                    assert(hole_names[i] == predicted_hole_name);
+                    vector<string> hole_names = skfunc->get_unit_holes();
+                    assert(hole_names.size() == holes->size());
+                    for (int i = 0; i < hole_names.size(); i++) {
+                        string predicted_hole_name = holes->at(i)->get_string(false);
+                        assert(hole_names[i] == predicted_hole_name);
+                    }
+
+                    holes_vec_var_val->decrement_shared_ptr();
                 }
 
-                holes_vec_var_val->decrement_shared_ptr();
+                { // assert ports invariant
+                    VarVal *ports_map_var_val = params[2]->eval(state);
+                    ports_map_var_val->increment_shared_ptr();
+                    PolyMap *ports_map = ports_map_var_val->get_poly_map();
+
+                    auto ufuns_map = skfunc->get_unit_ufuns_map();
+//                    assert(ufuns_map.size() == ports_map->size());
+//                    for (const auto &it: ufuns_map) {
+//                        auto left = ports_map->at(it.first)->get_string(false);
+//                        auto right =  it.second;
+//                        assert(left == right);
+//                    }
+                    ports_map_var_val->decrement_shared_ptr();
+                }
+                return new VarVal(skfunc);
             }
-
-            { // assert ports invariant
-                VarVal *ports_map_var_val = params[2]->eval(state);
-                ports_map_var_val->increment_shared_ptr();
-                PolyMap *ports_map = ports_map_var_val->get_poly_map();
-
-                auto ufuns_map = skfunc->get_unit_ufuns_map();
-//                assert(ufuns_map.size() == ports_map->size());
-//                for (const auto &it: ufuns_map) {
-//                    auto left = ports_map->at(it.first)->get_string(false);
-//                    auto right =  it.second;
-//                    assert(left == right);
-//                }
-
-                ports_map_var_val->decrement_shared_ptr();
+            else {
+                //create ufun.
+                SketchFunction* skfunc = new SketchFunction(new BooleanDAG(skfunc_name_var_val, false, skfunc_name_var_val, false), state->get_env());
+                return new VarVal(skfunc);
             }
-
-            return new VarVal(skfunc);
         }
         default:
             assert(false);
@@ -2234,6 +2241,10 @@ bool SL::VarVal::is_solution_holder()  const{
 void SL::VarVal::clear_assert_0_shared_ptrs() {
     assert(num_shared_ptr == 0);
     _clear();
+}
+void SL::VarVal::clear_assert_1_shared_ptrs() {
+    assert(num_shared_ptr == 1);
+    decrement_shared_ptr();
 }
 
 template void SL::VarVal::clear<SketchFunction*>(SketchFunction* &val, bool do_delete);

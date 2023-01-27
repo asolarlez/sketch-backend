@@ -19,7 +19,7 @@ void BooleanDagUtility::reset_env_to_original() {
 }
 
 
-bool BooleanDagUtility::is_inlining_tree_nonnull() {
+bool BooleanDagUtility::is_inlining_tree_nonnull() const {
     bool ret = inlining_tree != nullptr;
     if(inlining_tree != nullptr) {
         assert(inlining_tree->get_dag_id() == get_dag_id());

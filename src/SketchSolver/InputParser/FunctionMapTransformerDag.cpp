@@ -115,23 +115,19 @@ void FunctionMapTransformer::erase(const string &to_erase_name, bool assert_not_
     if(assert_not_in_function_map) {
         assert(function_map->find(to_erase_name) == function_map->end());
     }
-//    if(to_erase_name == "condition")
-//    {
-//        cout << "HERE" << endl;
-//    }
-    assert(root_dag_reps.find(to_erase_name) != root_dag_reps.end());
-    assert(root_dag_reps[to_erase_name]->get_function_name() == to_erase_name);
-    auto to_erase = root_dag_reps[to_erase_name];
+    if(root_dag_reps.find(to_erase_name) != root_dag_reps.end()) {
+        assert(root_dag_reps[to_erase_name]->get_function_name() == to_erase_name);
+        auto to_erase = root_dag_reps[to_erase_name];
 //    check_consistency();
-    auto ret = to_erase->erase(this);
-    if(ret == nullptr) {
-        assert(root_dag_reps.find(to_erase_name) == root_dag_reps.end());
-    }
-    else {
-        assert(root_dag_reps.find(to_erase_name)->second == ret);
-    }
-    erased_root_dag_reps.insert(to_erase_name);
+        auto ret = to_erase->erase(this);
+        if (ret == nullptr) {
+            assert(root_dag_reps.find(to_erase_name) == root_dag_reps.end());
+        } else {
+            assert(root_dag_reps.find(to_erase_name)->second == ret);
+        }
+        erased_root_dag_reps.insert(to_erase_name);
 //    check_consistency();
+    }
 }
 
 set<TransformPrimitive *> &FunctionMapTransformer::get_program() {
@@ -1063,8 +1059,12 @@ void ConcretizePrimitive::pretty_print(string& ret, map<string, string>* holes_t
 }
 
 void
-InitPrimitive::pretty_print(string& ret, map<string, string>* holes_to_values, const FunctionMapTransformer &fmt, map<string, map<string, string>> *running_assignment_map,
-                            set<TransformPrimitive *> *visited) const {
+InitPrimitive::pretty_print(
+    string& ret,
+    map<string, string>* holes_to_values,
+    const FunctionMapTransformer &fmt,
+    map<string, map<string, string>> *running_assignment_map,
+    set<TransformPrimitive *> *visited) const {
 
     if(visited->find((TransformPrimitive *) this) != visited->end()) {
         return;
@@ -1097,7 +1097,8 @@ InitPrimitive::pretty_print(string& ret, map<string, string>* holes_to_values, c
                 next->pretty_print(ret, holes_to_values, fmt, running_assignment_map, visited);
             }
             else {
-                ret += "// function name '" + val_name + "' not found;\n";
+                ret += val_name + " = declare(" + "\"" + val_name + "\"" + ", " + "[]" + ", " + "{}" + ");" + "\n";
+//                ret += "// function name '" + val_name + "' not found;\n";
             }
         }
         else {

@@ -57,7 +57,11 @@ namespace FMTL{
             return var_val_ret;
         }
 
-        SketchFunction *get_source_skfunc(string name);
+        SketchFunction *get_source_skfunc(const string& name);
+
+        bool has_source_skfunc(const string& name) {
+            return (source_function_map.find(name) != source_function_map.end());
+        }
 
         ProgramEnvironment *get_env();
 

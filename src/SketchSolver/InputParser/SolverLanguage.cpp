@@ -36,6 +36,7 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
 
     bool run_hsk_program = true;
     bool run_hardcoded_synthesis_strategy = !run_hsk_program;
+    bool the_result_was_an_original = false;
 
     if(run_hsk_program)
     {
@@ -56,8 +57,8 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
 
         {
             assert(var_val_ret->is_sketch_function());
-
             SketchFunction *_concretized_function = var_val_ret->get_skfunc(false);
+            the_result_was_an_original = _concretized_function->get_dag()->is_original();
 
             {
 
@@ -75,11 +76,15 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
 
             //print function_map_transformer_program, parse it, and check that it's the same.
 
-            bool save_and_test_fmtl_program = true;
+            bool save_fmtl_program = true;
+            bool test_fmtl_program = true;
+            if(test_fmtl_program) {
+                assert(save_fmtl_program);
+            }
 
             const string fmtl_program_file_name = "fmtl_program_file.fmtl";
 
-            if(save_and_test_fmtl_program)
+            if(save_fmtl_program)
             {
                 assert(final_hole_values.empty());
                 string fmtl_program_str = _concretized_function->get_rep()->pretty_print(function_map, &final_hole_values);
@@ -88,19 +93,15 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
                     cout << fmtl_program_str << endl;
                     cout << endl;
                 }
-
                 ofstream fmtl_program_file(fmtl_program_file_name);
-
                 fmtl_program_file << fmtl_program_str;
-
                 fmtl_program_file.close();
-
             }
 
-            var_val_ret->clear_assert_0_shared_ptrs();
+            var_val_ret->decrement_shared_ptr();
             state->clear();
 
-            if(save_and_test_fmtl_program) {
+            if(test_fmtl_program) {
 
                 function_map.print();
 
@@ -227,7 +228,9 @@ SolverLanguage::eval(string hypersketch_file_path, FunctionMap &function_map, co
 //                    assert(all_remaining_inlining_trees == 0);
         }
 
-        assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+        if(bool_node::get_allocated().size() - init_num_global_nodes != 0) {
+            assert(the_result_was_an_original);
+        }
 
         function_map.check_consistency();
         assert(function_map.contains_only_necessary());
