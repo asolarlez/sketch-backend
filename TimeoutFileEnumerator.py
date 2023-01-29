@@ -35,7 +35,8 @@ def find_files_with_timeout(directory):
 
 def main():
 
-    ret, nonto_files, text_of_files, sketches, keyword_sketches = find_files_with_timeout("/Users/klimentserafimov/CLionProjects/sketch-frontend/src/test/sk/seq")
+    ret, nonto_files, text_of_files, sketches, keyword_sketches = \
+        find_files_with_timeout("./../sketch-frontend/src/test/sk/seq")
 
     for keyword in ret:
         print(keyword, len(ret[keyword]))
@@ -45,6 +46,8 @@ def main():
     print("nonto_files", len(nonto_files))
     # for row in nonto_files:
     #     print(row)
+
+    return
 
     print()
     print("Unaccounted ERROR files:")

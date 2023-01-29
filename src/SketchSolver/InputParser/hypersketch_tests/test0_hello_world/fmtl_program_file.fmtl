@@ -1,0 +1,9 @@
+s = declare("s", ["H__0"], {});
+s__id3 = s.unit_clone("s__id3", {"H__0" : "H__0__id3"});
+s__id3__id19 = s__id3.unit_clone("s__id3__id19", {"H__0" : "H__0__id3__id19"});
+s__id3__id19.inplace_unit_concretize({"H__0__id3__id19" : "2"});
+s__Wrapper = declare("s__Wrapper", [], {"s" : "s"});
+s__Wrapper__id4 = s__Wrapper.unit_clone("s__Wrapper__id4", {});
+s__Wrapper__id4.replace("s", s__id3__id19);
+s__Wrapper__id4.inplace_unit_concretize({});
+return s__Wrapper__id4;

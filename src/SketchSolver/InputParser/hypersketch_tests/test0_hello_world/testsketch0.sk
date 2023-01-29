@@ -1,0 +1,4 @@
+@FromFile("data0_x.data")
+harness void s(int x) {
+    assert x*?? == x + x;
+}

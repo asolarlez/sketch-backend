@@ -1515,6 +1515,7 @@ public:
             return name_to_var_throws(name);
         }
         catch (exception& e1) {
+
             cout << "ERROR: NAME NOT FOUND: " << name->to_string() << endl;
             assert(false);
         }

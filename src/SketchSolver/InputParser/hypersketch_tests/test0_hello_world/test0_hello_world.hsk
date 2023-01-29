@@ -1,0 +1,7 @@
+//hypersketch
+main() {
+    s_ = s__Wrapper.deep_clone();
+    file = File(file_name, s_);
+    s_.make_executable(SATSolver(s_, file));
+    return s_;
+}

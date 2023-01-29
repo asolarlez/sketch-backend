@@ -1082,7 +1082,6 @@ SATSolverResult InterpreterEnvironment::assertHarness(BooleanDagLightUtility *ha
 
     int solveCode = 0;
     try {
-
         solveCode = solver->solve().success;
         if (solveCode || !hasGoodEnoughSolution) {
             recordSolution();
