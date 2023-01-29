@@ -379,6 +379,7 @@ public:
     }
 
     WORD_TYPE get_vector_as_int(size_t idx) const override {
+        assert(idx < vector_of_vectors.size());
         return vector_of_vectors[idx];
     }
 

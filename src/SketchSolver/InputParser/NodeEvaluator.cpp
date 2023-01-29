@@ -40,7 +40,7 @@ void NodeEvaluator::visit( ARR_R_node &node){
 	if(idx < 0){
 		setbn(node, 0 );
 	}else{
-    setbn(node, vv->get(idx,i(*node.father())) );
+            setbn(node, vv->get(idx,i(*node.father())) );
 	}
 }
 

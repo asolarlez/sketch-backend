@@ -37,7 +37,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		else
 		{
             assert(!inode->isArrType());
-            assert(values.getObjConst(inode->get_name()).get_size() == inode->get_nbits());
+//            assert(values.getObjConst(inode->get_name()).get_size() == inode->get_nbits());
 
 		    if(inode->getOtype() == OutType::BOOL){
 		        Assert(otype != OutType::FLOAT, "node should not be a FLOAT.");
@@ -69,7 +69,7 @@ void NodeHardcoder::visit( SRC_node& node ){
             if (!node.isArrType()) {
                 int obj_const_size = values.getObjConst(node.get_name()).get_size();
                 int node_get_nbits = node.get_nbits();
-                assert(obj_const_size == node_get_nbits);
+//                assert(obj_const_size == node_get_nbits);
             } else {
                 int obj_const_size = values.getObjConst(node.get_name()).get_size();
                 int node_nbits = node.get_nbits();

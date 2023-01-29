@@ -474,8 +474,9 @@ BooleanDAG * CEGISChecker::check(VarStore& controls, VarStore& input){
 	//getProblemDag()->lprint(std::cout);
 
 
-    controls.relabel(getHarness()->get_dag()->getNodesByType(bool_node::CTRL));
-	pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL), true);
+    auto harness = getHarness();
+//    controls.relabel(harness->get_dag()->getNodesByType(bool_node::CTRL));
+	pushProblem(harness->produce_concretization(&controls, bool_node::CTRL), true);
 
     #ifdef CHECK_FILE_INVARIANT
     {
