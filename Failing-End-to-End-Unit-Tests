@@ -1,3 +1,97 @@
+Best known Mon, Jan 30th 2023
+
+      30      85     460 miniTestBigInts2.sk
+      13      42     176 miniTestb183.sk
+     212     745    4630 miniTestb377.sk
+      25      78     459 miniTestb435.sk
+      25      81     470 miniTestb436.sk
+    2894    9528  146863 miniTestb678.sk
+       7      25     144 miniTestb776.sk
+     588    6967   35372 miniTestb841.sk
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk
+      37      65     603 miniTestb861.sk
+      29      59     441 miniTestb862.sk
+      13      42     262 miniTestb889.sk
+     204     527    4831 miniTestb895.sk
+      18      50     345 miniTestb901.sk
+
+failing within timeout
+./../sketch-frontend/src/test/sk/seq/miniTestb183.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb678.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb776.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb841.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb858.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb860.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb861.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb862.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb889.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb895.sk
+./../sketch-frontend/src/test/sk/seq/miniTestb901.sk
+
+--
+
+Best known Jul24
+
+---
+Jan 29 2023 recreation of Jul24.
+commit: d641575dac15bd178db3842db4b05a93b1bd08c4
+
+Sketch Not Resolved Error 41
+Assertion failed 3
+ERROR 43
+timeout 24
+nonto_files 867
+
+      30      85     460 miniTestBigInts2.sk
+      22      64     343 miniTestb180.sk
+      26      68     369 miniTestb181.sk
+      26      75     385 miniTestb182.sk
+     128     447    3012 miniTestb228.sk
+      33      85     624 miniTestb258.sk
+      40     114     805 miniTestb259.sk
+      24      80     573 miniTestb261.sk
+      18      66     403 miniTestb262.sk
+      32     123     729 miniTestb358.sk
+      20      84     634 miniTestb370.sk
+     212     745    4630 miniTestb377.sk
+      15      48     363 miniTestb389.sk
+      88     226    1973 miniTestb400.sk
+     185     428    3057 miniTestb414.sk
+      17      53     313 miniTestb433.sk
+      25      78     459 miniTestb435.sk
+      25      81     470 miniTestb436.sk
+      14      41     269 miniTestb465.sk
+      22      53     367 miniTestb484.sk
+      81     226    1729 miniTestb489.sk
+      22      49     416 miniTestb523.sk
+      32      98     578 miniTestb558.sk
+      34     166     894 miniTestb564_angelic.sk
+      94     283    1770 miniTestb565_angelic.sk
+     105     329    2075 miniTestb566_angelic.sk
+     140     499    2695 miniTestb567_angelic.sk
+    2894    9528  146863 miniTestb678.sk
+     102     379    2260 miniTestb795.sk
+     147     549    2937 miniTestb798.sk
+     588    6967   35372 miniTestb841.sk
+    1626    5939   45424 miniTestb851.sk
+      17      32     238 miniTestb858.sk
+      64     105     971 miniTestb860.sk
+      37      65     603 miniTestb861.sk
+      29      59     441 miniTestb862.sk
+      46     170     949 miniTestb868.sk
+      75     314    1743 miniTestb869.sk
+      65     266    1590 miniTestb876.sk
+      35     104     687 miniTestb880.sk
+      13      42     262 miniTestb889.sk
+     204     527    4831 miniTestb895.sk
+      18      50     345 miniTestb901.sk
+     867     867   17420 cur
+    8337   30657  293331 total
+
+--
+
+Jan 29.
 Merged master with dev_stable_unsafe
 
 Sketch Not Resolved Error 67
@@ -204,8 +298,6 @@ END OF LIST
 rm cur
 
 
-
-
 now Aug 10 11:34am. 68 failing. wo ._sk.
        9      40     207 miniTest207MainMethodAndPragma.sk
       23      60     308 miniTest74.sk
@@ -277,8 +369,6 @@ now Aug 10 11:34am. 68 failing. wo ._sk.
       18      50     345 miniTestb901.sk
      813     813   16309 cur
     8569   31841  233293 total
-
-
 
 now
 
@@ -530,14 +620,9 @@ annotated with whether or not they are resolved or still failing.
 +    35    104    687 miniTestb880.sk resolved
 +    30     85    460 miniTestBigInts2.sk still failing
 
-
-
-
-
----
+--
 
 update: d641575dac15bd178db3842db4b05a93b1bd08c4
-
 
       17      53     313 miniTestb433.sk
       25      78     459 miniTestb435.sk
@@ -556,16 +641,11 @@ update: d641575dac15bd178db3842db4b05a93b1bd08c4
       29      59     441 miniTestb862.sk
       13      42     262 miniTestb889.sk
       18      50     345 miniTestb901.sk
-
       --
-
       todo: test long
-
       --
-
 
 --
-
 
       20      65     409 miniTestb385.sk was failing | resolved.
      185     428    3057 miniTestb414.sk | resolved

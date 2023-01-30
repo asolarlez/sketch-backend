@@ -42,8 +42,7 @@ SATSolverResult CEGISFinder::find(
     else
     {
         //claim: solution is already optimal.
-        AssertDebug(false, "TODO: INVESTIGATE");
-        return SAT_SATISFIABLE;
+        return SAT_UNSATISFIABLE;
     }
 
 	//hasInputChange == is it a new problem;

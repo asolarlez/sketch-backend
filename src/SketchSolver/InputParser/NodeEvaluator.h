@@ -36,8 +36,8 @@ public:
 
 const int UNSET = -22;
 class cpvec{
-	int bnd;
-	cpvec* parent;
+	int bnd = -1;
+	cpvec* parent = nullptr;
 	//Entry 0 corresponds to the true value stored here.
 	//Entry's 1 and 2 are cache locations to avoid having to traverse too much.
 	int val[3];
@@ -62,9 +62,8 @@ public:
         const objP::BitMetaVector_rep_CHOOSE* const vv = nullptr;
     public:
         LocalVectorTrait_rep_BitVector(int sz, int init_val):
-        mutable_vv(new objP::BitMetaVector_rep_CHOOSE(sz, init_val)),
-        vv(mutable_vv) {}
-        LocalVectorTrait_rep_BitVector(const objP::BitMetaVector_rep_CHOOSE* _vv): vv(_vv) {}
+            mutable_vv(new objP::BitMetaVector_rep_CHOOSE(sz, init_val)), vv(mutable_vv) {}
+        LocalVectorTrait_rep_BitVector(const objP::BitMetaVector_rep_CHOOSE* _vv): vv(new objP::BitMetaVector_rep_CHOOSE(_vv)) {}
 
         int size() const override
         {
@@ -72,6 +71,7 @@ public:
         }
 
         int operator [] (int idx) const override {
+            assert(idx < vv->get_num_vectors());
             return vv->get_vector_as_int(idx);
         }
 
@@ -110,7 +110,7 @@ public:
 	cpvec(cpvec* pp, int ii, int v):vv(NULL){		
 		update(pp, ii, v);
 	}
-	cpvec(int sz):
+	explicit cpvec(int sz):
     // NOTE xzL: set uninitialized value to be 0
     mutable_vv(new LocalVectorTrait_rep_BitVector(sz, 0)), vv(mutable_vv) {
         assert(vv == mutable_vv);
@@ -138,9 +138,14 @@ public:
 	}
 	bool lget(int ii, int& rv){
 		if(vv != NULL){ 
-			if(ii>=bnd){ return false; }		
-			rv = (*vv)[ii];
-			return true;
+			if(ii>=bnd){ return false; }
+            if(ii < vv->size()) {
+                rv = (*vv)[ii];
+                return true;
+            }
+            else {
+                return false;
+            }
 		}
 
 		int b0 = idx[0]==ii;

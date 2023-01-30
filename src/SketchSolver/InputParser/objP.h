@@ -296,8 +296,8 @@ public:
 
 class BitMetaVector_rep_VectorInt: public BitMetaVectorTrait
 {
-    int num_bits_per_vector;
-    int total_num_bits;
+    int num_bits_per_vector = 0;
+    int total_num_bits = 0;
     vector<WORD_TYPE> vector_of_vectors;
 public:
 

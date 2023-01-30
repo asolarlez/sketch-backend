@@ -11,6 +11,8 @@ def find_files_with_timeout(directory):
         for file in files:
             file_path = os.path.join(root, file)
             with open(file_path, 'r') as f:
+                if ".DS_Store" in file_path or "failing" in file_path:
+                    continue
                 file_contents = f.read()
                 text_of_files[file_path] = file_contents
                 # if "miniTest207MainMethodAndPragma" in file_path:
@@ -33,19 +35,49 @@ def find_files_with_timeout(directory):
                     sketches.append(file_path)
     return ret, no_keyword_files, text_of_files, sketches, keyword_sketches
 
+def output_to_sk(path_w_output):
+    assert path_w_output[-7:] == ".output"
+    return path_w_output[:-7]+".sk"
+
 def main():
 
-    ret, nonto_files, text_of_files, sketches, keyword_sketches = \
-        find_files_with_timeout("./../sketch-frontend/src/test/sk/seq")
+    # test_dir = "./../sketch-frontend/src/test/sk/seq/failing_wo_to"
+    test_dir = "./../sketch-frontend/src/test/sk/seq"
+
+    ret, nonto_files, text_of_files, sketches, keyword_sketches = find_files_with_timeout(test_dir)
 
     for keyword in ret:
         print(keyword, len(ret[keyword]))
-        # for row in ret[keyword]:
-        #     print(row)
+        if False and keyword == "timeout":
+            for row in ret[keyword]:
+                print(row)
+                print("has timeout")
 
-    print("nonto_files", len(nonto_files))
+    print("ok_files", len(nonto_files))
     # for row in nonto_files:
     #     print(row)
+
+    failing_within_timeout = []
+    print("failing within timeout")
+    ret["ERROR"] = sorted(ret["ERROR"])
+    for row in ret["ERROR"]:
+        if row not in ret["timeout"]:
+            print(output_to_sk(row))
+            failing_within_timeout.append(output_to_sk(row))
+
+    return
+
+    import shutil
+    import os
+
+    def copy_files(file_paths, target_dir):
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+
+        for file_path in file_paths:
+            shutil.copy(file_path, target_dir)
+
+    copy_files(failing_within_timeout, "/Users/klimentserafimov/CLionProjects/sketch-frontend/src/test/sk/seq/failing_wo_to")
 
     return
 
