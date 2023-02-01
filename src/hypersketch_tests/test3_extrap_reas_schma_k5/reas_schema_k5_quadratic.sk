@@ -1,7 +1,8 @@
 int n_io = 2;
-int const_max_n = 4;
-int const_k = 5;
-int const_max_m = 16;
+int const_n_vecspec = 122;
+int const_max_n = 5;
+int const_k = 6;
+int const_max_m = 32;
 
 int get_2bit_id(int max_n, int ioro0, int x0, int ioro1, int x1, bit[max_n] input, bit[max_n] output){
     int id = 0;
@@ -209,6 +210,10 @@ void train_rs4(int max_num_ops, int signature_size, int max_m, int max_n, int m,
     return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits,signature);
 }
 
+void train_rs5(int max_num_ops, int signature_size, int max_m, int max_n, int m, int n_in, int n_out, bit[max_n][max_m][n_io] bits, ref int[signature_size][max_num_ops] signature) {
+    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits,signature);
+}
+
 generator void k3_ers(
     int k, int i,
     int max_num_ops, int signature_size,
@@ -231,6 +236,18 @@ generator void k3_ers(
     i = i+1;
     //9032; --bnd-arr-size 232 --bnd-unroll-amnt 16 --bnd-inline-amnt 3 --bnd-cbits 2 --fe-keep-tmp -V3
     train_rs4(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
+
+    // for train_rs4;
+    //21.9k; unroll 4; inline 3;
+    //72.9k; u8
+    //420k; u16
+    //2.98M; u32
+    //solveed;
+    //done train_rs4;
+
+    //i = i+1;
+    //train_rs5(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
+
 }
 
 /*generator void extrapolatable_reasoning_schema(
@@ -285,7 +302,6 @@ harness void sketch_main(
 
     bit[max_n][max_m][n_io][k] bits;
     int at_raw_bit_id = 0;
-    int const_n_vecspec = 58;
     for(int i = 0;i<const_n_vecspec;i++) {
         int kid = vecspecs[i][0];
         int ioro = vecspecs[i][1];
