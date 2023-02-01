@@ -1,4 +1,6 @@
-int get_2bit_id(int max_n_in, int max_n_out, int ioro0, int x0, int ioro1, int x1, bit[max_n_in] input, bit[max_n_out] output){
+int n_io = 2;
+
+int get_2bit_id(int max_n, int ioro0, int x0, int ioro1, int x1, bit[max_n] input, bit[max_n] output){
     int id = 0;
     if(ioro0==0) {
         id+=input[x0];
@@ -17,30 +19,29 @@ int get_2bit_id(int max_n_in, int max_n_out, int ioro0, int x0, int ioro1, int x
 
 generator void learnable_primitive_schema(
     int max_num_ops, int op_id, int signature_size,
-    int max_m, int max_n_in, int max_n_out,
+    int max_m, int max_n,
     int m, int n_in, int n_out,
-    bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits,
-    bit[max_n_in] input, ref bit[max_n_out] output, ref bit[max_n_out] output_mask, ref int num_done,
+    bit[max_n][max_m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
     ref int[signature_size][max_num_ops] signature)
 {
     assert(op_id < max_num_ops);
     assert(signature_size >= 6);
-    learnable_primitive(signature_size, max_m, max_n_in, max_n_out, m, n_in, n_out, inbits, outbits, input, output, output_mask, num_done, signature[op_id]);
+    learnable_primitive(signature_size, max_m, max_n, m, n_in, n_out, bits, input, output, output_mask, num_done, signature[op_id]);
 }
 
 generator void learnable_primitive(
     int signature_size,
-    int max_m, int max_n_in, int max_n_out,
+    int max_m, int max_n,
     int m, int n_in, int n_out,
-    bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits,
-    bit[max_n_in] input, ref bit[max_n_out] output, ref bit[max_n_out] output_mask, ref int num_done,
+    bit[max_n][max_m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
     ref int[signature_size] signature)
 {
     assert(signature_size >= 6);
     assert(?? == signature_size);
     assert(?? == max_m);
-    assert(?? == max_n_in);
-    assert(?? == max_n_out);
+    assert(?? == max_n);
     assert(?? == m);
     assert(?? == n_in);
     assert(?? == n_out);
@@ -82,15 +83,15 @@ generator void learnable_primitive(
     bit[num_ids] seen;
     bit[num_ids] table;
     for(int i = 0;i<m;i++) {
-        int id = get_2bit_id(max_n_in, max_n_out, ioro0, x0, ioro1, x1, inbits[i], outbits[i]);
+        int id = get_2bit_id(max_n, ioro0, x0, ioro1, x1, bits[0][i], bits[1][i]);
         if(seen[id] == 1) {
-            if(table[id] != outbits[i][y]) {
+            if(table[id] != bits[1][i][y]) {
                 undetermined[id] = 1;
             }
         }
         else {
             seen[id] = 1;
-            table[id] = outbits[i][y];
+            table[id] = bits[1][i][y];
         }
     }
 
@@ -103,7 +104,7 @@ generator void learnable_primitive(
         assert(_table[i] == table[i]);
     }
 
-    int id = get_2bit_id(max_n_in, max_n_out, ioro0, x0, ioro1, x1, input, output);
+    int id = get_2bit_id(max_n, ioro0, x0, ioro1, x1, input, output);
 
     if(undetermined[id] == 0) {
         output_mask[y] = 1;
@@ -114,10 +115,10 @@ generator void learnable_primitive(
 
 void learning_noop(
     int max_num_ops, int op_id, int signature_size,
-    int max_m, int max_n_in, int max_n_out,
+    int max_m, int max_n,
     int m, int n_in, int n_out,
-    bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits,
-    bit[max_n_in] input, ref bit[max_n_out] output, ref bit[max_n_out] output_mask, ref int num_done,
+    bit[max_n][max_m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
     ref int[signature_size][max_num_ops] signature) {
     assert(op_id < max_num_ops);
     for(int i = 0;i<signature_size;i++) {
@@ -127,28 +128,28 @@ void learning_noop(
 
 generator void reasoning_schema(
     int max_num_ops, int op_id, int signature_size,
-    int max_m, int max_n_in, int max_n_out,
+    int max_m, int max_n,
     int m, int n_in, int n_out,
-    bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits,
-    bit[max_n_in] input, ref bit[max_n_out] output, ref bit[max_n_out] output_mask, ref int num_done,
+    bit[max_n][max_m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
     ref int[signature_size][max_num_ops] signature) {
     assert(op_id < max_num_ops);
-    assert(?? == signature_size);
+    /*assert(?? == signature_size);
     assert(?? == max_m);
     assert(?? == max_n_in);
     assert(?? == max_n_out);
     assert(?? == n_in);
     assert(?? == n_out);
     assert(?? == op_id);
-    assert(?? == num_done);
+    assert(?? == num_done);*/
     if(num_done < n_out && op_id < n_out) {
-        learnable_primitive(signature_size, max_m, max_n_in, max_n_out, m, n_in, n_out, inbits, outbits, input, output, output_mask, num_done, signature[op_id]);
+        learnable_primitive(signature_size, max_m, max_n, m, n_in, n_out, bits, input, output, output_mask, num_done, signature[op_id]);
         int next_op_id = op_id+1;
         if(num_done < n_out && next_op_id < n_out) {
             reasoning_schema(
                 max_num_ops, next_op_id, signature_size,
-                max_m, max_n_in, max_n_out,
-                m, n_in, n_out, inbits, outbits,
+                max_m, max_n,
+                m, n_in, n_out, bits,
                 input, output, output_mask, num_done, signature);
         } else {
             assert(?? == num_done);
@@ -160,103 +161,106 @@ generator void reasoning_schema(
 
 generator void train_reasoning_schema(
     int max_num_ops, int signature_size,
-    int max_m, int max_n_in, int max_n_out, 
-    int m, int n_in, int n_out, 
-    bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits,
+    int max_m, int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][max_m][n_io] bits,
     ref int[signature_size][max_num_ops] signature) {
     for(int i = 0;i<m;i++){
-        bit[max_n_out] output;
-        bit[max_n_out] output_mask;
+        bit[max_n] output;
+        bit[max_n] output_mask;
         int num_done = 0;
         int op_id = 0;
 
         reasoning_schema(
             max_num_ops, op_id, signature_size,
-            max_m, max_n_in, max_n_out,
+            max_m, max_n,
             m, n_in, n_out,
-            inbits, outbits,
-            inbits[i], output, output_mask, num_done,
+            bits,
+            bits[0][i], output, output_mask, num_done,
             signature);
 
         assert(num_done == n_out);
         for(int j = 0;j<n_out;j++) {
-            assert(output[j] == outbits[i][j]);
+            assert(output[j] == bits[1][i][j]);
         }
     }
 }
 
-void train_rs0(int max_num_ops, int signature_size, int max_m, int max_n_in, int max_n_out, int m, int n_in, int n_out, bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits, ref int[signature_size][max_num_ops] signature) {
-    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n_in, max_n_out, m, n_in, n_out, inbits, outbits, signature);
+void train_rs0(int max_num_ops, int signature_size, int max_m, int max_n, int m, int n_in, int n_out, bit[max_n][max_m][n_io] bits, ref int[signature_size][max_num_ops] signature) {
+    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits, signature);
 }
 
-void train_rs1(int max_num_ops, int signature_size, int max_m, int max_n_in, int max_n_out, int m, int n_in, int n_out, bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits, ref int[signature_size][max_num_ops] signature) {
-    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n_in, max_n_out, m, n_in, n_out, inbits, outbits, signature);
+void train_rs1(int max_num_ops, int signature_size, int max_m, int max_n, int m, int n_in, int n_out, bit[max_n][max_m][n_io] bits, ref int[signature_size][max_num_ops] signature) {
+    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits, signature);
 }
 
-void train_rs2(int max_num_ops, int signature_size, int max_m, int max_n_in, int max_n_out, int m, int n_in, int n_out, bit[max_n_in][max_m] inbits, bit[max_n_out][max_m] outbits, ref int[signature_size][max_num_ops] signature) {
-    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n_in, max_n_out, m, n_in, n_out, inbits, outbits,signature);
+void train_rs2(int max_num_ops, int signature_size, int max_m, int max_n, int m, int n_in, int n_out, bit[max_n][max_m][n_io] bits, ref int[signature_size][max_num_ops] signature) {
+    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits,signature);
+}
+
+void train_rs3(int max_num_ops, int signature_size, int max_m, int max_n, int m, int n_in, int n_out, bit[max_n][max_m][n_io] bits, ref int[signature_size][max_num_ops] signature) {
+    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits,signature);
 }
 
 void k3_ers(
     int k, int i,
     int max_num_ops, int signature_size,
-    int max_m, int max_n_in, int max_n_out,
+    int max_m, int max_n,
     int[k] ms, int[k] n_ins, int[k] n_outs,
-    bit[max_n_in][max_m][k] inbits, bit[max_n_out][max_m][k] outbits,
+    bit[max_n][max_m][n_io][k] bits,
     ref int[signature_size][max_num_ops][k] signature)  {
     i = 0;
-    train_rs0(
-        max_num_ops, signature_size,
-        max_m, max_n_in, max_n_out,
-        ms[i], n_ins[i], n_outs[i], inbits[i], outbits[i],
-        signature[i]
-    );
+    //8804
+    //train_rs0(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
     i = i+1;
-    train_rs1(
-        max_num_ops, signature_size,
-        max_m, max_n_in, max_n_out,
-        ms[i], n_ins[i], n_outs[i], inbits[i], outbits[i],
-        signature[i]
-    );
+    //15777; //train_rs0 and train_rs1
+    //train_rs1(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
     i = i+1;
-    train_rs2(
-        max_num_ops, signature_size,
-        max_m, max_n_in, max_n_out,
-        ms[i], n_ins[i], n_outs[i], inbits[i], outbits[i],
-        signature[i]
-    );
+    //24224 //train_rs{0, 1, 2}
+    //train_rs2(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
+    i = 3;
+    //60697 //train_rs{0, 1, 2, 3}; 62578 wo print of bits
+    train_rs3(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
 }
 
 /*generator void extrapolatable_reasoning_schema(
     int k, int i,
     int max_num_ops, int signature_size,
-    int max_m, int max_n_in, int max_n_out,
+    int max_m, int max_n,
     int[k] ms, int[k] n_ins, int[k] n_outs,
-    bit[max_n_in][max_m][k] inbits, bit[max_n_out][max_m][k] outbits,
+    bit[max_n][max_m][n_io][k] bits,
     ref int[signature_size][max_num_ops][k] signature)
 {
     train_reasoning_schema(
         max_num_ops, signature_size,
-        max_m, max_n_in, max_n_out,
-        ms[i], n_ins[i], n_outs[i], inbits[i], outbits[i],
+        max_m, max_n,
+        ms[i], n_ins[i], n_outs[i], bits[i]
         signature[i]
     );
     if(i+1 < k) {
         extrapolatable_reasoning_schema(k, i+1,
             max_num_ops, signature_size,
-            max_m, max_n_in, max_n_out,
+            max_m, max_n,
             ms, n_ins, n_outs,
-            inbits, outbits,
+            bits,
             signature
         );
     }
 }*/
 
+int max(int a, int b)
+{
+    if(a > b)
+    {
+        return a;
+    }
+    return b;
+}
 
 @FromFile("gammaexample.data") // meta-examples across n.
 harness void sketch_main(
     int n_vecspec, int n_rawbits,
-    int k, int max_m, int max_n_in, int max_n_out,
+    int k, int max_m, int max_n,
     int[k] ms, int[k] n_ins, int[k] n_outs,
     int[4][n_vecspec] vecspecs, bit[n_rawbits] raw_bits)
 {
@@ -267,37 +271,45 @@ harness void sketch_main(
     assert(_raw_bits == raw_bits);
     */
 
-    bit[max_n_in][max_m][k][2] bits;
+    int const_max_n = 3;
+    assert(max_n == const_max_n);
+
+    bit[max_n][max_m][n_io][k] bits;
     int at_raw_bit_id = 0;
     for(int i = 0;i<n_vecspec;i++) {
-        int ioro = vecspecs[i][0];
-        int kid = vecspecs[i][1];
+        int kid = vecspecs[i][0];
+        int ioro = vecspecs[i][1];
         int mid = vecspecs[i][2];
         int n = vecspecs[i][3];
-        for(int j = 0; j<n;j++) {
-            bits[ioro][kid][mid][j] = raw_bits[at_raw_bit_id++];
+        int j = 0;
+        assert(n <= max_n);
+        repeat(const_max_n) {
+            if(at_raw_bit_id < n_rawbits) {
+                if(j < n) {
+                    bits[kid][ioro][mid][j] = raw_bits[at_raw_bit_id++];
+                    j++;
+                }
+            }
+            else {
+                assert(j>=n && i == n_vecspec-1);
+            }
         }
     }
 
-    bit[max_n_out][max_m][k] outbits = bits[1];
-    bit[max_n_in][max_m][k] inbits = bits[0];
+    int const_k = 4;
+    int const_m = 8;
 
+    assert(const_k == k);
+    assert(const_m == max_m);
 
-    bit[2][4][3] _inbits = ??;
-    bit[1][4][3] _outbits = ??;
+    /*repeat(i : const_k)
+    {
 
-    assert(_inbits == inbits);
-    assert(_outbits == outbits);
-
-    /*
-    bit[2][4] _inbits_k0 = ??;
-    assert(_inbits_k0 == inbits[0]);
-
-
-    bit[2] _inbits_k0_m0 = ??;
-    assert(_inbits_k0_m0 == inbits[0][0]);
-    */
-
+        bit[const_max_n][const_m] _inbits = ??;
+        bit[const_max_n][const_m] _outbits = ??;
+        assert(_inbits == bits[i][0]);
+        assert(_outbits ==  bits[i][1]);
+    }*/
     int max_op_fan_in = 2;
     int op_fan_out = 1;
     int signature_size = 2+max_op_fan_in+op_fan_out+1; //+2 for i/o destinction for 2 fanin; +1 for noop bit.
@@ -307,13 +319,13 @@ harness void sketch_main(
     k3_ers(
         k, i,
         max_num_ops, signature_size,
-        max_m, max_n_in, max_n_out, ms, n_ins, n_outs, inbits, outbits,
+        max_m, max_n, ms, n_ins, n_outs, bits,
         signature);
 
     /*extrapolatable_reasoning_schema(
         k, i,
         max_num_ops, signature_size,
-        max_m, max_n_in, max_n_out, ms, n_ins, n_outs, inbits, outbits,
+        max_m, max_n, ms, n_ins, n_outs, bits,
         signature
     );*/
 }
