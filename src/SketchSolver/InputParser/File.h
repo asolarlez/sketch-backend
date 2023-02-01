@@ -309,7 +309,7 @@ public:
                 return complete_row;
             }
             else{
-                AssertDebug(false, "INCOMPLETE LINE: " + _line);
+                Assert(false, "INCOMPLETE LINE: " + _line);
                 return incomplete_row;
             }
         }

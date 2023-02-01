@@ -1,4 +1,7 @@
 int n_io = 2;
+int const_max_n = 4;
+int const_k = 5;
+int const_max_m = 16;
 
 int get_2bit_id(int max_n, int ioro0, int x0, int ioro1, int x1, bit[max_n] input, bit[max_n] output){
     int id = 0;
@@ -39,12 +42,12 @@ generator void learnable_primitive(
     ref int[signature_size] signature)
 {
     assert(signature_size >= 6);
-    assert(?? == signature_size);
+    /*assert(?? == signature_size);
     assert(?? == max_m);
     assert(?? == max_n);
     assert(?? == m);
     assert(?? == n_in);
-    assert(?? == n_out);
+    assert(?? == n_out);*/
 
     signature[5] = 1;
     int ioro0 = ??(1);
@@ -202,7 +205,11 @@ void train_rs3(int max_num_ops, int signature_size, int max_m, int max_n, int m,
     return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits,signature);
 }
 
-void k3_ers(
+void train_rs4(int max_num_ops, int signature_size, int max_m, int max_n, int m, int n_in, int n_out, bit[max_n][max_m][n_io] bits, ref int[signature_size][max_num_ops] signature) {
+    return train_reasoning_schema(max_num_ops, signature_size, max_m, max_n, m, n_in, n_out, bits,signature);
+}
+
+generator void k3_ers(
     int k, int i,
     int max_num_ops, int signature_size,
     int max_m, int max_n,
@@ -210,21 +217,20 @@ void k3_ers(
     bit[max_n][max_m][n_io][k] bits,
     ref int[signature_size][max_num_ops][k] signature)  {
     i = 0;
-    //8804
-    //15032
-    train_rs0(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
+    //5920; with --bnd-arr-size 232 --bnd-unroll-amnt 16 --bnd-inline-amnt 2 --bnd-inbits 4
+    //train_rs0(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
     i = i+1;
-    //15777; //train_rs0 and train_rs1
-    //15075 only train_rs1
+    //5866
     //train_rs1(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
     i = i+1;
-    //24224 //train_rs{0, 1, 2}
-    //15525 only train_rs2
+    //5985
     //train_rs2(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
     i = i+1;
-    //60697 //train_rs{0, 1, 2, 3}; 62578 wo print of bits
-    //15938 only train_rs3
+    //6115
     //train_rs3(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
+    i = i+1;
+    //9032; --bnd-arr-size 232 --bnd-unroll-amnt 16 --bnd-inline-amnt 3 --bnd-cbits 2 --fe-keep-tmp -V3
+    train_rs4(max_num_ops, signature_size, max_m, max_n, ms[i], n_ins[i], n_outs[i], bits[i], signature[i]);
 }
 
 /*generator void extrapolatable_reasoning_schema(
@@ -275,12 +281,12 @@ harness void sketch_main(
     assert(_raw_bits == raw_bits);
     */
 
-    int const_max_n = 3;
     assert(max_n == const_max_n);
 
     bit[max_n][max_m][n_io][k] bits;
     int at_raw_bit_id = 0;
-    for(int i = 0;i<n_vecspec;i++) {
+    int const_n_vecspec = 58;
+    for(int i = 0;i<const_n_vecspec;i++) {
         int kid = vecspecs[i][0];
         int ioro = vecspecs[i][1];
         int mid = vecspecs[i][2];
@@ -300,17 +306,15 @@ harness void sketch_main(
         }
     }
 
-    int const_k = 4;
-    int const_m = 8;
 
     assert(const_k == k);
-    assert(const_m == max_m);
+    assert(const_max_m == max_m);
 
-    /*repeat(i : const_k)
-    {
-
-        bit[const_max_n][const_m] _inbits = ??;
-        bit[const_max_n][const_m] _outbits = ??;
+    /*
+    //Need more unrolling bc of flattened length of arrays.
+    repeat(i : const_k) {
+        bit[const_max_n][const_max_m] _inbits = ??;
+        bit[const_max_n][const_max_m] _outbits = ??;
         assert(_inbits == bits[i][0]);
         assert(_outbits ==  bits[i][1]);
     }*/
