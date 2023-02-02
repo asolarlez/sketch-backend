@@ -1,0 +1,396 @@
+int n_io = 2;
+int const_n_ids = 4;
+
+int const_n_vecspec = 256;
+int const_m = 128;
+int const_max_n = 7;
+
+
+int get_2bit_id(int max_n, int ioro0, int x0, int ioro1, int x1, bit[max_n] input, bit[max_n] output){
+    int id = 0;
+    if(ioro0==0) {
+        id+=input[x0];
+    }
+    else {
+        id+=output[x0];
+    }
+    if(ioro1==0) {
+        id+=2*input[x1];
+    }
+    else {
+         id+=2*output[x1];
+    }
+    return id;
+}
+
+/*void exec_learnable_primitive_schema(
+    int max_num_ops, int op_id, int sig_size,
+    int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
+    ref int[sig_size][max_num_ops] sig)
+{
+    assert(op_id < max_num_ops);
+    assert(sig_size >= 6);
+    learnable_primitive(sig_size, max_n, m, n_in, n_out, bits, input, output, output_mask, num_done, sig[op_id]);
+}*/
+
+void exec_learnable_primitive(
+    int n_ids,
+    int sig_size,
+    int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
+    int[sig_size] sig, bit[n_ids] undetermined, bit[n_ids] seen, bit[n_ids] table)
+{
+    assert(sig_size >= 6);
+
+    assert(sig[5] == 1);
+    int ioro0 = sig[0];
+    int x0 = sig[1];
+    if(ioro0 == 0) {
+        assert(0 <= x0 && x0 < n_in);
+    }
+    else {
+        assert(0 <= x0 && x0 < n_out-1);
+        assert(output_mask[x0] == 1);
+    }
+    int ioro1 = sig[2];
+    int x1 = sig[3];
+    if(ioro1 == 0) {
+        assert(ioro0 == 0);
+        assert(x0 <= x1 && x1 < n_in);
+    }
+    else {
+        if(ioro0 == 1) {
+            assert(x0 <= x1);
+        }
+        assert(0 <= x1 && x1 < n_out);
+        assert(output_mask[x1] == 1);
+    }
+    int y = sig[4];
+    assert(0 <= y && y < n_out);
+    assert(output_mask[y] == 0);
+
+    int id = get_2bit_id(max_n, ioro0, x0, ioro1, x1, input, output);
+
+    if(undetermined[id] == 0) {
+        output_mask[y] = 1;
+        num_done += 1;
+        output[y] = table[id];
+    }
+}
+
+
+generator void construct_learnable_primitive(
+    int n_ids, int max_num_ops,
+    int sig_size,
+    int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    ref int[sig_size] sig,
+    ref bit[n_ids] undetermined,
+    ref bit[n_ids] seen,
+    ref bit[n_ids] table,
+    ref int num_seen)
+{
+    assert(const_n_ids == n_ids);
+    assert(n_ids == 4);
+    assert(sig_size >= 6);
+    /*assert(?? == sig_size);
+    assert(?? == m);
+    assert(?? == max_n);
+    assert(?? == m);
+    assert(?? == n_in);
+    assert(?? == n_out);*/
+
+    sig[5] = 1;
+    int ioro0 = ??(1);
+    sig[0] = ioro0;
+    int x0 = ??;
+    sig[1] = x0;
+    if(ioro0 == 0) {
+        assert(0 <= x0 && x0 < n_in);
+    }
+    else {
+        assert(0 <= x0 && x0 < n_out-1);
+    }
+    int ioro1 = ??(1);
+    sig[2] = ioro1;
+    int x1 = ??;
+    sig[3] = x1;
+    if(ioro1 == 0) {
+        assert(ioro0 == 0);
+        assert(x0 <= x1 && x1 < n_in);
+    }
+    else {
+        if(ioro0 == 1) {
+            assert(x0 <= x1);
+        }
+        assert(0 <= x1 && x1 < n_out);
+    }
+    int y = ??;
+    sig[4] = y;
+    assert(0 <= y && y < n_out);
+
+    for(int i = 0;i<m;i++) {
+        int id = get_2bit_id(max_n, ioro0, x0, ioro1, x1, bits[0][i], bits[1][i]);
+        if(seen[id] == 1) {
+            if(table[id] != bits[1][i][y]) {
+                undetermined[id] = 1;
+                assert(false);
+            }
+        }
+        else {
+            num_seen++;
+            seen[id] = 1;
+            table[id] = bits[1][i][y];
+        }
+    }
+
+    bit[const_n_ids] _seen = {??, ??, ??, ??};
+    bit[const_n_ids] _undetermined = {??, ??, ??, ??};
+    bit[const_n_ids] _table = {??, ??, ??, ??};
+    for(int i = 0; i < const_n_ids;i++) {
+        assert(_seen[i] == seen[i]);
+        assert(_undetermined[i] == undetermined[i]);
+        assert(_table[i] == table[i]);
+    }
+}
+
+/*void learning_noop(
+    int max_num_ops, int op_id, int sig_size,
+    int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
+    ref int[sig_size][max_num_ops] sig) {
+    assert(op_id < max_num_ops);
+    for(int i = 0;i<sig_size;i++) {
+        sig[op_id][i] = 0;
+    }
+}*/
+
+void exec_reasoning_schema(
+    int n_ids,
+    int max_num_ops, int op_id, int sig_size,
+    int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    bit[max_n] input, ref bit[max_n] output, ref bit[max_n] output_mask, ref int num_done,
+    ref int[sig_size][max_num_ops] sig,
+    bit[n_ids][max_num_ops] undetermined,
+    bit[n_ids][max_num_ops] seen,
+    bit[n_ids][max_num_ops] table) {
+    assert(op_id < max_num_ops);
+    if(num_done < n_out && op_id < n_out) {
+        exec_learnable_primitive(n_ids, sig_size, max_n, m, n_in, n_out, bits, input, output, output_mask, num_done, sig[op_id],
+            undetermined[op_id], seen[op_id], table[op_id]
+        );
+        int next_op_id = op_id+1;
+        if(num_done < n_out && next_op_id < n_out) {
+            exec_reasoning_schema(n_ids,
+                max_num_ops, next_op_id, sig_size,
+                 max_n,
+                m, n_in, n_out, bits,
+                input, output, output_mask, num_done, sig,
+                undetermined, seen, table);
+        }
+    }
+}
+
+generator void construct_reasoning_schema(
+    int n_ids, int max_num_ops,
+    int op_id, int sig_size,
+    int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    ref int[sig_size][max_num_ops] sig,
+    ref bit[n_ids][max_num_ops] undetermined,
+    ref bit[n_ids][max_num_ops] seen,
+    ref bit[n_ids][max_num_ops] table,
+    ref int num_seen)
+{
+    assert(op_id < max_num_ops);
+    if(op_id < n_out) {
+        construct_learnable_primitive(n_ids, max_num_ops, sig_size, max_n, m, n_in, n_out, bits, sig[op_id],
+            undetermined[op_id], seen[op_id], table[op_id], num_seen
+        );
+        int next_op_id = op_id+1;
+        if(next_op_id < n_out) {
+            construct_reasoning_schema(
+                n_ids, max_num_ops, next_op_id, sig_size,
+                max_n, m, n_in, n_out, bits,
+                sig, undetermined, seen, table, num_seen);
+        } else {
+            assert(?? == next_op_id);
+        }
+    }
+}
+
+void check_reasoning_schema(
+    int n_ids,
+    int max_num_ops, int sig_size,
+    int max_n,
+    int m, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    ref int[sig_size][max_num_ops] sig,
+    bit[n_ids][max_num_ops] undetermined,
+    bit[n_ids][max_num_ops] seen,
+    bit[n_ids][max_num_ops] table) {
+    bit[max_n] output;
+    bit[max_n] output_mask;
+    int num_done = 0;
+    int op_id = 0;
+    for(int i = 0;i<m;i++){
+        for(int j = 0; j<const_max_n; j++)
+        {
+            output[j] = 0;
+            output_mask[j] = 0;
+        }
+        num_done = 0;
+        op_id = 0;
+        exec_reasoning_schema(
+            n_ids, max_num_ops, op_id, sig_size,
+             max_n,
+            m, n_in, n_out,
+            bits,
+            bits[0][i], output, output_mask, num_done,
+            sig, undetermined, seen, table);
+
+        assert(num_done == n_out);
+        for(int j = 0;j<const_max_n;j++) {
+            if(j < n_out){
+                assert(output_mask[j] == 1);
+                assert(output[j] == bits[1][i][j]);
+            }
+        }
+    }
+}
+
+generator void train_rs_gen(int max_num_ops, int sig_size, int max_n, int m, int n_in, int n_out, bit[max_n][m][n_io] bits, ref int[sig_size][max_num_ops] sig) {
+    int n_ids = 4;
+    assert(n_ids == const_n_ids);
+    bit[n_ids][max_num_ops] undetermined;
+    bit[n_ids][max_num_ops] seen;
+    bit[n_ids][max_num_ops] table;
+    int op_id = 0;
+    int num_seen = 0;
+    construct_reasoning_schema(n_ids, max_num_ops, op_id, sig_size, max_n, m, n_in, n_out, bits, sig, undetermined, seen, table, num_seen);
+    //todo: the testing loop needs to be outside. As in outside of the sketch.
+    return check_reasoning_schema(n_ids, max_num_ops, sig_size, max_n, m, n_in, n_out, bits, sig, undetermined, seen, table);
+}
+
+
+void train_rs(int max_num_ops, int sig_size, int max_n, int m, int n_in, int n_out, bit[max_n][m][n_io] bits, ref int[sig_size][max_num_ops] sig) {
+    return train_rs_gen(max_num_ops, sig_size, max_n, m, n_in, n_out, bits, sig);
+}
+
+/*generator void extrapolatable_reasoning_schema(
+    int k, int i,
+    int max_num_ops, int sig_size,
+    int max_n,
+    int ms, int n_in, int n_out,
+    bit[max_n][m][n_io] bits,
+    ref int[sig_size][max_num_ops] sig)
+{
+    check_reasoning_schema(
+        max_num_ops, sig_size,
+         max_n,
+        n_in, n_out, bits
+        sig
+    );
+    if(i+1 < k) {
+        extrapolatable_reasoning_schema(k, i+1,
+            max_num_ops, sig_size,
+             max_n,
+            ms, n_in, n_out,
+            bits,
+            sig
+        );
+    }
+}*/
+
+int max(int a, int b)
+{
+    if(a > b)
+    {
+        return a;
+    }
+    return b;
+}
+
+@FromFile("gammaexample.data") // meta-examples across n.
+harness void sketch_main(
+    int n_vecspec, int n_rawbits,
+    int m, int max_n,
+    int n_in, int n_out,
+    int[4][n_vecspec] vecspecs, int[n_rawbits] raw_bits)
+{
+    /*
+    int[4][10] _vecspecs = ??;
+    assert(_vecspecs == vecspecs);
+    bit[14] _raw_bits = ??;
+    assert(_raw_bits == raw_bits);
+    */
+
+    assert(max_n == const_max_n);
+
+    bit[max_n][m][n_io] bits;
+    int at_raw_bit_id = 0;
+    int at_int_id = 0;
+    for(int i = 0; i < const_n_vecspec; i++) {
+        int k_id = vecspecs[i][0];
+        int ioro = vecspecs[i][1];
+        int mid = vecspecs[i][2];
+        int n = vecspecs[i][3];
+        int j = 0;
+        assert(n <= max_n);
+        for(int _j = 0; _j < const_max_n; _j++) {
+            if(at_raw_bit_id < n_rawbits) {
+                if(j < n) {
+                    bits[ioro][mid][j] = raw_bits[at_raw_bit_id++];
+                    j++;
+                }
+            }
+            else {
+                assert(j>=n && i == n_vecspec-1);
+            }
+        }
+    }
+
+    assert(const_m == m);
+
+    /*
+    //Need more unrolling bc of flattened length of arrays.
+    repeat(i : const_k) {
+        bit[const_max_n][const_m] _inbits = ??;
+        bit[const_max_n][const_m] _outbits = ??;
+        assert(_inbits == bits[0]);
+        assert(_outbits ==  bits[1]);
+    }*/
+    int max_op_fan_in = 2;
+    int op_fan_out = 1;
+    int sig_size = 2+max_op_fan_in+op_fan_out+1; //+2 for i/o destinction for 2 fanin; +1 for noop bit.
+    int max_num_ops = n_out;
+    int i = 0;
+    int[sig_size][max_num_ops] sig;
+    train_rs(
+        max_num_ops, sig_size,
+        max_n, m, n_in, n_out, bits,
+        sig);
+
+    /*extrapolatable_reasoning_schema(
+        k, i,
+        max_num_ops, sig_size,
+         max_n, ms, n_in, n_out, bits,
+        sig
+    );*/
+}
+
+
+//i = 2; Total time = 527
+//i = 4; Total time = 1211
+//i = 7; Total time = 22081
