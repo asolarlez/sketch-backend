@@ -11,7 +11,7 @@ FMTL::FunctionMapTransformerState::FunctionMapTransformerState(FunctionMap &_sou
     source_function_map(_source_function_map),
     env(ProgramState::function_map.get_env()){}
 
-SketchFunction *FMTL::FunctionMapTransformerState::get_source_skfunc(string name) {
+SketchFunction *FMTL::FunctionMapTransformerState::get_source_skfunc(const string& name) {
     assert(source_function_map.find(name) != source_function_map.end());
     return source_function_map[name];
 }

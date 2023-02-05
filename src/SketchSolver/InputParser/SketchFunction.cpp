@@ -15,10 +15,10 @@ SL::SketchFunction *SL::SketchFunction::inplace_concretize(
 
     assert(do_clone == false);
 
-    const bool do_deep_clone_tail = false;
+    const bool do_deep_clone_tail = true;
     const bool do_recursive_concretize = true;
 
-//    assert(do_clone || do_deep_clone_tail);
+    assert(do_clone || do_deep_clone_tail);
     assert(do_recursive_concretize);
 
     VarStore* var_store = nullptr;
@@ -27,7 +27,8 @@ SL::SketchFunction *SL::SketchFunction::inplace_concretize(
     }
 
     SL::SketchFunction* ret = this;
-    assert(!do_deep_clone_tail);
+    assert(do_deep_clone_tail);
+    deep_clone_tail_nonconst();
 
     assert(ret != nullptr);
     ret->increment_shared_ptr();
@@ -837,8 +838,192 @@ SL::SketchFunction* SL::SketchFunction::deep_clone(bool only_tail) const
     return clone_of_this;
 }
 
+
+SL::SketchFunction* SL::SketchFunction::deep_clone_nonconst(bool only_tail)
+{
+
+    //first get all inlined functions
+    //clone all inlined functions;
+    //replace the name inside the inlined function with eachother's
+
+    //assert that all the ufuns are represented in the function map
+//    for (const auto& it: get_env()->function_map) {
+//        for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+//            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
+//            assert(f != get_env()->function_map.end());
+//        }
+//    }
+
+    set<string>* inlined_functions = get_inlined_functions();
+
+    assert(inlined_functions != nullptr);
+
+    //assert that all that the previous operation hasn't corrupted the function map ufuns invariant
+//    for (const auto& it: get_env()->function_map) {
+//        for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+//            auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
+//            assert(f != get_env()->function_map.end());
+//        }
+//    }
+
+    // assert that all the dags in the inlined functions have all the ufuns also in the inlined functions
+    for (const auto &inlined_f_name: *inlined_functions) {
+        auto it_f = get_env()->function_map.find(inlined_f_name);
+        if(it_f != get_env()->function_map.end()) {
+            for (auto ufun_it: it_f->second->get_dag()->getNodesByType(bool_node::UFUN)) {
+                auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufun_name());
+                if(f != get_env()->function_map.end()) {
+                    assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufun_name()) !=
+                           inlined_functions->end());
+                }
+            }
+        }
+    }
+
+    SL::SketchFunction* clone_of_this = nullptr;
+    const bool inlining_tree_invariant_assert = false;
+
+    bool entered_recursive_case = false;
+    map<string, SL::SketchFunction *> to_inline_skfuncs;
+    for (const string &_inlined_function_name: *inlined_functions) {
+        if(get_env()->function_map.find(_inlined_function_name) == get_env()->function_map.end()) {
+            continue;
+        }
+        assert(to_inline_skfuncs.find(_inlined_function_name) == to_inline_skfuncs.end());
+        if(only_tail) {
+            if (_inlined_function_name != get_dag_name()) {
+                const string &to_clone_fname = _inlined_function_name;
+                to_inline_skfuncs[to_clone_fname] = get_env()->function_map[to_clone_fname]->unit_clone_and_insert_in_function_map();
+            } else {
+                assert(_inlined_function_name == get_dag_name());
+                entered_recursive_case = true;
+                to_inline_skfuncs[_inlined_function_name] = get_env()->function_map[_inlined_function_name];
+            }
+        }
+        else {
+            const string &to_clone_fname = _inlined_function_name;
+            if(get_dag_name() == _inlined_function_name)
+                assert(get_env()->function_map[to_clone_fname] == this);
+            to_inline_skfuncs[to_clone_fname] = get_env()->function_map[to_clone_fname]->unit_clone_and_insert_in_function_map();
+            if (_inlined_function_name == get_dag_name()) {
+                entered_recursive_case = true;
+                clone_of_this = to_inline_skfuncs[to_clone_fname];
+
+                if(inlining_tree_invariant_assert) {
+                    if (clone_of_this != nullptr) {
+                        if (clone_of_this->get_inlining_tree(false) != nullptr) {
+                            assert(clone_of_this->get_inlining_tree()->get_dag_id() == get_dag_id());
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
+    if(entered_recursive_case) {
+        assert(to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end());
+    }
+    else {
+        assert(to_inline_skfuncs.find(get_dag_name()) == to_inline_skfuncs.end());
+    }
+
+//    assert(to_inline_skfuncs.size() == inlined_functions->size());
+
+//    for (const auto &it: *inlined_functions) {
+//        assert(to_inline_skfuncs.find(it) != to_inline_skfuncs.end());
+//    }
+
+    delete inlined_functions;
+    inlined_functions = nullptr;
+
+    if (to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end()) {
+        assert(entered_recursive_case);
+        if(only_tail) {
+            assert(to_inline_skfuncs[get_dag_name()] == this);
+        }
+    } else {
+        assert(!entered_recursive_case);
+        assert(clone_of_this == nullptr);
+        if(only_tail)
+        {
+//            AssertDebug(false, "HERE YOU ARE MUTATING, BUT FUNCITON MARKED CONST. CREATE A SEPERATE CONST FUNCTION STACK FOR DEEP CLONING ONLY TAIL.");
+            to_inline_skfuncs[get_dag_name()] = this;
+        }
+        else {
+            const string &to_clone_fname = get_dag_name();
+            assert(to_inline_skfuncs.find(to_clone_fname) == to_inline_skfuncs.end());
+            to_inline_skfuncs[to_clone_fname] = unit_clone_and_insert_in_function_map();
+            clone_of_this = to_inline_skfuncs[to_clone_fname];
+
+            if(inlining_tree_invariant_assert) {
+                if (clone_of_this != nullptr) {
+                    if (clone_of_this->get_inlining_tree(false) != nullptr) {
+                        assert(clone_of_this->get_inlining_tree()->get_dag_id() == get_dag_id());
+                    }
+                }
+            }
+
+        }
+    }
+
+    assert(to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end());
+
+    if(only_tail) {
+        assert(clone_of_this == nullptr);
+    }
+
+    //rename all the ufuns
+    for (const auto& skfunc_it: to_inline_skfuncs) {
+        set<pair<string, string> > ufnames;
+
+        for (auto ufun_it: skfunc_it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+            string ufname = ((UFUN_node *) ufun_it)->get_ufun_name();
+            string original = ((UFUN_node *) ufun_it)->get_original_ufname();
+            ufnames.insert(make_pair(ufname, original));
+        }
+
+        for (const pair<string, string> &ufname_now_original: ufnames) {
+            string ufname = ufname_now_original.first;
+            string original = ufname_now_original.second;
+
+            if(to_inline_skfuncs.find(ufname) != to_inline_skfuncs.end()) {
+                assert(to_inline_skfuncs[ufname]->get_env()->function_map.find(
+                        to_inline_skfuncs[ufname]->get_dag_name()) !=
+                       to_inline_skfuncs[ufname]->get_env()->function_map.end());
+
+                if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
+                    AssertDebug(false, "this should fail here, it was checked before");
+                } else {
+                    SL::SketchFunction *skfunc = skfunc_it.second;
+                    skfunc->replace(original, to_inline_skfuncs[ufname]->get_dag_name());
+                }
+            }
+        }
+    }
+
+    if(only_tail) {
+        assert(clone_of_this == nullptr);
+    }
+
+    if(inlining_tree_invariant_assert) {
+        if (clone_of_this != nullptr) {
+            if (clone_of_this->get_inlining_tree(false) != nullptr) {
+                assert(clone_of_this->get_inlining_tree()->get_dag_id() == get_dag_id());
+            }
+        }
+    }
+
+    return clone_of_this;
+}
+
+
 void SL::SketchFunction::deep_clone_tail() const {
     assert(deep_clone(true) == nullptr);
+}
+
+void SL::SketchFunction::deep_clone_tail_nonconst() {
+    assert(deep_clone_nonconst(true) == nullptr);
 }
 
 set<string> SL::SketchFunction::ufun_names() {

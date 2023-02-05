@@ -689,7 +689,8 @@ namespace SL
 
         bool is_solution_holder() const;
 
-        void clear_assert_0_shared_ptrs() ;
+        void clear_assert_0_shared_ptrs();
+        void clear_assert_1_shared_ptrs();
 
     };
 
@@ -1196,8 +1197,13 @@ public:
             if (it.second != nullptr) {
                 if (is_global){
                     if (it.second->is_sketch_function()) {
-                        assert(it.second->get_num_shared_ptr() == 1);
-                        delete it.second;
+                        if(it.second->get_num_shared_ptr() == 1) {
+//                            it.second->clear_assert_1_shared_ptrs();
+                            delete it.second;
+                        } else {
+                            assert(it.second->get_num_shared_ptr() == 2);
+                            it.second->decrement_shared_ptr();
+                        }
                         continue;
                     }
                 }
@@ -1509,6 +1515,7 @@ public:
             return name_to_var_throws(name);
         }
         catch (exception& e1) {
+
             cout << "ERROR: NAME NOT FOUND: " << name->to_string() << endl;
             assert(false);
         }
@@ -1534,8 +1541,7 @@ public:
         }
         SL::VarVal* ret = return_var_val;
         return_var_val = nullptr;
-        if(ret == nullptr)
-        {
+        if(ret == nullptr) {
             ret = new SL::VarVal();
         }
         return ret;

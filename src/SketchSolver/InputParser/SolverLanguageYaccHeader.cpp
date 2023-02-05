@@ -51,6 +51,7 @@ SL::VarVal * HyperSketchState::eval(){
     SL::VarVal* var_val_ret = get_return_var_val();
 
     assert(var_val_ret != nullptr);
+    var_val_ret->increment_shared_ptr();
 
     assert(frames.size() == 1);
     pop_stack_frame();

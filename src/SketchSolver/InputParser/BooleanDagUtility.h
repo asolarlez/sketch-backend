@@ -377,7 +377,7 @@ public:
         get_env_ref() = new_env;
     }
 
-    bool is_inlining_tree_nonnull();
+    bool is_inlining_tree_nonnull() const;
 
     const LightInliningTree * get_inlining_tree(bool assert_nonnull = true) const;
     LightInliningTree * get_inlining_tree_non_const(bool assert_nonnull = true) const;

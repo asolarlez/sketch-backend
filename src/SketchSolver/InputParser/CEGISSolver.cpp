@@ -228,62 +228,97 @@ CEGISSolverResult CEGISSolver::solve(
 			if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart();
 			try{
-                auto start_finder = std::chrono::steady_clock::now();
-                int dag_size = counterexample_concretized_dag->size();
+
+                //
+
                 int nctrlbs = ctrl_store.get_bit_size();
-
-                auto start_find = chrono::steady_clock::now();
-                SATSolverResult sat_solver_result_from_find =
-                        finder->find(
-                                counterexample_concretized_dag, ctrl_store, hasInputChanged, find_solve_max_timeout_in_microseconds);
-                cout << "time(find): " << elapsed_time(start_find) << " (us)" << endl;
-
-                switch (sat_solver_result_from_find) {
-                    case UNSPECIFIED:
-                        assert(false);
-                        break;
-                    case SAT_UNDETERMINED:
-                        assert(false);
-                        doMore = false;
-                        break;
-                    case SAT_UNSATISFIABLE:
-                        doMore = false;
-                        break;
-                    case SAT_SATISFIABLE:
-                        doMore = true;
-                        break;
-                    case SAT_TIME_OUT:
-                        doMore = false; //play with this
-                        break;
-                    case SAT_MEM_OUT:
-                        doMore = false;
-                        break;
-                    case SAT_ABORTED:
-                        doMore = false;
-                        break;
-                    default:
-                        assert(false);
-                        break;
-                    assert(false);
-                }
-
-                assert(dag_size == counterexample_concretized_dag->size());
-                assert(nctrlbs == ctrl_store.get_bit_size());
-//                timestamp(start_finder,
-//                          "solve__f_"+std::to_string(counterexample_concretized_dag->get_dag_id_from_the_user())+
-//                          "__step_"+std::to_string(finder_step_id)+
-//                          "__n"+std::to_string(finder->get_all_inputs_dag()->size())+
-//                          "__nctrlbs"+std::to_string(nctrlbs));
-                timestamp(start_finder,
-                          "solve__step_"+std::to_string(finder_step_id)+
-                          "__nctrlbs_"+std::to_string(nctrlbs));
-                finder_step_id++;
-//                cout << performance_summary_to_string() << endl;
-
+                auto start_finder = chrono::steady_clock::now();
                 if(counterexample_concretized_dag != nullptr) {
+
+                    int dag_size = counterexample_concretized_dag->size();
+                    SATSolverResult sat_solver_result_from_find =
+                            finder->find(
+                                    counterexample_concretized_dag, ctrl_store, hasInputChanged, find_solve_max_timeout_in_microseconds);
+                    cout << "time(find): " << elapsed_time(start_finder) << " (us)" << endl;
+                    assert(dag_size == counterexample_concretized_dag->size());
+                    timestamp(start_finder,
+                              "solve__f_" + std::to_string(counterexample_concretized_dag->get_dag_id_from_the_user()) +
+                              "__step_" + std::to_string(finder_step_id) +
+                              "__dagsz_" + std::to_string(dag_size) +
+                              "__nctrlbs" + std::to_string(nctrlbs));
                     counterexample_concretized_dag->clear();
                     counterexample_concretized_dag = nullptr;
+
+                    switch (sat_solver_result_from_find) {
+                        case UNSPECIFIED:
+                            assert(false);
+                            break;
+                        case SAT_UNDETERMINED:
+                            assert(false);
+                            doMore = false;
+                            break;
+                        case SAT_UNSATISFIABLE:
+                            doMore = false;
+                            break;
+                        case SAT_SATISFIABLE:
+                            doMore = true;
+                            break;
+                        case SAT_TIME_OUT:
+                            doMore = false; //play with this
+                            break;
+                        case SAT_MEM_OUT:
+                            doMore = false;
+                            break;
+                        case SAT_ABORTED:
+                            doMore = false;
+                            break;
+                        default:
+                            assert(false);
+                            break;
+                            assert(false);
+                    }
                 }
+                else
+                {
+                    SATSolverResult sat_solver_result_from_find =
+                            finder->find(
+                                    counterexample_concretized_dag, ctrl_store, hasInputChanged, find_solve_max_timeout_in_microseconds);
+                    cout << "time(find): " << elapsed_time(start_finder) << " (us)" << endl;
+                    timestamp(start_finder,
+                              "solve__dag_null__step_" + std::to_string(finder_step_id) +
+                              "__nctrlbs" + std::to_string(nctrlbs));
+
+                    switch (sat_solver_result_from_find) {
+                        case UNSPECIFIED:
+                            assert(false);
+                            break;
+                        case SAT_UNDETERMINED:
+                            assert(false);
+                            doMore = false;
+                            break;
+                        case SAT_UNSATISFIABLE:
+                            doMore = false;
+                            break;
+                        case SAT_SATISFIABLE:
+                            doMore = true;
+                            break;
+                        case SAT_TIME_OUT:
+                            doMore = false; //play with this
+                            break;
+                        case SAT_MEM_OUT:
+                            doMore = false;
+                            break;
+                        case SAT_ABORTED:
+                            doMore = false;
+                            break;
+                        default:
+                            assert(false);
+                            break;
+                            assert(false);
+                    }
+
+                }
+
                 #ifdef CHECK_FILE_INVARIANT
                 {
                     File *file = files[(int)files.size() - 1];

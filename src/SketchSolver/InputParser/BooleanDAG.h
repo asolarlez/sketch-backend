@@ -133,6 +133,9 @@ private:
   INTER_node* create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
 
 public:
+    bool is_original() const {
+        return !is_clone;
+    }
 	bool isModel;
     Dllist assertions;
 	typedef vector<bool_node*>::iterator iterator;

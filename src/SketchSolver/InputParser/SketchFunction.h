@@ -195,6 +195,8 @@ namespace SL {
 
         SketchFunction *deep_clone(bool only_tail = false) const;
 
+        SketchFunction *deep_clone_nonconst(bool only_tail = false);
+
         SketchFunction *deep_exact_clone_and_fresh_function_map(ProgramEnvironment *new_environment = nullptr,
                                                                 map<const SketchFunction *, SketchFunction *> *dp =
                                                                         new map<const SketchFunction *, SketchFunction *>()) const;
@@ -202,6 +204,7 @@ namespace SL {
         SketchFunction *unit_exact_clone_in_fresh_env(Dependencies &new_dependencies, ProgramEnvironment *fresh_env) const;
 
         void deep_clone_tail() const;
+        void deep_clone_tail_nonconst();
 
         void clear() const;
 
@@ -210,16 +213,15 @@ namespace SL {
         VarStore *get_solution();
 
         void concretize(const VarStore *local_solution) {
-            auto prev_num_dags_size = BooleanDAG::get_allocated().size();
+//            auto prev_num_dags_size = BooleanDAG::get_allocated().size();
             inplace_concretize(local_solution, bool_node::CTRL, false);
-            assert(prev_num_dags_size == BooleanDAG::get_allocated().size());
+//            int now_num_dags_size = BooleanDAG::get_allocated().size();
+//            assert(prev_num_dags_size == now_num_dags_size);
         }
 
         void replace(const string replace_this, const string with_this);
 
         SketchFunction *produce_get(const string &subfunc_name);
-
-        bool solution_is_null();
 
         string get_assignment(const string &key);
 

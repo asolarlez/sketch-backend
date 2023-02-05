@@ -40,7 +40,7 @@ void NodeEvaluator::visit( ARR_R_node &node){
 	if(idx < 0){
 		setbn(node, 0 );
 	}else{
-    setbn(node, vv->get(idx,i(*node.father())) );
+        setbn(node, vv->get(idx,i(*node.father())) );
 	}
 }
 
@@ -322,8 +322,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 				if(vecvalues[node.id] != NULL){
 					delete vecvalues[node.id];
 				}
-				auto op = inputs->getObjConst(sstr.str());
-				
+				objP op = inputs->getObjConst(sstr.str());
 				vecvalues[node.id] = new cpvec(op.arrSize(), &(op));
 			}else{
 				Assert(false, "Multiple return arrays not yet implemented");
