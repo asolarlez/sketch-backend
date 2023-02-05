@@ -5,6 +5,7 @@
 #include <cassert>
 #include <set>
 #include <map>
+#include <memory>
 
 #include <stack>
 #include <cstring>

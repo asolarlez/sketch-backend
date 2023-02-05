@@ -10,6 +10,7 @@
 // Created by kliment on 12/6/21. // from RangeFilter codebase.
 //
 
+#include <limits>
 #include <utility>
 #include <vector>
 #include <string>
@@ -226,6 +227,7 @@ public:
         return frontier.size();
     }
 
+
     ParamsType at(int idx) const
     {
         assert(idx >= 0);
@@ -319,37 +321,6 @@ public:
         }
 //        sort();
 //        assert(is_sorted());
-    }
-
-
-    void print(ostream& out, int print_top = -1, bool decorate = false)
-    {
-        sort();
-        _print(frontier, out, print_top, decorate);
-    }
-    static void _print(const vector<FrontierPoint<CoordType, ParamsType>* >& frontier, ostream& out, int print_top = -1, bool decorate = false)
-    {
-        auto reversed_frontier = frontier;
-        reverse(reversed_frontier.begin(), reversed_frontier.end());
-        int init_print = 0;
-
-        if(decorate)
-            out << "frontier (";
-
-        if(print_top != -1) {
-            init_print = max(0, (int)reversed_frontier.size()-print_top);
-        }
-
-        if(decorate)
-            out << "top " << reversed_frontier.size() - init_print << "/" << reversed_frontier.size() << ")" <<  endl;
-
-        for(size_t i = init_print; i<reversed_frontier.size();i++)
-        {
-            out << reversed_frontier[i]->score_to_string() << " PARAMS " << reversed_frontier[i]->get_params().to_string() << endl;
-        }
-
-        if(decorate)
-            out << "done printing_frontier" << endl;
     }
 
 /**

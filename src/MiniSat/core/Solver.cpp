@@ -19,6 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "MSolver.h"
 #include "Sort.h"
+#include <chrono>
 #include <cmath>
 #include <algorithm>
 #include "SynthInSolver.h"
@@ -80,7 +81,7 @@ void Clause::print(){
 	std::cout << std::endl;
 }
 
-Solver::Solver() :
+Solver::Solver(int seed) :
 
     // Parameters: (formerly in 'SearchParams')
     var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.8)
@@ -104,7 +105,7 @@ Solver::Solver() :
   , simpDB_assigns   (-1)
   , simpDB_props     (0)
   , order_heap       (VarOrderLt(activity))
-  , random_seed      (91648253)
+  , random_seed      (seed)
   , progress_estimate(0)
   , remove_satisfied (true)
   , incompletenessCutoff(-1)

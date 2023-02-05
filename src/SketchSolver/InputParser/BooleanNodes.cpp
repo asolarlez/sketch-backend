@@ -279,7 +279,7 @@ void bool_node::switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& repl
 
 
 
-void bool_node::redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert){
+void bool_node::redirectParentPointers(const BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert) {
   for(auto it = p_begin(); it != p_end(); ++it){
   	if(*it != NULL){
   		if( oribdag.checkNodePosition(*it) ){

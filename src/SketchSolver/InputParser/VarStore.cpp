@@ -186,8 +186,7 @@ VarStore::VarStore(const VarStore &to_copy, bool deep_clone)
     AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
     AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
 
-    if(deep_clone) {
-        AssertDebug(to_copy.inlining_tree != nullptr, "THIS ASSERT IS NOT NECESSARY.");
+    if(deep_clone && to_copy.inlining_tree != nullptr) {
         inlining_tree = new LightInliningTree(to_copy.inlining_tree, true);
     }
 

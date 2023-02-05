@@ -432,7 +432,7 @@ bool_node* DagOptimizeCommutAssoc::getNode(int id){
 	}
 }
 
-void DagOptimizeCommutAssoc::process(BooleanDAG& bdag){
+void DagOptimizeCommutAssoc::process(BooleanDAG &bdag){
 	
 
 	dagsize = bdag.size();

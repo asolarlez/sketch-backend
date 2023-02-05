@@ -120,7 +120,7 @@ private:
 	
 
     public:
-    enum Type {NO_TYPE, AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} ;
+    enum Type {NO_TYPE, AND, OR, XOR, SRC, DST, NOT, CTRL, PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} ;
 	typedef bool_node** parent_iter;
 
     const Type type;
@@ -240,7 +240,7 @@ private:
 	virtual void addToParent(bool_node* only_thisone);
   
     
-    virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
+    virtual void redirectParentPointers(const BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
     virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, childset& tchild);
     virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
     virtual string get_tname() const{
@@ -1281,6 +1281,10 @@ public:
 		return arrSz;
 	}
 	void setArr(int sz){
+        if(sz == 32)
+        {
+            cout << "AHA" << endl;
+        }
 		arrSz = sz;
 		if(sz>=0){
 			if(otype == OutType::INT){

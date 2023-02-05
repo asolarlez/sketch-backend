@@ -6,10 +6,8 @@
 #define SKETCH_SOURCE_BOOLEANDAGLIGHTUTILITY_H
 
 #include <utility>
-
 #include "ProgramEnvironment.h"
-
-class File;
+#include "File.h"
 
 class BooleanDagUtility;
 
@@ -20,6 +18,7 @@ public:
     static long long inlining_tree_global_id;
     static set<const LightSkFuncSetter*> all_inlining_trees;
     static map<string, int> name_to_count;
+    #define assert_max_inlining_tree_count
     static int max_count;
     long long int get_tree_id() const;
 private:
@@ -52,7 +51,9 @@ protected:
         }
         name_to_count[dag_name]+=1;
         max_count = max(max_count, name_to_count[dag_name]);
+#ifdef assert_max_inlining_tree_count
         assert(max_count <= 3);
+#endif
     }
 
     void change_id(int new_id){
@@ -673,6 +674,12 @@ class BooleanDagLightUtility
 
 public:
 
+    int size() const
+    {
+        return get_dag()->size();
+    }
+
+
     void force_set_has_not_been_concretized()
     {
         has_been_concretized = false;
@@ -711,14 +718,18 @@ public:
         assert(root_dag != nullptr);
     }
 
-    explicit BooleanDagLightUtility(BooleanDagLightUtility* to_copy):
+    explicit BooleanDagLightUtility(const BooleanDagLightUtility* to_copy):
         root_dag(to_copy->root_dag->clone()), _env(to_copy->get_env()), dag_name(to_copy->dag_name), dag_id(to_copy->get_dag_id()), has_been_concretized(to_copy->has_been_concretized) {
         assert(root_dag != nullptr);
     }
 
     set<string>* get_inlined_functions(set<string>* ret = new set<string>()) const;
 
-    BooleanDAG* get_dag() const {
+    const BooleanDAG* get_dag() const {
+        return root_dag;
+    }
+
+    BooleanDAG* get_dag__non_const() {
         return root_dag;
     }
 
@@ -778,7 +789,7 @@ public:
 //        return ret;
 //    }
 
-    BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type) {
+    BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type = bool_node::CTRL) {
 //        AssertDebug(get_dag()->getNodesByType(bool_node::UFUN).empty(),
 //        "NEED THIS TO HOLD BC WHEN YOU CLONE YOU WANT A DEEP CLONE;
 //        BUT THERE IS NO DEEP CLONE IN THIS CLASS.
@@ -836,9 +847,9 @@ public:
 
     }
 
-    virtual bool soft_clear_assert_num_shared_ptr_is_0();
+    virtual bool soft_clear_assert_num_shared_ptr_is_0() const;
 
-    virtual int count_passing_inputs(const File *file);
+    virtual int count_passing_inputs(const File *file) const;
 
     virtual void clear(LightInliningTree*& inlining_tree) {
         if(soft_clear(inlining_tree)){
@@ -856,7 +867,7 @@ public:
         clear(tmp);
     }
 
-    virtual bool soft_clear(LightInliningTree*& inlining_tree)
+    virtual bool soft_clear(LightInliningTree*& inlining_tree) const
     {
         decrement_shared_ptr_wo_clear();
 
@@ -893,7 +904,7 @@ public:
         shared_ptr++;
     }
 
-    void decrement_shared_ptr_wo_clear() {
+    void decrement_shared_ptr_wo_clear() const {
 //        if(get_dag()->get_dag_id() == 306)
 //        {
 //            cout << "here " << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;

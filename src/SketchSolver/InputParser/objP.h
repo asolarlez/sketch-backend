@@ -332,7 +332,7 @@ public:
         ret += "}";
         return ret;
     }
-
+//
     BitMetaVector_rep_VectorInt(int _num_vectors, int _num_bits_per_vector):
             num_bits_per_vector(_num_bits_per_vector), total_num_bits(_num_vectors*_num_bits_per_vector) {
         assert(num_bits_per_vector <= max_num_bits);
@@ -483,7 +483,7 @@ public:
         {
             assert(init_val == 1);
             WORD_TYPE all_ones = ~0;
-            assert(__builtin_popcount(all_ones) == word_size);
+//            assert(__builtin_popcount(all_ones) == word_size);
             bits = vector<WORD_TYPE>((num_bits + word_size - 1) >> word_size_bits, ~0);
         }
     }

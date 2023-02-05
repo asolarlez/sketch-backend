@@ -2,7 +2,7 @@
 
 
 
-DagFunctionToAssertion::DagFunctionToAssertion(BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, FloatManager& fm):
+DagFunctionToAssertion::DagFunctionToAssertion(BooleanDAG& p_dag, const map<string, const BooleanDAG *> &p_functionMap, FloatManager& fm):
 dag(p_dag), DagOptim(p_dag, fm),functionMap(p_functionMap) {
 	
 }

@@ -208,7 +208,7 @@ void AutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p
 	}
 	inputValues = inputValues_p;
 
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+	for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 		//cout << (*node_it)->lprint() << endl;
 		(*node_it)->accept(*this);
 	}
@@ -222,13 +222,13 @@ bool AutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputVal
     }
     inputValues = inputValues_p; // this does copying again
     
-    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+    for(auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
         //cout << (*node_it)->lprint() << endl;
         (*node_it)->accept(*this);
     }
     
     bool failed = false;
-    for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); node_it++) {
+    for (auto node_it = bdag.begin(); node_it != bdag.end(); node_it++) {
         bool_node* node = *node_it;
         if (!onlyBool && node->type == bool_node::ASSERT) {
             ASSERT_node* an = (ASSERT_node*) node;

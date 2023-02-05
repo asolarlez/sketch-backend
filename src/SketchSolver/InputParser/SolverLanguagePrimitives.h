@@ -15,34 +15,38 @@ class File;
 
 namespace SolverLanguagePrimitives {
 
+    CEGISSolverResult solve(
+            const SketchFunction* skfunc, const File* training_file,
+            const long long budget, float timeout_per_find,
+            const File* validation_file = nullptr, const int* seed = nullptr);
+
     class ProblemAE {
-        GenericFile *generic_file = nullptr;
-        File *file = nullptr;
+        const File *training_file = nullptr;
+        const File *validation_file = nullptr;
         string file_name;
         BooleanDagLightUtility *skfunc = nullptr;
+
     public:
-        explicit ProblemAE(BooleanDagLightUtility *_function, GenericFile *_generic_file = nullptr) :
-                skfunc(_function), generic_file(_generic_file) {}
+        explicit ProblemAE(BooleanDagLightUtility *_function, const File *_training_file = nullptr, const File* _validation_file = nullptr) :
+                skfunc(_function), training_file(_training_file), validation_file(_validation_file) {}
 
-        explicit ProblemAE(BooleanDagLightUtility *_function, File *_file = nullptr) :
-                skfunc(_function), file(_file) {}
-
-        GenericFile *get_generic_file() {
-            assert(generic_file != nullptr);
-            return generic_file;
+        const File *get_file() {
+            assert(training_file != nullptr);
+            return training_file;
         }
 
-        File *get_file() {
-            assert(file != nullptr);
-            return file;
+        const File *get_validation_file(bool assert_isnotnull = true) {
+            if(assert_isnotnull) {
+                assert(validation_file != nullptr);
+            }
+            return validation_file;
         }
 
         auto get_harness() {
             return skfunc;
         }
 
-
-        BooleanDAG *get_dag() {
+        const BooleanDAG *get_dag() {
             return skfunc->get_dag();
         }
 
@@ -59,9 +63,9 @@ namespace SolverLanguagePrimitives {
     class Solver_AE {
     public:
         Solver_AE() = default;
-
-        virtual HoleVarStore *solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) { assert(false); }
-
+        virtual CEGISSolverResult solve(
+                ProblemAE *problem, const long long _budget,
+                const long long find_solve_max_timeout_in_microseconds) { assert(false); }
         virtual string to_string() { assert(false); }
     };
 
@@ -87,9 +91,12 @@ namespace SolverLanguagePrimitives {
             return solver;
         }
 
-        WrapperAssertDAG(ProgramEnvironment* _env) :
+        WrapperAssertDAG(ProgramEnvironment* _env, const int* seed = nullptr) :
                 env(_env){
-            _pfind = ::SATSolver::solverCreate(env->params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
+            if(seed != nullptr) {
+                env->params.seed = *seed;
+            }
+            _pfind = ::SATSolver::solverCreate(env->params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG", env->params.seed);
             if (env->params.outputSat) {
                 _pfind->outputSAT();
             }
@@ -103,10 +110,10 @@ namespace SolverLanguagePrimitives {
         }
 
         HoleVarStore *recordSolution() {
-            return new HoleVarStore(solver->ctrlStore);
+            return new HoleVarStore(solver->ctrl_store);
         }
 
-        HoleVarStore *solve(ProblemAE *problem, const unsigned long long find_solve_max_timeout_in_microseconds) override;
+        CEGISSolverResult solve(ProblemAE *problem, const long long _budget, const long long find_solve_max_timeout_in_microseconds) override;
     };
 
     class WrapperBatchEvaluatorSolver : public Solver_AE {
@@ -137,17 +144,17 @@ namespace SolverLanguagePrimitives {
         }
 
         HoleVarStore *recordSolution() {
-            return new HoleVarStore(solver->ctrlStore);
+            return new HoleVarStore(solver->ctrl_store);
         }
 
-        HoleVarStore *solve(ProblemAE *problem, unsigned long long find_solve_max_timeout_in_microseconds) override;
+        CEGISSolverResult solve(
+                ProblemAE *problem, const long long _budget, const long long find_solve_max_timeout_in_microseconds) override;
     };
 
-    HoleVarStore* solve(SketchFunction* skfunc, File* subset_file, float timeout);
 };
 
 
-void set_inlining_tree(VarStore* sol, BooleanDagUtility* harness);
+void set_inlining_tree(VarStore* sol, const BooleanDagUtility* harness);
 
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGEPRIMITIVES_H

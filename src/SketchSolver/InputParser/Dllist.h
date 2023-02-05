@@ -107,7 +107,7 @@ public:
 	}
 };
 
-inline void Dllist::append(DllistNode* n){
+inline void Dllist::append(DllistNode* n) {
 	if(tail == NULL){
 		tail = n;
 		head = n;

@@ -2,7 +2,7 @@
 #include "SATSolver.h"
 #include "CommandLineArgs.h"
 
-DagOptim::DagOptim(BooleanDAG& dag, FloatManager& fm):cse(dag), stillPrivate(NULL), floats(fm)
+DagOptim::DagOptim(BooleanDAG &dag, FloatManager& fm): cse(dag), stillPrivate(NULL), floats(fm)
 {
 	ALTER_ARRACS = false;
 	possibleCycles = false;
@@ -3080,7 +3080,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 }
 
 
-void DagOptim::process(BooleanDAG& dag){
+void DagOptim::process(BooleanDAG &bdag){
 	timerclass everything("everything");
 
 
@@ -3088,34 +3088,34 @@ void DagOptim::process(BooleanDAG& dag){
 	
 	failedAssert = NULL;
 	int k=0;
-	for(int i=0; i<dag.size() ; ++i ){
+	for(int i=0; i < bdag.size() ; ++i ){
 		// Get the code for this node.
 				
 
-		if(dag[i] != NULL){
+		if(bdag[i] != NULL){
 //             cout<<"Orig = "<<dag[i]->lprint();
-			bool_node* node = computeOptim(dag[i]);
+			bool_node* node = computeOptim(bdag[i]);
 //			 cout<<"  becomes "<<node->lprint()<<endl;
 
 
-			if(dag[i] != node){			
-					Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
-					dag.replace(i, node);					
+			if(bdag[i] != node){
+					Dout(cout << "Replacing [" << bdag[i]->globalId << "] " << bdag[i]->id << " with [" << node->globalId << "] " << node->id << endl);
+					bdag.replace(i, node);
 			}else{
 					//cout<<"Kept      "<<dag[i]->lprint()<<endl;
 			}
 		}
 
 		if (failedAssert != NULL) {
-			for (++i ; i < dag.size(); ++i) {
-				if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN || dag[i]->type == bool_node::CTRL) {
-					dag.replace(i, getCnode(0));
+			for (++i ; i < bdag.size(); ++i) {
+				if (bdag[i]->type == bool_node::ASSERT || bdag[i]->type == bool_node::UFUN || bdag[i]->type == bool_node::CTRL) {
+					bdag.replace(i, getCnode(0));
 				}
 			}
 		}
 	}
 
-	cleanup(dag);
+	cleanup(bdag);
 
 	everything.stop();
 	

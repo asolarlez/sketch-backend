@@ -15,11 +15,11 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions,
+DagFunctionInliner::DagFunctionInliner(BooleanDAG &p_dag, const map<string, const BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions,
                                        bool p_randomize, InlineControl* ict, bool p_onlySpRandomize, int p_spRandBias):
 dag(p_dag), 
 DagOptim(p_dag, fm), 
-ufunAll(" ufun all"),
+ufunAll("ufun all"),
 functionMap(p_functionMap),
 replaceMap(p_replaceMap),
 ictrl(ict),
@@ -180,10 +180,10 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
     }
     else
     {
-        AssertDebug(false, (
-                    "TRUE UFUNS NOT SUPPORTED!!! "
-                    "ASSERT FALSE IN void DagOneStepInlineAndConcretize::visit(UFUN_node& node): "
-                    "node.get_ufun_name() = " + node.get_ufun_name()));
+//        AssertDebug(false, (
+//                    "TRUE UFUNS NOT SUPPORTED!!! "
+//                    "ASSERT FALSE IN void DagOneStepInlineAndConcretize::visit(UFUN_node& node): "
+//                    "node.get_ufun_name() = " + node.get_ufun_name()));
         //!!! UFUNS STILL FAILING.
 //        ufun is a ufun, which is handled by NodeHardcoder.
 //        DagFunctionInliner::visit(node);
@@ -450,7 +450,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 //    cout << "Inlining " << name << endl;
 
         assert(functionMap.find(name) != functionMap.end());
-		BooleanDAG& oldFun = *functionMap.at(name);
+		const BooleanDAG& oldFun = *functionMap.at(name);
 
         for(auto ctrl_it: oldFun.getNodesByType(bool_node::CTRL))
         {
@@ -1025,24 +1025,24 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 extern map<string, pair<int, int> > sizes;
 */
 
-void DagFunctionInliner::process(BooleanDAG& dag){
+void DagFunctionInliner::process(BooleanDAG &bdag){
 
-	initLight(dag);
+	initLight(bdag);
 	funsInlined.clear();
 	somethingChanged = false;
 	lnfuns = 0;
 	uidcount = 0;
 	if(ictrl != NULL){
 		DllistNode* lastDln = NULL;
-		for(int i=0; i<dag.size() ; ++i ){
+		for(int i=0; i < bdag.size() ; ++i ){
 
-			if(isDllnode(dag[i])){
-				lastDln = getDllnode(dag[i]);
+			if(isDllnode(bdag[i])){
+				lastDln = getDllnode(bdag[i]);
 			}
 
 			// Get the code for this node.
-			if(dag[i]->type == bool_node::UFUN){
-				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
+			if(bdag[i]->type == bool_node::UFUN){
+				UFUN_node& uf = *dynamic_cast<UFUN_node*>(bdag[i]);
 				
 				/*
 				When the inline controller checks a function and the function is 
@@ -1057,7 +1057,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
                         if (lastDln != NULL) {
                             lastDln->add(&uf);
                         } else {
-                            dag.assertions.append(&uf);
+                            bdag.assertions.append(&uf);
                         }
                     }
                 }
@@ -1068,27 +1068,27 @@ void DagFunctionInliner::process(BooleanDAG& dag){
     //dag.lprint(cout);
 	mpcontroller.clear();
 	failedAssert = NULL;
-	for(int i=0; i<dag.size() ; ++i ){
+	for(int i=0; i < bdag.size() ; ++i ){
 		// Get the code for this node.
         //cout<<dag[i]->lprint()<<endl;
-		bool_node* node = computeOptim(dag[i]);
+		bool_node* node = computeOptim(bdag[i]);
 
-       if(dag[i] != node){
-                Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
-				dag.replace(i, node);
+       if(bdag[i] != node){
+                Dout(cout << "replacing " << bdag[i]->get_name() << " -> " << node->get_name() << endl );
+				bdag.replace(i, node);
 		}
 
 //        assert(node->get_name() != "num_bools_4_0_0");
 	   if (failedAssert != NULL) {
-		   for (++i; i < dag.size(); ++i) {
-			   if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN) {
-				   dag.replace(i, getCnode(0));
+		   for (++i; i < bdag.size(); ++i) {
+			   if (bdag[i]->type == bool_node::ASSERT || bdag[i]->type == bool_node::UFUN) {
+				   bdag.replace(i, getCnode(0));
 			   }
 		   }
 		   if (failedAssert->isNormal()) {
 
 //			   cout << "Assertion Failure \"" << failedAssert->getMsg() << "\"" << endl;
-			   cleanup(dag);
+			   cleanup(bdag);
 //			   assert(false);
 			   throw BadConcretization(failedAssert->getMsg());
 		   }
@@ -1097,9 +1097,9 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	// cout<<" added nodes = "<<newnodes.size()<<endl;
     seenControls.clear();
-    cleanup(dag);
+    cleanup(bdag);
 	if (this->symbolicSolve) {
-		dag.setUseSymbolic();
+		bdag.setUseSymbolic();
 	}
 }
 

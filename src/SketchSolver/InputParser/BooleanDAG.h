@@ -62,9 +62,35 @@ private:
     long long dag_id;
     static long long global_boolean_dag_id;
 #ifdef SCHECKMEM
-	static set<BooleanDAG*> allocated;
+    class AllDAGs : private set<BooleanDAG*> {
+        size_t global_max_num_allocated_dags = 0;
+        int num_dags = 0;
+    public:
+        size_t get_max() {
+            return global_max_num_allocated_dags;
+        }
+
+        size_t get_num() {
+            return num_dags;
+        }
+
+        void insert(BooleanDAG* new_dag) {
+            set<BooleanDAG*>::insert(new_dag);
+            num_dags++;
+            global_max_num_allocated_dags = max(global_max_num_allocated_dags, size());
+        }
+
+        size_t size() const {
+            return set<BooleanDAG*>::size();
+        }
+
+        void erase(BooleanDAG* to_erase) {
+            set<BooleanDAG*>::erase(to_erase);
+        }
+    };
+	static AllDAGs allocated;
 public:
-    static set<BooleanDAG*>& get_allocated()
+    static AllDAGs& get_allocated()
     {
         return allocated;
     }
@@ -74,7 +100,7 @@ public:
     {
         return global_boolean_dag_id;
     }
-    long long get_dag_id()
+    long long get_dag_id() const
     {
         return dag_id;
     }
@@ -108,7 +134,7 @@ private:
 
 public:
 	bool isModel;
-Dllist assertions;
+    Dllist assertions;
 	typedef vector<bool_node*>::iterator iterator;
 	typedef vector<bool_node*>::reverse_iterator reverse_iterator;
   ////////////////////////////////////////////////////////////////////////
@@ -125,7 +151,7 @@ Dllist assertions;
         ownsNodes=false;
     }
 
-  int getIntSize(){
+  int getIntSize() const{
 	return intSize;
   }
 
@@ -159,7 +185,7 @@ Dllist assertions;
   void change_father(const string& father, const string& son);
   void change_mother(const string& father, const string& son);
   void layer_graph();  
-  void relabel();
+  void relabel() const;
   void cleanup(); //Sorts and cleans up the graph.
   void cleanup_children();
   void cleanUnshared();
@@ -185,19 +211,19 @@ Dllist assertions;
   
   bool_node* get_node(const string& name);  
   bool_node* unchecked_get_node(const string& name);
-  iterator begin() { return nodes.begin(); }
-  iterator end(){ return nodes.end(); }
+  auto begin() const { return nodes.begin(); }
+  auto end() const { return nodes.end(); }
 
-  reverse_iterator rbegin(){ return nodes.rbegin(); }
-  reverse_iterator rend(){ return nodes.rend(); }
+    auto rbegin() const { return nodes.rbegin(); }
+    auto rend() const { return nodes.rend(); }
 
 
-  inline bool checkNodePosition(bool_node* bn){
+  inline bool checkNodePosition(bool_node* bn) const {
 	  int bid = bn->id;
 	return bid < this->size() && bid >= 0 && bn == nodes[bid];
   }
 
-  vector<bool> evaluate_inputs(const File* file, FloatManager& floats, int repeats = 1);
+  vector<bool> evaluate_inputs(const File* file, FloatManager& floats, int repeats = 1) const;
     int get_passing_input_id(const File* file, FloatManager& floats);
 
 
@@ -250,7 +276,7 @@ Dllist assertions;
 // and they must be sorted according to the normal order!
   template<typename forward_iter>
   BooleanDAG* slice(forward_iter begin, forward_iter end, int i){
-		for(BooleanDAG::iterator it = nodes.begin(); it != nodes.end(); ++it){
+		for(auto it = nodes.begin(); it != nodes.end(); ++it){
 			(*it)->flag = 0;
 		}
 		BooleanDAG* bd = new BooleanDAG(this->name);
@@ -268,12 +294,12 @@ Dllist assertions;
 
   void repOK();
 
-  BooleanDAG* clone(const string& explict_name = "", const bool rename_holes = false, const map<string, string>* = nullptr);
-  void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=nullptr);
+  BooleanDAG* clone(const string& explict_name = "", const bool rename_holes = false, const map<string, string>* = nullptr) const;
+  void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=nullptr) const;
 
-  void print(ostream& out)const;
-  void lprint(ostream& out);
-  void mrprint(ostream& out, bool print_only_nodes = false);
+  void print(ostream& out) const;
+  void lprint(ostream& out) const ;
+  void mrprint(ostream& out, bool print_only_nodes = false) const;
   void smtlinprint(ostream& out, int &nbits);
   void smt_exists_print(ostream &out);
   void print_wrapper()const;
@@ -285,7 +311,7 @@ Dllist assertions;
 	  useSymbolicSolver = true;
   }
 
-  bool useSymbolic() {
+  bool useSymbolic() const {
 	  return useSymbolicSolver;
   }
 
@@ -300,7 +326,7 @@ public:
     {
         failed_assert = _failed_assert;
     }
-    ASSERT_node* get_failed_assert()
+    const ASSERT_node* get_failed_assert() const
     {
         return failed_assert;
     }

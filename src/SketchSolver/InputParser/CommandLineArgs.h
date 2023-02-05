@@ -26,7 +26,7 @@ const string VERSION_INFO = "vlarrays";
 class CommandLineArgs{
 	public:
         // HARDCODE HYPERSKETCH PATH HERE.
-    string hypersketch_file_path = "";
+    string hypersketch_file_path = "/home/ivcha/development/sketch/sketch-backend/src/SketchSolver/InputParser/solver_language__test_files/hypersketch_depth_1.hsk";
         // HARDCODE THE PATH TO YOUR HYPERSKETCH HERE IF YOU WANT
         // TO RUN THE END-TO-END PIPELINE WITH THE FRONTEND.
         // MAKE SURE YOU ARE USING THE BRANCH

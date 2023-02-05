@@ -215,7 +215,7 @@ void KLocalityAutoDiff::getMergeNodesArracc(bool_node* node) {
 }
 
 void KLocalityAutoDiff::getMergeNodes() {
-    for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
+    for (auto node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
         bool_node* n = *node_it;
         if (n->type == bool_node::CTRL || n->type == bool_node::CONST) {
             Path* p = path(n, 1);

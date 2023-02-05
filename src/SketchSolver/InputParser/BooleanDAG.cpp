@@ -20,7 +20,7 @@ using namespace std;
 
 #ifdef SCHECKMEM
 size_t prev_num_dags = 0;
-set<BooleanDAG*> BooleanDAG::allocated;
+BooleanDAG::AllDAGs BooleanDAG::allocated;
 long long BooleanDAG::global_boolean_dag_id = 0;
 #endif
 
@@ -79,14 +79,13 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
   }
 #endif
 
-//  if(dag_id == 362) {
+//  if(dag_id == 259) {
 //     cout << "HERE" << endl;
 //  }
-
 }
 
 
-void BooleanDAG::growInputIntSizes(){
+void BooleanDAG::growInputIntSizes() {
 	{
 		auto specIn = getNodesByType(bool_node::SRC);
 		++intSize;
@@ -116,7 +115,7 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 
 
 
-void BooleanDAG::clear(){
+void BooleanDAG::clear() {
 	if(ownsNodes){
 	  for(int i=0; i < nodes.size(); ++i){
 		  if (nodes[i] != nullptr) {
@@ -138,7 +137,7 @@ BooleanDAG::~BooleanDAG()
 #endif
 }
 
-void BooleanDAG::relabel(){
+void BooleanDAG::relabel() const{
   for(int i=0; i < nodes.size(); ++i){
   	if( nodes[i] != NULL ){  		
     	nodes[i]->id = i;
@@ -299,7 +298,7 @@ void BooleanDAG::removeNullNodes(){
 		Dout( cout<<"Removing "<<newnodes.size() - nodes.size()<<" nodes"<<endl );
 	}
 
-	for(map<bool_node::Type, vector<bool_node*> >::iterator mapit = nodesByType.begin(); mapit != nodesByType.end(); ++mapit){
+	for(auto mapit = nodesByType.begin(); mapit != nodesByType.end(); ++mapit){
 		vector<bool_node*>& bnv = mapit->second;
 		int out=0;
 		for(int i=0; i<bnv.size(); ++i){
@@ -410,7 +409,7 @@ void BooleanDAG::repOK(){
 	cout<<"*** DOING REPOK ****"<<endl;
 
 	map<bool_node::Type, set<bool_node*> > tsets;
-	for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin(); it != nodesByType.end(); ++it){
+	for(auto it = nodesByType.begin(); it != nodesByType.end(); ++it){
 		bool_node::Type type = it->first;
 		vector<bool_node*>& nv = it->second;
 		for(int i=0; i<nv.size(); ++i){
@@ -420,7 +419,7 @@ void BooleanDAG::repOK(){
 		}		
 	}
 
-	  for(map<string, INTER_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
+	  for(auto it = named_nodes.begin(); it != named_nodes.end(); ++it){
 		  Assert( it->second != NULL, "Named node was null");
 	  }
 
@@ -502,7 +501,7 @@ void BooleanDAG::cleanUnshared(){
 	if(onode->flag == 0 ){ 
 		if(onode->isInter()){
 			INTER_node* inonode = dynamic_cast<INTER_node*>(onode);	
-			map<string, INTER_node*>::iterator it = named_nodes.find(inonode->name);
+			auto it = named_nodes.find(inonode->name);
 			if(it != named_nodes.end() && it->second==inonode){
 				named_nodes.erase(it);
 			}
@@ -583,7 +582,7 @@ void BooleanDAG::cleanup(){
   		  	
 		if(onode->isInter()){
 			INTER_node* inonode = dynamic_cast<INTER_node*>(onode);	
-			map<string, INTER_node*>::iterator it = named_nodes.find(inonode->name);
+			auto it = named_nodes.find(inonode->name);
 			if(it != named_nodes.end() && it->second==inonode){
 				named_nodes.erase(it);
 			}
@@ -888,7 +887,7 @@ void BooleanDAG::print(ostream& out)const{
   out<<"}"<<endl;
 }
 
-void BooleanDAG::mrprint(ostream& out, bool print_only_nodes){
+void BooleanDAG::mrprint(ostream& out, bool print_only_nodes) const {
 
     if(!print_only_nodes) {
         out << "dag " << this->get_name() << " :" << endl;
@@ -1102,7 +1101,7 @@ void BooleanDAG::smt_exists_print(ostream &out){
 }
 
 
-void BooleanDAG::lprint(ostream& out){    
+void BooleanDAG::lprint(ostream& out) const {
 	out<<"dag "<< this->get_name() <<"{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
   	if(nodes[i] != NULL){
@@ -1134,26 +1133,24 @@ void BooleanDAG::lprint_wrapper(const char* fileName){
 }
 
 void BooleanDAG::clearBackPointers(){
-	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
+	for(auto node_it = begin(); node_it != end(); ++node_it){
 		(*node_it)->children.clear();				
 	}	
 }
 
 void BooleanDAG::resetBackPointers(){
-	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
+	for(auto node_it = begin(); node_it != end(); ++node_it){
 		if( *node_it != NULL){ 
 			(*node_it)->children.clear();
 		}
 	}
 	int i=0;
-	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it, ++i){
+	for(auto node_it = begin(); node_it != end(); ++node_it, ++i){
 		if( *node_it != NULL){
 			(*node_it)->addToParents();
 		}
 	}
 }
-
-
 
 void BooleanDAG::andDag(BooleanDAG* bdag){
 	relabel();
@@ -1173,7 +1170,7 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 	}
 
 	map<bool_node*, bool_node*> replacements;	
-	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
+	for(auto node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		Assert( (*node_it) != NULL, "Can't make a miter when you have null nodes.");
 		Assert((*node_it)->type != bool_node::DST, "This DAG should be a miter");
 		Dout( cout<<" adding "<<(*node_it)->get_name()<<endl );		
@@ -1224,7 +1221,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 	bdag->relabel();
 	map<bool_node*, bool_node*> replacements;	
 
-	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
+	for(auto node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		Assert( (*node_it) != NULL, "Can't make a miter when you have null nodes.");
 		(*node_it)->flag = 0;
 		Dout( cout<<" adding "<<(*node_it)->get_name()<<endl );		
@@ -1355,14 +1352,12 @@ void BooleanDAG::rename(const string& oldname,  const string& newname){
 	named_nodes[newname] = node;	
 }
 
-
-
-void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
+void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl) const {
 	nstore.resize(nodes.size());
 
 	Dout( cout<<" after relabel "<<endl );
 	int nnodes = 0;
-	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
+	for(auto node_it = begin(); node_it != end(); ++node_it){
 		if( (*node_it) != NULL ){		
 			AssertDebug( (*node_it)->id != -22 , "This node has already been deleted " + (*node_it)->get_name() );
             Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
@@ -1384,8 +1379,8 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 	}
 	Dout( cout<<" after indiv clone "<<endl );
 	//nstore.resize(nnodes);
-	//BooleanDAG::iterator old_it = begin();
-	for(BooleanDAG::iterator node_it = nstore.begin(); node_it != nstore.end(); ++node_it /*,++old_it*/){
+	//auto old_it = begin();
+	for(auto node_it = nstore.begin(); node_it != nstore.end(); ++node_it /*,++old_it*/){
 		//(*node_it)->redirectPointers(*this, (vector<const bool_node*>&) nstore, (*old_it)->children);
 		(*node_it)->redirectParentPointers(*this, (vector<const bool_node*>&) nstore, true, NULL);
 	}
@@ -1393,7 +1388,7 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 
 
-BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_holes, const map<string, string>* _hole_renaming_map){
+BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_holes, const map<string, string>* _hole_renaming_map) const{
 
     if(!rename_holes) {
         AssertDebug(_hole_renaming_map == nullptr, "IF YOU ARE NOT RENAME HOLES, YOU MUSTN'T PASS A _hole_renaming_map");
@@ -1407,7 +1402,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
         }
     }
 
-    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
+    for(auto it = nodesByType.begin();
         it != nodesByType.end(); ++it){
         for(int i=0; i<it->second.size(); ++i){
             assert(nodes[it->second[i]->id] == it->second[i]);
@@ -1424,8 +1419,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
     }
 
 
-    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
-        it != nodesByType.end(); ++it){
+    for(auto it = nodesByType.begin();it != nodesByType.end(); ++it){
         for(int i=0; i<it->second.size(); ++i){
             assert(nodes[it->second[i]->id] == it->second[i]);
         }
@@ -1440,14 +1434,14 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 	bdag->intSize = intSize;
 	bdag->useSymbolicSolver = useSymbolicSolver;
 
-    for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
+    for(auto it = nodesByType.begin();
         it != nodesByType.end(); ++it){
         for(int i=0; i<it->second.size(); ++i){
             assert(nodes[it->second[i]->id] == it->second[i]);
         }
     }
 	
-	for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin();
+	for(auto it = nodesByType.begin();
 					it != nodesByType.end(); ++it){
 		vector<bool_node*>& tmp = bdag->nodesByType[it->first];
 		Assert( tmp.size() == 0, "This can't happen. This is an invariant.");
@@ -1536,7 +1530,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
             }
         }
 
-        for (map<string, INTER_node *>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it) {
+        for (auto it = named_nodes.begin(); it != named_nodes.end(); ++it) {
             AssertDebug(it->second->id != -22, "This node has already been deleted " + it->first + "\n");
             Assert(it->second->id != -22, "This node has already been deleted " << it->first << endl);
             AssertDebug(bdag->nodes.size() > it->second->id, " Bad node  " + it->first + "\n");
@@ -1559,7 +1553,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
         }
     }
     else {
-        for (map<string, INTER_node *>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it) {
+        for (auto it = named_nodes.begin(); it != named_nodes.end(); ++it) {
             AssertDebug(it->second->id != -22, "This node has already been deleted " + it->first + "\n");
             Assert(it->second->id != -22, "This node has already been deleted " << it->first << endl);
             AssertDebug(bdag->nodes.size() > it->second->id, " Bad node  " + it->first + "\n");
@@ -1640,7 +1634,7 @@ string zeros(int n)
 #include "FileForVecInterp.h"
 #include "vectorized_interpreter_main.h"
 
-vector<bool> evaluate_inputs_baseline(BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
+vector<bool> evaluate_inputs_baseline(const BooleanDAG& dag, const File* file, FloatManager& floats, int repeats = 0)
 {
     for(int i = 0;i<repeats;i++) {
         evaluate_inputs_baseline(dag, file, floats, 0);
@@ -1801,7 +1795,7 @@ vector<bool> evaluate_inputs_vectorized_interpreter(BooleanDAG& dag, const File*
 }
 
 
-vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats, int repeats) {
+vector<bool> BooleanDAG::evaluate_inputs(const File* file, FloatManager& floats, int repeats) const {
 //    return evaluate_inputs_vectorized_interpreter(*this, file, floats, 0);
 //    return evaluate_inputs_vectorized_interpreter_assert_correctness(*this, file, floats, 0);
     return evaluate_inputs_baseline(*this, file, floats, 0);

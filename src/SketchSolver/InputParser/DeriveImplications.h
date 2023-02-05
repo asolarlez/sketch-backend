@@ -22,5 +22,5 @@ public:
 	virtual void visit( LT_node& node );
 	virtual void visit( EQ_node& node );
 	virtual void visit( ASSERT_node &node);	
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 };

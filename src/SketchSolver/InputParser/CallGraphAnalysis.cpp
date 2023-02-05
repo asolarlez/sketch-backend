@@ -21,11 +21,15 @@ void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funma
 				}
 			}
 		}
-		for(vector<string>::reverse_iterator it = vlist.rbegin(); it!= vlist.rend(); ++it){
+		for(auto it = vlist.rbegin(); it!= vlist.rend(); ++it){
 			BooleanDAG* dagToOptim = funmap[*it];
 			InclusiveInliner ict;
 			map<string, map<string, string> > replaceMap;
-			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, set<string>(), false, &ict);
+            map<string, const BooleanDAG*> constfunmap;
+            for(const auto& _it : funmap) {
+                constfunmap[_it.first] = _it.second;
+            }
+			DagFunctionInliner fi(*(dagToOptim), constfunmap, replaceMap, floats, NULL, set<string>(), false, &ict);
 			for(int i=0; i<nocycles.size(); ++i){
 				if(nocycles[i] != dagToOptim->get_name()){
 					ict.addFunToInline(nocycles[i]);
@@ -41,7 +45,11 @@ void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funma
 			BooleanDAG* dagToOptim = root;
 			InclusiveInliner ict;
 			map<string, map<string, string> > replaceMap;
-			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, set<string>(), false, &ict);
+            map<string, const BooleanDAG*> constfunmap;
+            for(const auto& _it : funmap) {
+                constfunmap[_it.first] = _it.second;
+            }
+			DagFunctionInliner fi(*(dagToOptim), constfunmap, replaceMap, floats, NULL, set<string>(), false, &ict);
 			for(int i=0; i<nocycles.size(); ++i){
 				ict.addFunToInline(nocycles[i]);
 			}
@@ -69,7 +77,7 @@ void CallGraphAnalysis::populateCG(BooleanDAG& dag, map<string, BooleanDAG*>& fu
 	seen.insert(&dag);
 	while(!tosee.empty()){		
 		BooleanDAG* cur = tosee.top(); tosee.pop();		
-		for(BooleanDAG::iterator it = cur->begin(); it != cur->end(); ++it){
+		for(auto it = cur->begin(); it != cur->end(); ++it){
             auto star_it = *it;
 			if(typeid(*star_it) == typeid(UFUN_node)){
 				UFUN_node* node = dynamic_cast<UFUN_node*>(*it);
@@ -96,7 +104,7 @@ void CallGraphAnalysis::process(BooleanDAG& dag, map<string, BooleanDAG*>& funMa
 
 	map<string, BooleanDAG*>& tmpmap = funMap;
 	/*
-	for(map<string, BooleanDAG*>::iterator it = funMap.begin(); it != funMap.end(); ++it){
+	for(auto it = funMap.begin(); it != funMap.end(); ++it){
 		tmpmap[it->first] = it->second->clone();
 	}
 	*/

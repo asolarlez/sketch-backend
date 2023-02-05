@@ -19,7 +19,7 @@ int Driver::resolveSketches(){
 		  string outname =  params.outputFname;
 		  ofstream out(outname.c_str());
 		
-		  for(map<string, BooleanDAG*>::iterator it = INp::function_map.begin(); it != INp::function_map.end(); ++it){
+		  for(auto it = INp::function_map.begin(); it != INp::function_map.end(); ++it){
 			env.addFunction(it->first, it->second);
 		  }
 
@@ -77,6 +77,7 @@ void Driver::parseInput(){
 		int rv = INp::yyparse(scanner);
 		if (rv != 0) {
 			INp::yylex_destroy(scanner);
+            AssertDebug(false, "*** Rejected");
 			cerr<<"\n*** Rejected\n";
 			exit(rv);
 		}
@@ -106,6 +107,7 @@ void PyDriver::parseInput(){
 		}
 		if (INp::yyparse(scanner) != 0) {
 			INp::yylex_destroy(scanner);
+            AssertDebug(false, "*** Rejected");
 			cerr<<"\n*** Rejected\n";
 			exit(1);
 		}

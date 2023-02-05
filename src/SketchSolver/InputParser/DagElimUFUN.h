@@ -88,7 +88,7 @@ public:
 	
 	virtual void visit( UFUN_node& node );
 	
-	virtual void process(BooleanDAG& bdag);
+	virtual void process(BooleanDAG &bdag);
 };
 
 #endif /*DAGELIMUFUN_H_*/

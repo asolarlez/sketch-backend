@@ -34,8 +34,8 @@ public:
         ProgramState::clear(true);
     }
 
-    HyperSketchState(FunctionMap& _function_map, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
-                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
+    HyperSketchState(FunctionMap &_function_map, const string &_file_name, FloatManager &_floats,
+                     CommandLineArgs &_args, HoleHardcoder &_hc) :
             ProgramState(_function_map), file_name(_file_name),
             floats(_floats), args(_args), hc(_hc) {}
 
