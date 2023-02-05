@@ -19,6 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "MSolver.h"
 #include "Sort.h"
+#include <chrono>
 #include <cmath>
 #include <algorithm>
 #include "SynthInSolver.h"

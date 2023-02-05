@@ -5,6 +5,8 @@
 #include "BenchmarkScore.h"
 #include <vector>
 #include <iomanip>
+#include <algorithm>
+#include <iostream>
 
 map<string, BenchmarkScore> timestamp_counter = map<string, BenchmarkScore>();
 

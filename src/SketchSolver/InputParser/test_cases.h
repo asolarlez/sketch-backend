@@ -5,9 +5,11 @@
 #ifndef EXAFUNCTIONGRAPHEXECUTOR_TEST_CASES_H
 #define EXAFUNCTIONGRAPHEXECUTOR_TEST_CASES_H
 
+#include <memory>
 #include <string>
 #include <chrono>
 #include <map>
+
 #include "BenchmarkScore.h"
 #include "types.h"
 #include "DagLikeProgramInterpreter.h"
