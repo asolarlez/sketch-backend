@@ -206,8 +206,9 @@ CEGISSolverResult CEGISSolver::solve(
 			// store the current solution
 			storePreviousSolution(checker->get_input_store(), ctrl_store);
 			// optimization: only add inputs if the verification fails
-			if(finder->minimizeHoleValue(ctrl_store, mhnames, mhsizes))
+			if(finder->minimizeHoleValue(ctrl_store, mhnames, mhsizes)){
 				doMore=true;
+            }
 			else{
 				doMore = false;
 				checker->get_input_store() = prevInputStore;
@@ -228,13 +229,10 @@ CEGISSolverResult CEGISSolver::solve(
 			if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart();
 			try{
-
-                //
-
                 int nctrlbs = ctrl_store.get_bit_size();
                 auto start_finder = chrono::steady_clock::now();
                 if(counterexample_concretized_dag != nullptr) {
-
+                    cout << "counterexample_concretized_dag != nullptr" << endl;
                     int dag_size = counterexample_concretized_dag->size();
                     SATSolverResult sat_solver_result_from_find =
                             finder->find(
@@ -258,28 +256,33 @@ CEGISSolverResult CEGISSolver::solve(
                             doMore = false;
                             break;
                         case SAT_UNSATISFIABLE:
+                            cout << "SAT_UNSATISFIABLE" << endl;
                             doMore = false;
                             break;
                         case SAT_SATISFIABLE:
+                            cout << "SAT_SATISFIABLE" << endl;
                             doMore = true;
                             break;
                         case SAT_TIME_OUT:
+                            cout << "SAT_TIME_OUT" << endl;
                             doMore = false; //play with this
                             break;
                         case SAT_MEM_OUT:
+                            cout << "SAT_MEM_OUT" << endl;
                             doMore = false;
                             break;
                         case SAT_ABORTED:
+                            cout << "SAT_ABORTED" << endl;
                             doMore = false;
                             break;
                         default:
                             assert(false);
                             break;
-                            assert(false);
                     }
                 }
                 else
                 {
+                    cout << "counterexample_concretized_dag == nullptr" << endl;
                     SATSolverResult sat_solver_result_from_find =
                             finder->find(
                                     counterexample_concretized_dag, ctrl_store, hasInputChanged, find_solve_max_timeout_in_microseconds);
@@ -297,28 +300,31 @@ CEGISSolverResult CEGISSolver::solve(
                             doMore = false;
                             break;
                         case SAT_UNSATISFIABLE:
+                            cout << "SAT_UNSATISFIABLE" << endl;
                             doMore = false;
                             break;
                         case SAT_SATISFIABLE:
+                            cout << "SAT_SATISFIABLE" << endl;
                             doMore = true;
                             break;
                         case SAT_TIME_OUT:
+                            cout << "SAT_TIME_OUT" << endl;
                             doMore = false; //play with this
                             break;
                         case SAT_MEM_OUT:
+                            cout << "SAT_MEM_OUT" << endl;
                             doMore = false;
                             break;
                         case SAT_ABORTED:
+                            cout << "SAT_ABORTED" << endl;
                             doMore = false;
                             break;
                         default:
                             assert(false);
                             break;
-                            assert(false);
                     }
 
                 }
-
                 #ifdef CHECK_FILE_INVARIANT
                 {
                     File *file = files[(int)files.size() - 1];
@@ -398,6 +404,7 @@ CEGISSolverResult CEGISSolver::solve(
 		}
 
 		if(hasInputChanged && !doMore){
+            // cout << "hasInputChanged && !doMore" << endl;
 			if(PARAMS->minvarHole && prevSolutionFound){
 				cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
 				checker->get_input_store() = prevInputStore;

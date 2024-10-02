@@ -155,7 +155,7 @@ SKETCH version 1.7.6
 Benchmark = bitarray_synth.sk
 
 void op (bit x0, bit x1, ref bit _out) {
-  _out = !(x0 && x1);
+  _out = !(x0 || x1);
   return;
 }
 @FromFile("bits.data")

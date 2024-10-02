@@ -26,6 +26,7 @@ SATSolverResult CEGISFinder::find(
 
     if(hasInputChanged)
     {
+		Assert(problem != nullptr, "if the input has changed, we expect problem to be non-null since its a conretized counterexample.");
         BooleanDAG* newdag = problem->clone();
         if(allInputsDag == nullptr)
         {
@@ -38,11 +39,6 @@ SATSolverResult CEGISFinder::find(
             DagOptim dag_optim(*allInputsDag, floats);
             dag_optim.process(*allInputsDag);
         }
-    }
-    else
-    {
-        //claim: solution is already optimal.
-        return SAT_UNSATISFIABLE;
     }
 
 	//hasInputChange == is it a new problem;
@@ -255,6 +251,7 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 			}
 		}		
 		catch(BasicError& be){
+			cout << "returning false from minimizeHoleValue" << endl;
 			return false;
 		}
 	}
@@ -264,6 +261,7 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 			dirFind.addRetractableAssertClause(bigor[0]);
 		}
 		catch(BasicError& be){
+			cout << "returning false from minimizeHoleValue" << endl;
 			return false;
 		}
 	}
@@ -271,5 +269,6 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 		dirFind.getMng().lightSolve();
 	}
 	
+	cout << "returning true from minimizeHoleValue" << endl;
 	return true; //doMore
 }
