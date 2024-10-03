@@ -21,172 +21,180 @@ using namespace MSsolverNS;
 class CEGISFinderSpec
 {
 protected:
-    FloatManager& floats;
-    BooleanDAG* allInputsDag = nullptr;
-public:
-    explicit CEGISFinderSpec(FloatManager& _floats): floats(_floats) {}
-	virtual SATSolverResult find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) {
-        Assert(false, "CEGISFinderSpec is just an interface.");
-        return UNSPECIFIED;
-    }
+	FloatManager &floats;
+	BooleanDAG *allInputsDag = nullptr;
 
-	virtual bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes)
+public:
+	explicit CEGISFinderSpec(FloatManager &_floats) : floats(_floats) {}
+	virtual SATSolverResult find(BooleanDAG *problem, VarStore &controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds)
+	{
+		Assert(false, "CEGISFinderSpec is just an interface.");
+		return UNSPECIFIED;
+	}
+
+	virtual bool minimizeHoleValue(VarStore &ctrlStore, vector<string> &mhnames, vector<int> &mhsizes)
 	{
 		Assert(false, "CEGISFinderSpec is just an interface.");
 		return false;
 	}
 
-	virtual void declareControl(CTRL_node* cnode)
+	virtual void declareControl(CTRL_node *cnode)
 	{
 		Assert(false, "CEGISFinderSpec is just an interface.");
 	}
 
-	virtual void updateCtrlVarStore(VarStore& ctrlStore)
+	virtual void updateCtrlVarStore(VarStore &ctrlStore)
 	{
 		Assert(false, "CEGISFinderSpec is just an interface.");
 	}
 
-	virtual void retractAssumptions()
+	virtual void retractAssumptions(){
+		Assert(false, "CEGISFinderSpec is just an interface.")}
+
+	FloatManager &get_floats()
 	{
-		Assert(false, "CEGISFinderSpec is just an interface.")
+		return floats;
 	}
 
-    FloatManager &get_floats() {
-        return floats;
-    }
+	BooleanDAG *&get_all_inputs_dag()
+	{
+		return allInputsDag;
+	}
 
-    BooleanDAG*& get_all_inputs_dag()
-    {
-        return allInputsDag;
-    }
-
-    virtual void clear()
-    {
-        assert(false);
-    }
-
+	virtual void clear()
+	{
+		assert(false);
+	}
 };
 
-class CEGISFinder: public CEGISFinderSpec  {
+class CEGISFinder : public CEGISFinderSpec
+{
 	vector<Tvalue> find_node_ids;
 	vector<Tvalue> find_history;
 	bool stoppedEarly;
 	CEGISParams params;
-	SolverHelper& dirFind;
-	SATSolver& mngFind;
+	SolverHelper &dirFind;
+	SATSolver &mngFind;
 
-
-	void addInputsToTestSet(BooleanDAG* problem, VarStore& input);
-    void addProblemToTestSet(BooleanDAG* problem);
+	void addInputsToTestSet(BooleanDAG *problem, VarStore &input);
+	void addProblemToTestSet(BooleanDAG *problem);
 
 public:
-
-	CEGISFinder(FloatManager &_floats, SolverHelper &_dirFind, SATSolver &_mngFind, CommandLineArgs &args) :
-		CEGISFinderSpec(_floats), dirFind(_dirFind), mngFind(_mngFind), params(args)
+	CEGISFinder(FloatManager &_floats, SolverHelper &_dirFind, SATSolver &_mngFind, CommandLineArgs &args) : CEGISFinderSpec(_floats), dirFind(_dirFind), mngFind(_mngFind), params(args)
 	{
-
 	}
 
-    void clear() override
-    {
-        find_node_ids.clear();
-        find_history.clear();
-        delete this;
-    }
+	void clear() override
+	{
+		find_node_ids.clear();
+		find_history.clear();
+		delete this;
+	}
 
-	SATSolverResult find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) override;
+	SATSolverResult find(BooleanDAG *problem, VarStore &controls, bool hasInputChanged, unsigned long long max_finder_solve_timeout_in_microseconds) override;
 
-	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override;
+	bool minimizeHoleValue(VarStore &ctrlStore, vector<string> &mhnames, vector<int> &mhsizes) override;
 
-	void declareControl(CTRL_node* cnode) override {
+	void declareControl(CTRL_node *cnode) override
+	{
 		dirFind.declareControl(cnode);
 	}
 
-	void updateCtrlVarStore(VarStore& ctrlStore) override {
-		for (auto it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it)  {
-            AssertDebug(ctrlStore.contains(it->first), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
-            ctrlStore.newVar(it->first, it->second, dirFind.getOtype(it->first), dirFind.get_type(it->first), dirFind.get_original_name(it->first), dirFind.get_source_dag_name(it->first));
+	void updateCtrlVarStore(VarStore &ctrlStore) override
+	{
+		for (auto it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it)
+		{
+			AssertDebug(ctrlStore.contains(it->first), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
+			ctrlStore.newVar(it->first, it->second, dirFind.getOtype(it->first), dirFind.get_type(it->first), dirFind.get_original_name(it->first), dirFind.get_source_dag_name(it->first));
 		}
 	}
 
-	void retractAssumptions() override {
+	void retractAssumptions() override
+	{
 		dirFind.getMng().retractAssumptions();
 	}
-
-
 };
 
-
-class CEGISFinderNumerical: public CEGISFinderSpec
+class CEGISFinderNumerical : public CEGISFinderSpec
 {
-	static const int  float_idx_size = 18;
+	static const int float_idx_size = 18;
 
-    REASSolver* reasSolver = NULL;
+	REASSolver *reasSolver = NULL;
 
-    void clear() override {
-        delete reasSolver;
-    }
+	void clear() override
+	{
+		delete reasSolver;
+	}
 
 	SATSolverResult assertDAGNumerical(
-		BooleanDAG* dag, map<string, string>& currentControls, map<string, int>& currentControlInts, map<string, float>& currentControlFloats) {
+		BooleanDAG *dag, map<string, string> &currentControls, map<string, int> &currentControlInts, map<string, float> &currentControlFloats)
+	{
 
+		cout << "CEGISFinderNumerical::assertDAGNumerical" << endl;
+		cout << "rewriting dag from int to float" << endl;
 		IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag->clone(), floats);
-		BooleanDAG* new_dag = rewriter.rewrite();
+		BooleanDAG *new_dag = rewriter.rewrite();
 
-	    reasSolver->addProblem(new_dag);
-	       	
-	    int solveCode = 0;
-	    try{
-	        solveCode = reasSolver->solve();
-	        currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(),currentControlInts, currentControlFloats);
-	        //reasSolver->get_control_map_as_map_str_str(currentControls);
-	    }catch(SolverException* ex){
-	        cout<<"ERROR "/*<<basename()*/<<": "<<ex->code<<"  "<<ex->msg<<endl;
+		reasSolver->addProblem(new_dag);
+
+		int solveCode = 0;
+		try
+		{
+			solveCode = reasSolver->solve();
+			currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(), currentControlInts, currentControlFloats);
+			// reasSolver->get_control_map_as_map_str_str(currentControls);
+		}
+		catch (SolverException *ex)
+		{
+			cout << "ERROR " /*<<basename()*/ << ": " << ex->code << "  " << ex->msg << endl;
 			return SAT_UNSATISFIABLE; // ex->code + 2;
-	    }catch(BasicError& be){
-	        currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(),currentControlInts, currentControlFloats);
-	        cout<<"ERROR: "/*<<basename()*/<<endl;
-	        return SAT_UNSATISFIABLE;
-	    }
-	    if( !solveCode ){			
-	        return SAT_UNSATISFIABLE;
-	    }
-	    
-	    return SAT_SATISFIABLE;
+		}
+		catch (BasicError &be)
+		{
+			currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(), currentControlInts, currentControlFloats);
+			cout << "ERROR: " /*<<basename()*/ << endl;
+			return SAT_UNSATISFIABLE;
+		}
+		if (!solveCode)
+		{
+			return SAT_UNSATISFIABLE;
+		}
+
+		return SAT_SATISFIABLE;
 	}
 
 	static int get_bit(int bitstring, int idx)
 	{
-		return (bitstring & (1<<idx) )!= 0;
+		return (bitstring & (1 << idx)) != 0;
 	}
 
-
 public:
-
-	CEGISFinderNumerical(FloatManager& _floats, ostream& out): CEGISFinderSpec(_floats)
+	CEGISFinderNumerical(FloatManager &_floats, ostream &out) : CEGISFinderSpec(_floats)
 	{
 		reasSolver = new REASSolver(floats);
 	}
 
-
-    SATSolverResult find(BooleanDAG* newdag, VarStore& controls, bool hasInputChanged, unsigned long long _unused_timeout = numeric_limits<unsigned long long>::max()) override
+	SATSolverResult find(BooleanDAG *problem, VarStore &controls, bool hasInputChanged, unsigned long long _unused_timeout = numeric_limits<unsigned long long>::max()) override
 	{
-		if(hasInputChanged)
-        {
-			if(allInputsDag == nullptr)
+		cout << "CEGISFinderNumerical::find: hasInputChanged: " << hasInputChanged << endl;
+		if (hasInputChanged)
+		{
+			BooleanDAG *newdag = problem->clone();
+			if (allInputsDag == nullptr)
 			{
 				allInputsDag = newdag;
 			}
 			else
 			{
 				allInputsDag->andDag(newdag);
-			}		
+			}
 		}
 		else
 		{
-			//claim: solution is already optimal.
-            assert(allInputsDag->get_failed_assert() == nullptr);
-            AssertDebug(false, "THIS NEEDS TO BE CONFIRMED THAT IT'S WHAT WE WANT IF YOU CAN EVEN GET HERE.");
+			Assert(problem == nullptr, "We expect problem to be null.");
+			// claim: solution is already optimal.
+			assert(allInputsDag->get_failed_assert() == nullptr);
+			AssertDebug(false, "THIS NEEDS TO BE CONFIRMED THAT IT'S WHAT WE WANT IF YOU CAN EVEN GET HERE.");
 			return SAT_SATISFIABLE;
 		}
 
@@ -196,8 +204,8 @@ public:
 
 		SATSolverResult result =
 			assertDAGNumerical(allInputsDag, outputControls, outputControlInts, outputControlFloats);
-		
-		if(result != SAT_TIME_OUT && result != SAT_SATISFIABLE)
+
+		if (result != SAT_TIME_OUT && result != SAT_SATISFIABLE)
 		{
 			return result;
 		}
@@ -205,25 +213,27 @@ public:
 		updateCtrlVarStore(controls);
 
 		long long sum = 0;
-		//Save outputControls in (VarStore) controls
-		for(auto it = controls.begin(); it !=controls.end(); ++it){
-			const string& cname = it->get_name();
+		// Save outputControls in (VarStore) controls
+		for (auto it = controls.begin(); it != controls.end(); ++it)
+		{
+			const string &cname = it->get_name();
 			cout << "cname = " << cname << endl;
-			OutType* out_type = allInputsDag->get_node(cname)->getOtype();
-			cout << "out_type = " <<  out_type->str() << endl;
- 			//int cnt = dirFind.getArrSize(cname);
-			assert(allInputsDag->get_node(cname)->isArrType() == false); 
-			if(out_type == OutType::INT || out_type == OutType::BOOL)
+			OutType *out_type = allInputsDag->get_node(cname)->getOtype();
+			cout << "out_type = " << out_type->str() << endl;
+			// int cnt = dirFind.getArrSize(cname);
+			assert(allInputsDag->get_node(cname)->isArrType() == false);
+			if (out_type == OutType::INT || out_type == OutType::BOOL)
 			{
-				INTER_node* inter_node = (INTER_node*)allInputsDag->get_node(cname);
+				INTER_node *inter_node = (INTER_node *)allInputsDag->get_node(cname);
 				int cnt = inter_node->get_nbits();
-				Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
+				Assert(cnt == it->element_size(), "find: SIZE MISMATCH: " << cnt << " != " << it->element_size() << endl);
 				int ctrl_val = outputControlInts[cname];
 				cout << "ctrl_val = " << ctrl_val << endl;
-				for(int i=0; i<cnt; ++i){
-					//int val = mngFind.getVarVal(dirFind.getArr(cname, i));
+				for (int i = 0; i < cnt; ++i)
+				{
+					// int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 					int val = get_bit(ctrl_val, i);
-					it->set_bit(i, (val==1) ? 1 : 0);
+					it->set_bit(i, (val == 1) ? 1 : 0);
 				}
 			}
 			else
@@ -231,14 +241,15 @@ public:
 				Assert(allInputsDag->get_node(cname)->getOtype() == OutType::FLOAT, "Otype is " + allInputsDag->get_node(cname)->getOtype()->str() + " but should be FLOAT.");
 				int float_idx = floats.getIdx(outputControlFloats[cname]);
 				sum = float_idx;
-				int cnt = float_idx_size; 
-				Assert((1<<cnt) > float_idx, "num bits for float idx is too small");
-				Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
+				int cnt = float_idx_size;
+				Assert((1 << cnt) > float_idx, "num bits for float idx is too small");
+				Assert(cnt == it->element_size(), "find: SIZE MISMATCH: " << cnt << " != " << it->element_size() << endl);
 				cout << "float_idx = " << float_idx << " | ctrl_val = " << floats.getFloat(float_idx) << endl;
-				for(int i=0; i<cnt; ++i){
-					//int val = mngFind.getVarVal(dirFind.getArr(cname, i));
+				for (int i = 0; i < cnt; ++i)
+				{
+					// int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 					int val = get_bit(float_idx, i);
-					it->set_bit(i, (val==1) ? 1 : 0);
+					it->set_bit(i, (val == 1) ? 1 : 0);
 				}
 			}
 		}
@@ -246,28 +257,31 @@ public:
 		return result;
 	}
 
-	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override
+	bool minimizeHoleValue(VarStore &ctrlStore, vector<string> &mhnames, vector<int> &mhsizes) override
 	{
-		//do nothing
-        AssertDebug(false, "TODO: return something meaningful here. Not sure what needs to be returned here.");
+		// do nothing
+		AssertDebug(false, "TODO: return something meaningful here. Not sure what needs to be returned here.");
 	}
 
-	void declareControl(CTRL_node* cnode) override
+	void declareControl(CTRL_node *cnode) override
 	{
-		//do nothing
+		// do nothing
 	}
 
-	void updateCtrlVarStore(VarStore& ctrlStore) override
+	void updateCtrlVarStore(VarStore &ctrlStore) override
 	{
-		if(allInputsDag == nullptr) {
-            return;
+		if (allInputsDag == nullptr)
+		{
+			return;
 		}
 		auto problemIn = allInputsDag->getNodesByType(bool_node::CTRL);
-	    for(int i=0; i<problemIn.size(); ++i){
-			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
-            string name = ctrlnode->get_name();
-            AssertDebug(ctrlStore.contains(name), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
-            if (ctrlnode->getOtype() == OutType::FLOAT) {
+		for (int i = 0; i < problemIn.size(); ++i)
+		{
+			CTRL_node *ctrlnode = dynamic_cast<CTRL_node *>(problemIn[i]);
+			string name = ctrlnode->get_name();
+			AssertDebug(ctrlStore.contains(name), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
+			if (ctrlnode->getOtype() == OutType::FLOAT)
+			{
 				ctrlStore.newVar(name, float_idx_size, OutType::FLOAT, bool_node::CTRL, ctrlnode->get_original_name(), ctrlnode->get_source_dag_name());
 			}
 		}
@@ -275,7 +289,6 @@ public:
 
 	void retractAssumptions() override
 	{
-		//do nothing
+		// do nothing
 	}
 };
-

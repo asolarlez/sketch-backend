@@ -67,7 +67,6 @@ void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 				if(failedpos > cutoff){
 					if(PARAMS->verbosity > 5){ cout<<" failedpos = "<<failedpos<<"   cutoff = "<<cutoff <<"  as = "<<asserts.size() <<" node "<<(*node_it)->id<<" out of "<<orisize<<endl; }
 					dag->clear();
-					delete dag;
 					return;
 				}
 			}else{
@@ -89,7 +88,6 @@ void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 		}
 	}else{
 		dag->clear();
-		delete dag;
 	}
 }
 

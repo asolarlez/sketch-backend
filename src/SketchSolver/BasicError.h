@@ -38,10 +38,8 @@ inline void Warning(const string& msg){
 
 
 inline string int2str(int i){
-	char tmp[30];
-	Assert( i < 999999999, "Went out of bounds");
-	sprintf(tmp, "%d", i);
-	return string(tmp);
+	Assert(i < 999999999, "Went out of bounds");
+	return std::to_string(i);
 }
 
 #endif

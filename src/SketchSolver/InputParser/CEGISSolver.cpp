@@ -404,7 +404,6 @@ CEGISSolverResult CEGISSolver::solve(
 		}
 
 		if(hasInputChanged && !doMore){
-            // cout << "hasInputChanged && !doMore" << endl;
 			if(PARAMS->minvarHole && prevSolutionFound){
 				cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
 				checker->get_input_store() = prevInputStore;
@@ -449,6 +448,7 @@ CEGISSolverResult CEGISSolver::solve(
     {
         assert(iterations == 1);
     }
+    cout << "returning from CEGISSolver::solve" << endl;
 	return CEGISSolverResult{!fail, new HoleVarStore(ctrl_store), intermediate_solutions};
 }
 

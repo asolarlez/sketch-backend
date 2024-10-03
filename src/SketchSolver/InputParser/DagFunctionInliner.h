@@ -41,17 +41,11 @@ class CallTreeTracker{
 	*/
 	map<int, string> cname;
 
-	string funName(const UFUN_node& fun){
+	string funName(const UFUN_node& fun) {
 		string s = fun.get_ufun_name().substr(0, 9);
-		s += "_";
-		char tmpbo[256];
-		//itoa(fun.get_callsite(), tmpbo, 10);
-		//s += tmpbo;
-		//s += "_";
-		//itoa(fun.globalId, tmpbo, 10);
-                sprintf(tmpbo, "%d", fun.globalId);
-		s += tmpbo;		
-		return s;
+		s += '_';
+		// s += std::to_string(fun.get_callsite()) + "_";
+		return s + std::to_string(fun.globalId);
 	}
 
 	void regName(const UFUN_node& fun){

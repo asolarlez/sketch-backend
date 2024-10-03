@@ -466,6 +466,8 @@ public:
 			else
 			{
 				cout << "ALL INTS AND BOOLS SHOULD HAVE node_id_to_replacement_nodes" << endl;
+				cout << "mother_is_one_hot: " << mother_is_one_hot << endl;
+				cout << "father_is_one_hot: " << father_is_one_hot << endl;
 				assert(false);
 			}
 		}
@@ -1002,8 +1004,13 @@ public:
 
 			make_vectors_equal_length(if_true_one_hot, if_false_one_hot);
 
+			if (cond_one_hot.size() != 2)
+			{
+				cout << "cond_one_hot.size() == " << cond_one_hot.size() << endl;
+			}
 			assert(cond_one_hot.size() == 2);
-
+			// Assert(cond_one_hot.size() == 2, "cond_one_hot.size() == " + to_string(cond_one_hot.size())); // todo: add rationale; can be made more general
+			
 			vector<bool_node*> new_nodes;
 
 			int len = if_true_one_hot.size();

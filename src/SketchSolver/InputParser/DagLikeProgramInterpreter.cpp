@@ -25,7 +25,7 @@ namespace VectorizedInterpreter {
     }
 
     DagLikeProgramInterpreter::DagLikeProgramInterpreter(Graph _graph) {
-        graph = move(_graph);
+        graph = std::move(_graph);
 
         int max_original_buffer_id = -1;
         for(const auto& op : graph.operations) {

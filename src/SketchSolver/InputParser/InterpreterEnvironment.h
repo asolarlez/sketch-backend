@@ -198,10 +198,12 @@ public:
         CEGISFinderSpec* cegisfind;
 		if (params.numericalSolver) 
 		{
+			cout << "using Finder: CEGISFinderNumerical" << endl;
 			cegisfind = new CEGISFinderNumerical(floats, cout);
 	    }
 	    else
 	    {
+			cout << "using Finder: CEGISFinder" << endl;
 			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
 		solver = new CEGISSolver(cegisfind, params, floats, hardcoder);

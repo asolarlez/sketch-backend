@@ -1624,7 +1624,8 @@ void DagOptim::visit( UFUN_node& node ){
  		int mmid = node.arguments(i) == NULL? -1: node.arguments(i)->id;
 		char tmpbo[256];		
 		// itoa(mmid, tmpbo, 10);
-		sprintf(tmpbo,"%d", mmid);
+		// sprintf(tmpbo,"%d", mmid); // deprecated
+		snprintf(tmpbo, sizeof(tmpbo), "%d", mmid);
 		tmp += tmpbo;
  		tmp += ",";
  	}

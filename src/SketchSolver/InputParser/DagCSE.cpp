@@ -374,7 +374,8 @@ void DagCSE::visit(  CONST_node& node ){
 	size_t p = 0;
 	tch[p] = '$'; p++;
 	if(node.isFloat()){
-		p += sprintf(tch+p, "%A", node.getFval());
+		// p += sprintf(tch+p, "%A", node.getFval()); // deprecated
+		p += snprintf(tch+p, tmpbuf.size()-p, "%A", node.getFval());
 	}else{
 		writeInt(tch, node.getVal(), p);
 	}
