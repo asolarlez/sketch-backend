@@ -828,6 +828,8 @@ public:
 		//if (status >= 1 && status <= 9) {
 		//    Assert(constraintsSatisfied, "Something is wrong with snopt");
 		//}
+		bool init_suppressPrint = suppressPrint;
+		suppressPrint = false;
 		if (!suppressPrint) {
 			if (constraintsSatisfied) {
 				cout << "Constraints satisfied" << endl;
@@ -836,6 +838,7 @@ public:
 				cout << "Constraints not satisfied" << endl;
 			}
 		}
+		suppressPrint = init_suppressPrint;
 
 		return constraintsSatisfied;
 	}

@@ -71,13 +71,16 @@ BoolApproxSolver::~BoolApproxSolver(void) {
 void BoolApproxSolver::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
-    cout << "I: ";
-    for (int i = 0; i < allInputs[0].size(); i++) {
-        if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
-            cout << imap[i] << "," << allInputs[0][i] << ";";
+    cout << "setInputs" << endl;
+    if (PARAMS->verbosity > 3) {
+        cout << "I: ";
+        for (int i = 0; i < allInputs[0].size(); i++) {
+            if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
+                cout << imap[i] << "," << allInputs[0][i] << ";";
+            }
         }
+        cout << endl;
     }
-    cout << endl;
 }
 
 bool BoolApproxSolver::checkInputs(int rowid, int colid) {

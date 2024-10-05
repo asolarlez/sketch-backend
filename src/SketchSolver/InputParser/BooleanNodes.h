@@ -1780,7 +1780,7 @@ public:
 /*mother is an index to the array, multi-mother is the array*/
 class ARRACC_node: public bool_node{
 private:
-	ARRACC_node(int n):bool_node(ARRACC, n+1){ }
+	ARRACC_node(int n):bool_node(ARRACC, n+1){}
 	ARRACC_node(const ARRACC_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }
 
 public:

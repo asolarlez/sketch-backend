@@ -79,8 +79,12 @@ public:
     }
 
     void analyze(gsl_vector* state, SClause* s = NULL) {
+        cout << "in analyze" << endl;
     	actualEval->run(state);
-    	cout << "BA" << GradUtil::counter << ",";
+        bool do_print = false;  
+        if (do_print) {
+            cout << "BA" << GradUtil::counter << ",";
+        }
     	for (auto it1 = assertConstraints.begin(); it1 != assertConstraints.end(); it1++) {
     		const vector<int>& inputs = dependentInputs[*it1];
             int minid = -1;
@@ -94,34 +98,47 @@ public:
                 } 
             }
             if (minid != -1) {
-            	cout << "(" << *it1 << ":" << minid;
-            	if (minerror < 0.0) {
-            		cout << ":S";
-            	} else if (minerror < 0.1) {
-            		cout << ":B";
-            	} else {
-            		cout << ":U";
-            	}
+                if (do_print) {
+                    cout << "(" << *it1 << ":" << minid;
+                    if (minerror < 0.0) {
+                        cout << ":S";
+                    } else if (minerror < 0.1) {
+                        cout << ":B";
+                    } else {
+                        cout << ":U";
+                    }
+                }
                 if (s != NULL) {
                     for (int k = 0; k < s->size(); k++) {
                         if (get<0>(s->getPair(k)) == *it1) {
-                            cout << ":L";
+                            if (do_print) {
+                                cout << ":L";
+                            }
                         }
                     }
                 }
-            	cout << "),";
-        	}
-    	}
-    	cout << endl;
+                if (do_print) {
+                    cout << "),";
+                }
+            }
+        }
+        if (do_print) {
+            cout << endl;
+        }
     }
 
 	virtual void sampleState(gsl_vector* state) { 
 		tuple<int, double> best = make_tuple(0, 1e30);
         for (int i = 0; i < RANDOM_SEARCH; i++) {
             randomize(tmp);
-            cout << "Trying: ";
-            for (int j = 0; j < tmp->size; j++) {
-                cout << gsl_vector_get(tmp, j) << ", ";
+            cout << "Trying new initialization in sampleState 2." << endl;
+            static bool printDebugInfo = false;  // Initialize the debug flag
+            if (printDebugInfo) {
+                cout << "Trying: ";
+                for (int j = 0; j < tmp->size; j++) {
+                    cout << gsl_vector_get(tmp, j) << ", ";
+                }
+                cout << endl;
             }
             actualEval->run(tmp);
             double error = getError();

@@ -88,6 +88,19 @@ public:
 			values[it->first] = str.str(); // TODO: deal with boolean holes
 		}
 	}
+
+	void getControls_and_floats(map<string, string>& values, map<string, float>& floats) {
+		for (auto it = ctrls.begin(); it != ctrls.end(); it++) {
+			ctrlVals[it->first] = gsl_vector_get(state, it->second);
+		}
+		for (auto it = ctrlVals.begin(); it != ctrlVals.end(); it++) {
+			stringstream str;
+			str << it->second;
+			values[it->first] = str.str(); // TODO: deal with boolean holes
+			floats[it->first] = it->second;
+		}
+	}
+
     map<string, int>& get_ctrls()
     {
         return solver->get_ctrls();

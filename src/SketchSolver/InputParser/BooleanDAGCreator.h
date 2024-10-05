@@ -6,6 +6,8 @@
 
 class BooleanDAGCreator
 {
+    CommandLineArgs& params;
+	
 	StringHTable2<bool_node*> named_nodes;
 	int new_names;
 	int new_namesb;
@@ -16,7 +18,7 @@ class BooleanDAGCreator
 		const string& father, /*OUT*/bool_node*& mth, /*OUT*/bool_node*& fth);
 
 public:
-    BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm);
+    BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm, CommandLineArgs& params);
 
 public:
 	virtual ~BooleanDAGCreator(void);

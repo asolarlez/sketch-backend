@@ -64,14 +64,17 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 		
 	doublereal* xlow = new doublereal[ncontrols];
 	doublereal* xupp = new doublereal[ncontrols];
-	xlow[0] = -20; 
-	xupp[0] = 20;
-	for (auto i = 0; i < ctrlNodes.size(); i++) {
+	float min_float = -20; //can be changed to e.g. 0.0;
+	float max_float = 20; //can be changed to e.g. 1.0;
+	assert(min_float < max_float);
+	xlow[0] = min_float; 
+	xupp[0] = max_float;
+	for (auto i = 1; i < ctrlNodes.size(); i++) {
 		CTRL_node* cnode = (CTRL_node*)ctrlNodes[i];
 		if (cnode->getOtype() == OutType::FLOAT) {
 			int idx = ctrls[cnode->get_name()];
-			xlow[idx] = cnode->hasRange ? cnode->low : -20.0;
-			xupp[idx] = cnode->hasRange ? cnode->high : 20.0;
+			xlow[idx] = cnode->hasRange ? cnode->low : min_float;
+			xupp[idx] = cnode->hasRange ? cnode->high : max_float;
 		}
 		else if (cnode->getOtype() == OutType::BOOL) {
 			int idx = ctrls[cnode->get_name()];

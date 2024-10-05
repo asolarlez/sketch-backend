@@ -3,7 +3,7 @@
 #include "BackwardsAnalysis.h"
 //extern CommandLineArgs* PARAMS;
 
-BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm):dag(p_dag),optim(*p_dag, fm)
+BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm, CommandLineArgs& params):dag(p_dag),optim(*p_dag, fm), params(params)
 {
 	//
 	// optim.alterARRACS();
@@ -241,6 +241,11 @@ bool_node* BooleanDAGCreator::create_const(double n) {
 
 
 INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz, int tupDepth){
+    if (n > 0 && n > params.NINPUTS){
+		// this handles the case when n == 2 (called by the parser), but params.NINPUTS == 1
+		Assert(params.NINPUTS > 0, "NINPUTS should be greater than 0");
+		n = params.NINPUTS;
+	}
 	INTER_node* tmp = dag->create_inputs(n, type, gen_name, arrSz, tupDepth);
 	bool_node* f;
 	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);

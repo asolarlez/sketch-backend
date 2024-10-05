@@ -44,6 +44,7 @@ class REASSolver
     void print_control_map(ostream& out);
     void printDiagnostics(SATSolver& mng, char c);
     void get_control_map(map<string, string>& values);
+    void get_control_map_and_floats(map<string, string>& values, map<string, float>& floats);
     map<string, int>& get_ctrls()
     {
         return ns->get_ctrls();

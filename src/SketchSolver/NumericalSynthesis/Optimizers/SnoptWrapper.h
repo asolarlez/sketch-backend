@@ -256,7 +256,10 @@ public:
                 }
             }
         }
-        cout << "Error: " << F[0] << endl;
+        cout << "[df] Error: " << F[0] << " " << endl;
+        if (F[0] < 0.001) {
+            cout << "[df] Found small error." << endl;
+        }
         F[0] = -F[0];
         for (int j = 0; j < *n; j++) {
             G[j] = -G[j];
@@ -431,7 +434,11 @@ public:
         GradUtil::BETA = betas[0];
         GradUtil::ALPHA = alphas[0];
         eval->run(t);
-        cout << "I:" << Util::print(t) << "::" << getError(constraints, minimizeNode) << " beta " << alphas[0]  << endl;
+        cout << "done eval->run in optimize 1" << endl;
+        bool do_print = false; // Local debug flag
+        if (do_print) {
+            cout << "I:" << Util::print(t) << "::" << getError(constraints, minimizeNode) << " beta " << alphas[0]  << endl;
+        }
         
         double obj;
         int numtries = 0;
@@ -476,7 +483,11 @@ public:
                 obj = snoptSolver->getObjectiveVal();
                 gsl_vector_memcpy(t, snoptSolver->getResults());
                 eval->run(t);
-                cout << "I:" << Util::print(t) << "::" << getError(constraints, minimizeNode) << " beta " << p->alpha  << endl;
+                bool do_print = false;
+                cout << "done eval->run in optimize 2" << endl;
+                if (do_print) {
+                    cout << "I:" << Util::print(t) << "::" << getError(constraints, minimizeNode) << " beta " << p->alpha  << endl;
+                }
                 if (PARAMS->numdebug) {
                     SnoptEvaluator::file << Util::print(t) << endl;
                     SnoptEvaluator::file << timer.stop().get_cur_ms() << endl;
@@ -488,7 +499,11 @@ public:
                     localState->errors[i] = getError(constraints, minimizeNode);
                     // TODO: this does not work with multiple retries and we want best local state so far. 
                 }
-                cout << "Error: " << getError(constraints, minimizeNode) << endl;
+                double error = getError(constraints, minimizeNode); 
+                cout << "[optimize] Error: " << error << endl;
+                if (error < 0.0001) {
+                    cout << "[optimize] Found small error." << endl;
+                }
 
             }
             if (numtries == 0) {
@@ -502,6 +517,20 @@ public:
             if (minObjectiveVal > threshold && numtries < MAX_TRIES && !solved) {
                 randomizeCtrls(t, inputs, constraints, minimizeNode);
             }
+        }
+        // Determine reason for exiting the while loop
+        bool has_reason = false;
+        if (minObjectiveVal <= threshold) {
+            cout << "Exiting loop: Objective value " << minObjectiveVal << " is below or equal to threshold " << threshold << endl;
+            has_reason = true;
+        } if (numtries >= MAX_TRIES) {
+            cout << "Exiting loop: Reached maximum number of tries (" << MAX_TRIES << ")" << endl;
+            has_reason = true;
+        } if (solved) {
+            cout << "Exiting loop: Problem solved successfully" << endl;
+            has_reason = true;
+        } if (!has_reason) {
+            cout << "Exiting loop: Unknown reason" << endl;
         }
         return solved || (minObjectiveVal < threshold);
     }
@@ -537,9 +566,13 @@ public:
         bool foundValid = false;
         for (int i = 0; i < RANDOM_SEARCH; i++) {
             randomize(t1);
-            cout << "Trying: ";
-            for (int j = 0; j < t1->size; j++) {
-                cout << gsl_vector_get(t1, j) << ", ";
+            cout << "Trying new initialization in randomizeCtrls." << endl;
+            static bool printDebugInfo = false;  // Initialize the flag
+            if (printDebugInfo) {
+                cout << "Trying: ";
+                for (int j = 0; j < t1->size; j++) {
+                    cout << gsl_vector_get(t1, j) << ", ";
+                }
             }
             GradUtil::BETA = -50;
             GradUtil::ALPHA = 50;

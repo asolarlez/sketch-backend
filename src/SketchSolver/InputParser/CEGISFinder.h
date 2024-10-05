@@ -115,6 +115,7 @@ public:
 	}
 };
 
+
 class CEGISFinderNumerical : public CEGISFinderSpec
 {
 	static const int float_idx_size = 18;
@@ -131,9 +132,21 @@ class CEGISFinderNumerical : public CEGISFinderSpec
 	{
 
 		cout << "CEGISFinderNumerical::assertDAGNumerical" << endl;
-		cout << "rewriting dag from int to float" << endl;
-		IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag->clone(), floats);
-		BooleanDAG *new_dag = rewriter.rewrite();
+
+		bool use_int_to_float_rewrite = true; // can be made into an input param. 
+		BooleanDAG *new_dag = nullptr;
+		IntToFloatRewriteDag *rewriter = nullptr;
+		if (use_int_to_float_rewrite) {
+			cout << "[assertDAGNumerical] Rewriting dag from int to float using IntToFloatRewriteDag" << endl;
+			rewriter = new IntToFloatRewriteDag(*dag->clone(), floats);
+			new_dag = rewriter->rewrite();
+		}
+		else {
+			cout << "[assertDAGNumerical] Using DagOptim. NOT using IntToFloatRewriteDag" << endl;
+			new_dag = dag->clone();
+			DagOptim dagOptim = DagOptim(*new_dag, floats);
+			dagOptim.process(*new_dag);
+		}
 
 		reasSolver->addProblem(new_dag);
 
@@ -141,8 +154,13 @@ class CEGISFinderNumerical : public CEGISFinderSpec
 		try
 		{
 			solveCode = reasSolver->solve();
-			currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(), currentControlInts, currentControlFloats);
-			// reasSolver->get_control_map_as_map_str_str(currentControls);
+			if (use_int_to_float_rewrite) {
+				assert(rewriter != nullptr);
+				currentControls = rewriter->extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(), currentControlInts, currentControlFloats);
+			}
+			else {
+				reasSolver->get_control_map_and_floats(currentControls, currentControlFloats);
+			}
 		}
 		catch (SolverException *ex)
 		{
@@ -151,7 +169,13 @@ class CEGISFinderNumerical : public CEGISFinderSpec
 		}
 		catch (BasicError &be)
 		{
-			currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(), currentControlInts, currentControlFloats);
+			if (use_int_to_float_rewrite) {
+				assert(rewriter != nullptr);
+				currentControls = rewriter->extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(), currentControlInts, currentControlFloats);
+			}
+			else {
+				reasSolver->get_control_map_and_floats(currentControls, currentControlFloats);
+			}
 			cout << "ERROR: " /*<<basename()*/ << endl;
 			return SAT_UNSATISFIABLE;
 		}
@@ -180,6 +204,10 @@ public:
 		if (hasInputChanged)
 		{
 			BooleanDAG *newdag = problem->clone();
+			// Assert that all nodes in newdag and allInputsDag have unique ids
+			std::set<int> uniqueIds;
+			
+
 			if (allInputsDag == nullptr)
 			{
 				allInputsDag = newdag;
@@ -218,15 +246,20 @@ public:
 		{
 			const string &cname = it->get_name();
 			cout << "cname = " << cname << endl;
-			OutType *out_type = allInputsDag->get_node(cname)->getOtype();
+			auto node = allInputsDag->unchecked_get_node(cname);
+			if (node == nullptr) {
+				cout << "warning: node " << cname << " not found" << endl;
+				continue;
+			}
+			OutType *out_type = node->getOtype();
 			cout << "out_type = " << out_type->str() << endl;
 			// int cnt = dirFind.getArrSize(cname);
-			assert(allInputsDag->get_node(cname)->isArrType() == false);
+			assert(node->isArrType() == false);
 			if (out_type == OutType::INT || out_type == OutType::BOOL)
 			{
-				INTER_node *inter_node = (INTER_node *)allInputsDag->get_node(cname);
+				INTER_node *inter_node = (INTER_node *)node;
 				int cnt = inter_node->get_nbits();
-				Assert(cnt == it->element_size(), "find: SIZE MISMATCH: " << cnt << " != " << it->element_size() << endl);
+				AssertDebug(cnt == it->element_size(), "find: SIZE MISMATCH: " + std::to_string(cnt) + " != " + std::to_string(it->element_size()));
 				int ctrl_val = outputControlInts[cname];
 				cout << "ctrl_val = " << ctrl_val << endl;
 				for (int i = 0; i < cnt; ++i)
@@ -238,12 +271,12 @@ public:
 			}
 			else
 			{
-				Assert(allInputsDag->get_node(cname)->getOtype() == OutType::FLOAT, "Otype is " + allInputsDag->get_node(cname)->getOtype()->str() + " but should be FLOAT.");
+				Assert(node->getOtype() == OutType::FLOAT, "Otype is " + node->getOtype()->str() + " but should be FLOAT.");
 				int float_idx = floats.getIdx(outputControlFloats[cname]);
 				sum = float_idx;
 				int cnt = float_idx_size;
 				Assert((1 << cnt) > float_idx, "num bits for float idx is too small");
-				Assert(cnt == it->element_size(), "find: SIZE MISMATCH: " << cnt << " != " << it->element_size() << endl);
+				AssertDebug(cnt == it->element_size(), "find: SIZE MISMATCH: " + std::to_string(cnt) + " != " + std::to_string(it->element_size()));
 				cout << "float_idx = " << float_idx << " | ctrl_val = " << floats.getFloat(float_idx) << endl;
 				for (int i = 0; i < cnt; ++i)
 				{

@@ -47,17 +47,26 @@ public:
         bool foundValid = false;
         for (int i = 0; i < RANDOM_SEARCH; i++) {
             randomize(tmp);
-            cout << "Trying: ";
-            for (int j = 0; j < tmp->size; j++) {
-                cout << gsl_vector_get(tmp, j) << ", ";
+            cout << "Trying new initialization in sampleState 1." << endl;
+            static bool printDebugInfo = false;  // Initialize the debug flag
+            if (printDebugInfo) {
+                cout << "Trying: ";
+                for (int j = 0; j < tmp->size; j++) {
+                    cout << gsl_vector_get(tmp, j) << ", ";
+                }
+                cout << endl;
             }
             actualEval->run(tmp);
             double error = getError();
-            cout << "Error: " << error << endl;
+            cout << "[sampleState] Error: " << error << " " <<endl;
             
             if (error < best) {
                 best = error;
                 gsl_vector_memcpy(state, tmp);
+            }
+
+            if(error == 0.0) {
+                cout << "[sampleState] Found valid state." << endl;
             }
         }
     }

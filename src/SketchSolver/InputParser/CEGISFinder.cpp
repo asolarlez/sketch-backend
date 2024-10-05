@@ -107,7 +107,7 @@ SATSolverResult CEGISFinder::find(
 	for(auto it = controls.begin(); it !=controls.end(); ++it){
 		const string& cname = it->get_name();
 		int cnt = dirFind.getArrSize(cname);
-		Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
+		AssertDebug( cnt == it->element_size(), "find: SIZE MISMATCH: " + std::to_string(cnt) + " != " + std::to_string(it->element_size()));
 		for(int i=0; i<cnt; ++i){
             auto idx = dirFind.getArr(cname, i);
             if(mngFind.contains_idx(idx)){

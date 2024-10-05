@@ -88,13 +88,13 @@ void SmoothSatSolver::setInputs(vector<vector<int>>& allInputs_, vector<int>& in
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
     if (PARAMS->verbosity > 7 && !fullSAT) {
-    cout << "I:";
-    for (int i = 0; i < allInputs[0].size(); i++) {
-        if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
-            cout << imap[i] << "," << allInputs[0][i] << ";";
+        cout << "I:";
+        for (int i = 0; i < allInputs[0].size(); i++) {
+            if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
+                cout << imap[i] << "," << allInputs[0][i] << ";";
+            }
         }
-    }
-    cout << endl;
+        cout << endl;
     }
 }
 

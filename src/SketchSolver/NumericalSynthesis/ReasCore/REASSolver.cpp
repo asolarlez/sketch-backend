@@ -135,3 +135,7 @@ void REASSolver::print_control_map(ostream& out){
 void REASSolver::get_control_map(map<string, string>& values){
     ns->getControls(values);
 }
+
+void REASSolver::get_control_map_and_floats(map<string, string>& values, map<string, float>& floats){
+    ns->getControls_and_floats(values, floats);
+}

@@ -5,7 +5,7 @@
 
 class IntToFloatRewriteDag: public DagOptim
 {
-	bool meta_print = true;
+	bool meta_print = false;
 	float threshold = 0.9;
 	float sum_trehsold = 0.95;
 	float epsilon = 0.001;
@@ -25,13 +25,14 @@ public:
 		cout << "----------------------------------------------------------" << endl;
 		cout << "----------------------------------------------------------" << endl;
 		cout << "Hello World" << endl;
-		for(int i = 0; i< dag.size(); i++)
-		{
-			bool_node* node = (dag)[i];
-			cout << "node_" <<i << ":: name: " << node->get_name() << ", out_type: " << node->getOtype()->str() << endl;
-		}
+		cout << "init dag size: " << dag.size() << endl;
+		// for(int i = 0; i< dag.size(); i++)
+		// {
+		// 	bool_node* node = (dag)[i];
+		// 	cout << "node_" <<i << ":: name: " << node->get_name() << ", out_type: " << node->getOtype()->str() << endl;
+		// }
 
-		dag.lprint(cout);
+		// dag.lprint(cout);
 
 		/*
 		todo: handle NEG(int);
@@ -75,7 +76,9 @@ public:
 		*/
 		process(dag); // main
 
-		dag.lprint(cout);
+		// dag.lprint(cout);
+
+		cout << "final dag size: " << dag.size() << endl;
 
 
 		BooleanDAG* ret = &dag;
@@ -142,16 +145,16 @@ public:
 
 	bool_node* after_create(bool_node* node)
 	{
-		cout << "new node (pre add) : " << node->lprint() << endl;
+		// cout << "new node (pre add) : " << node->lprint() << endl;
 		if(node->type != bool_node::CONST)
 		{
 			node->addToParents();
 			node = optAdd(node);
 			if(node->type == bool_node::ASSERT)
 			{
-				if(inserted_asserts.find(node->id) == inserted_asserts.end())
+				if(inserted_asserts.find(node->globalId) == inserted_asserts.end())
 				{
-					inserted_asserts.insert(node->id);
+					inserted_asserts.insert(node->globalId);
 					bool_node* parent = node->get_parent(0);
 					if(parent->type == bool_node::CONST)
 					{
@@ -164,7 +167,7 @@ public:
 				}
 			}
 		}
-		cout << "new node (post add): " << node->lprint() << endl;
+		// cout << "new node (post add): " << node->lprint() << endl;
 		return node;
 	}
 
@@ -280,9 +283,9 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( CTRL_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( CTRL_node& node ); node.globalId = " << node.globalId << endl;
 
 		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{
@@ -305,8 +308,8 @@ public:
 				new_nodes.push_back(p_new_node);
 				new_ctrl_nodes.push_back(new_node);
 			}
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 			assert(ctrl_node_name_to_replacement_nodes.find(node.get_name()) == ctrl_node_name_to_replacement_nodes.end());
 			ctrl_node_name_to_replacement_nodes[node.get_name()] = new_ctrl_nodes;
 
@@ -328,9 +331,9 @@ public:
 		}
 		CONST_node& node = (CONST_node&)*rvalue;
 
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( CONST_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( CONST_node& node ); node.globalId = " << node.globalId << endl;
 
 		if(node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{		
@@ -349,9 +352,20 @@ public:
 			{
 				new_nodes.push_back(after_create(getCnode(0.0)));
 			}
-
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			if (node_id_to_replacement_nodes.find(node.globalId) != node_id_to_replacement_nodes.end()) {
+				const auto& existing_nodes = node_id_to_replacement_nodes[node.globalId];
+				AssertDebug(new_nodes.size() == existing_nodes.size(), "Mismatch in number of replacement nodes");
+				for (size_t i = 0; i < new_nodes.size(); ++i) {
+					CONST_node* new_const = dynamic_cast<CONST_node*>(new_nodes[i]);
+					CONST_node* existing_const = dynamic_cast<CONST_node*>(existing_nodes[i]);
+					AssertDebug(new_const && existing_const, "Non-constant node encountered");
+					AssertDebug(getFval(new_const) == getFval(existing_const), "Mismatch in node values");
+				}
+			}
+			else {
+				assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.globalId] = new_nodes;
+			}
 		}
 
 	}
@@ -362,9 +376,9 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( PLUS_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( PLUS_node& node ); node.globalId = " << node.globalId << endl;
 		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{
 			bool_node* mother = node.mother();
@@ -373,15 +387,15 @@ public:
 			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
 			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
 
-			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 			if(mother_is_one_hot && father_is_one_hot)
 			{
 				if(print)
 				cout << "ENTER 1" << endl;
-				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
-				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->globalId];
+				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->globalId];
 
 				int max_val = replace_mother_nodes.size() - 1 + replace_father_nodes.size() - 1;
 
@@ -400,8 +414,8 @@ public:
 					
 					new_nodes.push_back(sum_nodes(inter_node_ids));
 				}
-				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-				node_id_to_replacement_nodes[node.id] = new_nodes;
+				assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 				assert_one_hot_constraint(new_nodes);
 			}
@@ -420,9 +434,9 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( TIMES_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( TIMES_node& node ); node.globalId = " << node.globalId << endl;
 		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{
 			bool_node* mother = node.mother();
@@ -431,15 +445,15 @@ public:
 			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
 			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
 
-			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 			if(mother_is_one_hot && father_is_one_hot)
 			{
 				if(print)
 				cout << "ENTER" << endl;
-				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
-				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->globalId];
+				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->globalId];
 
 				int max_val = (replace_mother_nodes.size() - 1) * (replace_father_nodes.size() - 1);
 
@@ -458,8 +472,8 @@ public:
 					new_nodes.push_back(sum_nodes(matrix[i]));
 				}
 				
-				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-				node_id_to_replacement_nodes[node.id] = new_nodes;
+				assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 				assert_one_hot_constraint(new_nodes);
 			}
@@ -480,9 +494,9 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( DIV_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( DIV_node& node ); node.globalId = " << node.globalId << endl;
 		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{
 			bool_node* mother = node.mother();
@@ -491,15 +505,15 @@ public:
 			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
 			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
 
-			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 			if(mother_is_one_hot && father_is_one_hot)
 			{
 				if(print)
 				cout << "ENTER" << endl;
-				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
-				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->globalId];
+				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->globalId];
 
 				int max_val = replace_mother_nodes.size() - 1;
 
@@ -520,8 +534,8 @@ public:
 					new_nodes.push_back(sum_nodes(matrix[i]));
 				}
 				
-				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-				node_id_to_replacement_nodes[node.id] = new_nodes;
+				assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 				assert_one_hot_constraint(new_nodes);
 			}
@@ -540,9 +554,9 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( MOD_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( MOD_node& node ); node.globalId = " << node.globalId << endl;
 		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{
 			bool_node* mother = node.mother();
@@ -551,15 +565,15 @@ public:
 			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
 			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
 
-			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 			if(mother_is_one_hot && father_is_one_hot)
 			{
 				if(print)
 				cout << "ENTER" << endl;
-				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
-				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->globalId];
+				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->globalId];
 
 				int max_val = replace_mother_nodes.size() - 1 - 1;
 
@@ -580,8 +594,8 @@ public:
 					new_nodes.push_back(sum_nodes(matrix[i]));
 				}
 				
-				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-				node_id_to_replacement_nodes[node.id] = new_nodes;
+				assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 				assert_one_hot_constraint(new_nodes);
 			}
@@ -609,21 +623,21 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( LT_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( LT_node& node ); node.globalId = " << node.globalId << endl;
 		bool_node* mother = node.mother();
 		bool_node* father = node.father();
 
-		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 		if (mother_is_one_hot && father_is_one_hot)
 		{
 			if(print)
 			cout << "ENTER" << endl;
-			vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
-			vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+			vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->globalId];
+			vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->globalId];
 
 			vector<bool_node*> to_sum;
 
@@ -650,8 +664,8 @@ public:
 
 			assert_max_gt_c(bool_as_floats);
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = bool_as_floats;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = bool_as_floats;
 		}
 
 
@@ -664,10 +678,10 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( ASSERT_node& node ); node.id = " << node.id << endl;
-		int cond_id = node.get_parent(0)->id;
+		cout << "IN visit( ASSERT_node& node ); node.globalId = " << node.globalId << endl;
+		int cond_id = node.get_parent(0)->globalId;
 
 		bool cond_is_one_hot = node_id_to_replacement_nodes.find(cond_id) != node_id_to_replacement_nodes.end();
 
@@ -716,21 +730,21 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( AND_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( AND_node& node ); node.globalId = " << node.globalId << endl;
 		bool_node* mother = node.mother();
 		bool_node* father = node.father();
 
-		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 		if(mother_is_one_hot && father_is_one_hot)
 		{
 			if(print)
 			cout << "ENTER" << endl;
-			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
-			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->globalId];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->globalId];
 			assert(left.size() == 2);
 			assert(right.size() == 2);
 
@@ -747,8 +761,8 @@ public:
 
 			assert_one_hot_constraint(new_nodes);
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 		}
 
@@ -761,21 +775,21 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( OR_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( OR_node& node ); node.globalId = " << node.globalId << endl;
 		bool_node* mother = node.mother();
 		bool_node* father = node.father();
 
-		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 		if(mother_is_one_hot && father_is_one_hot)
 		{
 			if(print)
 			cout << "ENTER" << endl;
-			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
-			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->globalId];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->globalId];
 			assert(left.size() == 2);
 			assert(right.size() == 2);
 
@@ -789,8 +803,8 @@ public:
 
 			assert_one_hot_constraint(new_nodes);
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 		}
 
@@ -803,18 +817,18 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( XOR_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( XOR_node& node ); node.globalId = " << node.globalId << endl;
 		bool_node* mother = node.mother();
 		bool_node* father = node.father();
 
-		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 
 		if(print)
 		{
-			cout << mother->id <<" "<< father->id << endl;
+			cout << mother->globalId <<" "<< father->globalId << endl;
 			cout << mother_is_one_hot << " " << father_is_one_hot << endl;
 		}
 
@@ -822,8 +836,8 @@ public:
 		{
 			if(print)
 			cout << "ENTER" << endl;
-			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
-			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->globalId];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->globalId];
 			assert(left.size() == 2);
 			assert(right.size() == 2);
 
@@ -837,8 +851,8 @@ public:
 
 			assert_one_hot_constraint(new_nodes);
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 		}
 
@@ -851,25 +865,25 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( EQ_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( EQ_node& node ); node.globalId = " << node.globalId << endl;
 		bool_node* mother = node.mother();
 		bool_node* father = node.father();
 
-		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
-		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->globalId) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->globalId) != node_id_to_replacement_nodes.end();
 		if(print)
 		{
-			cout << mother->id <<" "<< father->id << endl;
+			cout << mother->globalId <<" "<< father->globalId << endl;
 			cout << mother_is_one_hot << " "  << father_is_one_hot << endl;
 		}
 		if(mother_is_one_hot && father_is_one_hot)
 		{
 			if(print)
 			cout << "ENTER" << endl;
-			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
-			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->globalId];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->globalId];
 			vector<bool_node*> new_nodes;
 
 			vector<bool_node*> mults;
@@ -886,8 +900,8 @@ public:
 
 			assert_max_gt_c(new_nodes);
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 		}
 
@@ -901,19 +915,19 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( NOT_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( NOT_node& node ); node.globalId = " << node.globalId << endl;
 
 		bool_node* parent = node.mother();
 
-		bool parent_is_one_hot = node_id_to_replacement_nodes.find(parent->id) != node_id_to_replacement_nodes.end();
+		bool parent_is_one_hot = node_id_to_replacement_nodes.find(parent->globalId) != node_id_to_replacement_nodes.end();
 
 		if(parent_is_one_hot)
 		{
 			if(print)
 			cout << "ENTER" << endl;
-			vector<bool_node*> parent_nodes = node_id_to_replacement_nodes[parent->id];
+			vector<bool_node*> parent_nodes = node_id_to_replacement_nodes[parent->globalId];
 
 			assert(parent_nodes.size() == 2);
 
@@ -922,8 +936,8 @@ public:
 			new_nodes.push_back(parent_nodes[1]);
 			new_nodes.push_back(parent_nodes[0]);
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 
 		}
 
@@ -936,7 +950,7 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 
 		if(node.getOtype() == OutType::FLOAT_ARR)
 		{
@@ -949,8 +963,8 @@ public:
 				new_nodes.push_back(node.get_parent(i));
 			}
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 		}
 		
 		DagOptim::visit(node);
@@ -975,20 +989,20 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( ARRACC_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( ARRACC_node& node ); node.globalId = " << node.globalId << endl;
 
 		bool_node* cond_node = node.get_parent(0);
 		bool_node* if_false_node = node.get_parent(1);
 		bool_node* if_true_node = node.get_parent(2);
 
 		if(print)
-		cout << cond_node->id << " " << if_false_node->id <<" "<< if_true_node->id << endl;
+		cout << cond_node->globalId << " " << if_false_node->globalId <<" "<< if_true_node->globalId << endl;
 
-		bool cond_is_one_hot = node_id_to_replacement_nodes.find(cond_node->id) != node_id_to_replacement_nodes.end();
-		bool if_true_is_one_hot = node_id_to_replacement_nodes.find(if_false_node->id) != node_id_to_replacement_nodes.end();
-		bool if_false_is_one_hot = node_id_to_replacement_nodes.find(if_true_node->id) != node_id_to_replacement_nodes.end();
+		bool cond_is_one_hot = node_id_to_replacement_nodes.find(cond_node->globalId) != node_id_to_replacement_nodes.end();
+		bool if_true_is_one_hot = node_id_to_replacement_nodes.find(if_false_node->globalId) != node_id_to_replacement_nodes.end();
+		bool if_false_is_one_hot = node_id_to_replacement_nodes.find(if_true_node->globalId) != node_id_to_replacement_nodes.end();
 
 		if(print)
 		{
@@ -998,9 +1012,9 @@ public:
 		{
 			if(print)
 			cout << "ENTER 1" << endl;
-			vector<bool_node*> cond_one_hot = node_id_to_replacement_nodes[cond_node->id];
-			vector<bool_node*> if_true_one_hot = node_id_to_replacement_nodes[if_true_node->id];
-			vector<bool_node*> if_false_one_hot = node_id_to_replacement_nodes[if_false_node->id];
+			vector<bool_node*> cond_one_hot = node_id_to_replacement_nodes[cond_node->globalId];
+			vector<bool_node*> if_true_one_hot = node_id_to_replacement_nodes[if_true_node->globalId];
+			vector<bool_node*> if_false_one_hot = node_id_to_replacement_nodes[if_false_node->globalId];
 
 			make_vectors_equal_length(if_true_one_hot, if_false_one_hot);
 
@@ -1027,12 +1041,12 @@ public:
 
 			assert_one_hot_constraint(new_nodes);
 
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 		}
 		else if(cond_is_one_hot && !if_true_is_one_hot && !if_false_is_one_hot)
 		{
-			vector<bool_node*> cond_one_hot = node_id_to_replacement_nodes[cond_node->id];
+			vector<bool_node*> cond_one_hot = node_id_to_replacement_nodes[cond_node->globalId];
 
 			bool all_floats = true;
 			int n = node.nargs();
@@ -1069,30 +1083,30 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 		if(print)
-		cout << "IN visit( ARRASS_node& node ); node.id = " << node.id << endl;
+		cout << "IN visit( ARRASS_node& node ); node.globalId = " << node.globalId << endl;
 
 		bool_node* lhs_of_cond = node.mother();
 		int rhs_of_cond = node.quant;
 		bool_node* new_value = node.getNewVal();
 		bool_node* old_value = node.getOldVal();
 
-		bool lhs_of_cond_has_one_hot = node_id_to_replacement_nodes.find(lhs_of_cond->id) != node_id_to_replacement_nodes.end();
-		bool new_value_has_one_hot = node_id_to_replacement_nodes.find(new_value->id) != node_id_to_replacement_nodes.end();
-		bool old_value_has_one_hot = node_id_to_replacement_nodes.find(old_value->id) != node_id_to_replacement_nodes.end();
+		bool lhs_of_cond_has_one_hot = node_id_to_replacement_nodes.find(lhs_of_cond->globalId) != node_id_to_replacement_nodes.end();
+		bool new_value_has_one_hot = node_id_to_replacement_nodes.find(new_value->globalId) != node_id_to_replacement_nodes.end();
+		bool old_value_has_one_hot = node_id_to_replacement_nodes.find(old_value->globalId) != node_id_to_replacement_nodes.end();
 
 		if(lhs_of_cond_has_one_hot && new_value_has_one_hot && old_value_has_one_hot)
 		{
 			if(print) cout << "ENTER 1" << endl;
-			vector<bool_node*> lhs_nodes = node_id_to_replacement_nodes[lhs_of_cond->id];
+			vector<bool_node*> lhs_nodes = node_id_to_replacement_nodes[lhs_of_cond->globalId];
 			vector<bool_node*> new_nodes;
 			if(rhs_of_cond < lhs_nodes.size())
 			{
 				bool_node* quant_node = lhs_nodes[rhs_of_cond];
 
-				vector<bool_node*> new_value_nodes = node_id_to_replacement_nodes[new_value->id];
-				vector<bool_node*> old_value_nodes = node_id_to_replacement_nodes[old_value->id];
+				vector<bool_node*> new_value_nodes = node_id_to_replacement_nodes[new_value->globalId];
+				vector<bool_node*> old_value_nodes = node_id_to_replacement_nodes[old_value->globalId];
 				
 				make_vectors_equal_length(new_value_nodes, old_value_nodes);
 
@@ -1109,16 +1123,16 @@ public:
 			}
 			else
 			{
-				vector<bool_node*> old_value_nodes = node_id_to_replacement_nodes[old_value->id];
+				vector<bool_node*> old_value_nodes = node_id_to_replacement_nodes[old_value->globalId];
 				new_nodes = old_value_nodes;
 			}
-			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-			node_id_to_replacement_nodes[node.id] = new_nodes;
+			assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.globalId] = new_nodes;
 		}
 		else if(lhs_of_cond_has_one_hot && !new_value_has_one_hot && !old_value_has_one_hot)
 		{
 			if(print) cout << "ENTER 2" << endl;
-			vector<bool_node*> lhs_nodes = node_id_to_replacement_nodes[lhs_of_cond->id];
+			vector<bool_node*> lhs_nodes = node_id_to_replacement_nodes[lhs_of_cond->globalId];
 
 			if(new_value->getOtype() == OutType::FLOAT && old_value->getOtype() == OutType::FLOAT)
 			{
@@ -1146,15 +1160,15 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 
-		if(print) cout << "IN visit( ARR_W_node& node ); node.id = " << node.id << endl;
+		if(print) cout << "IN visit( ARR_W_node& node ); node.globalId = " << node.globalId << endl;
 
 		bool_node* idx_node = node.mother();
 		bool_node* arr_node = node.getOldArr();
 		bool_node* new_val = node.getNewVal();
 
-		bool is_idx_node_one_hot = node_id_to_replacement_nodes.find(idx_node->id) != node_id_to_replacement_nodes.end();
+		bool is_idx_node_one_hot = node_id_to_replacement_nodes.find(idx_node->globalId) != node_id_to_replacement_nodes.end();
 
 //		cout << "idx_node " << idx_node->lprint() << endl;
 //		cout << "arr_node " << arr_node->lprint() << " out type: " << arr_node->getOtype()->str() << endl;
@@ -1166,7 +1180,7 @@ public:
 
 		if(is_idx_node_one_hot)
 		{
-			vector<bool_node*> idx_nodes = node_id_to_replacement_nodes[idx_node->id];
+			vector<bool_node*> idx_nodes = node_id_to_replacement_nodes[idx_node->globalId];
 			if(arr_node->getOtype() == OutType::FLOAT && new_val->getOtype() == OutType::FLOAT)
 			{
 				if(print) cout << "ENTER 1" << endl;
@@ -1175,16 +1189,16 @@ public:
 				{
 					new_nodes.push_back(my_mult(idx_nodes[i], new_val));
 				}
-				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-				node_id_to_replacement_nodes[node.id] = new_nodes;
+				assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.globalId] = new_nodes;
 			}
 			else if (arr_node->getOtype() == OutType::FLOAT_ARR && new_val->getOtype() == OutType::FLOAT)
 			{
-				bool is_arr_node_replaced = node_id_to_replacement_nodes.find(arr_node->id) != node_id_to_replacement_nodes.end();
+				bool is_arr_node_replaced = node_id_to_replacement_nodes.find(arr_node->globalId) != node_id_to_replacement_nodes.end();
 				if(is_arr_node_replaced)
 				{
 					if(print) cout << "ENTER 2" << endl;
-					vector<bool_node*> arr_nodes = node_id_to_replacement_nodes[arr_node->id];
+					vector<bool_node*> arr_nodes = node_id_to_replacement_nodes[arr_node->globalId];
 
 					make_vectors_equal_length(arr_nodes, idx_nodes);
 
@@ -1201,8 +1215,8 @@ public:
 							);
 					}
 
-					assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-					node_id_to_replacement_nodes[node.id] = new_nodes;
+					assert(node_id_to_replacement_nodes.find(node.globalId) == node_id_to_replacement_nodes.end());
+					node_id_to_replacement_nodes[node.globalId] = new_nodes;
 				}
 			}
 		}
@@ -1216,21 +1230,21 @@ public:
 			DagOptim::visit(node);
 			return;
 		}
-		bool print = meta_print || node.id != -1;
+		bool print = meta_print;
 
-		if(print) cout << "IN visit( ARR_R_node& node ); node.id = " << node.id << endl;
+		if(print) cout << "IN visit( ARR_R_node& node ); node.globalId = " << node.globalId << endl;
 
 		bool_node* idx_node = node.mother();
 		bool_node* arr_node = node.father();
 
-		bool is_idx_node_one_hot = node_id_to_replacement_nodes.find(idx_node->id) != node_id_to_replacement_nodes.end();
-		bool is_arr_node_replaced = node_id_to_replacement_nodes.find(arr_node->id) != node_id_to_replacement_nodes.end();
+		bool is_idx_node_one_hot = node_id_to_replacement_nodes.find(idx_node->globalId) != node_id_to_replacement_nodes.end();
+		bool is_arr_node_replaced = node_id_to_replacement_nodes.find(arr_node->globalId) != node_id_to_replacement_nodes.end();
 
 		if(is_idx_node_one_hot && is_arr_node_replaced)
 		{ 
 			if(print) cout << "ENTER" << endl;
-			vector<bool_node*> idx_nodes = node_id_to_replacement_nodes[idx_node->id];
-			vector<bool_node*> arr_nodes = node_id_to_replacement_nodes[arr_node->id];
+			vector<bool_node*> idx_nodes = node_id_to_replacement_nodes[idx_node->globalId];
+			vector<bool_node*> arr_nodes = node_id_to_replacement_nodes[arr_node->globalId];
 			vector<bool_node*> dot_product;
 			for(int i = 0;i<min(idx_nodes.size(), arr_nodes.size());i++)
 			{

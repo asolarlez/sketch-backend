@@ -37,7 +37,7 @@ NumericalSolver::~NumericalSolver(void) {
 
 bool NumericalSolver::checkSAT(int level, gsl_vector* initState) {
     interf->printInputs();
-    if (initState != NULL) {
+    if (initState != NULL && PARAMS->verbosity > 3) {
         cout << "Init state: " << Util::print(initState) << endl;
     }
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
@@ -51,13 +51,17 @@ bool NumericalSolver::checkSAT(int level, gsl_vector* initState) {
     if (sat) {
         result = opt->getMinState();
         cout << "Level " << level << " satisfiable" << endl;
-        cout << Util::print(result) << endl;
+        if (PARAMS->verbosity > 3) {
+            cout << Util::print(result) << endl;
+        }
         return true;
     } else {
         result = opt->getMinState();
         cout << "Level " << level << " unsatisfiable" << endl;
-        cout << "Local solution" << endl;
-        localState->print();
+        if (PARAMS->verbosity > 3) {
+            cout << "Local solution" << endl;
+            localState->print();
+        }
         return false;
     }
 }

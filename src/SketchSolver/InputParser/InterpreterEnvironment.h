@@ -296,7 +296,7 @@ public:
 		functionMap[name] = tmp;
 
 
-		return new BooleanDAGCreator(tmp, floats);		
+		return new BooleanDAGCreator(tmp, floats, params);		
 	}
 
 
