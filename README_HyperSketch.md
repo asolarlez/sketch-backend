@@ -148,31 +148,43 @@ Now we are ready to call Sketch. Run:
   make run-local-seq EXEC_ARGS="bitarray_synth.sk --slv-hypersketch my-hypersketch.hsk"
 ``
 
-Sketch should quickly output in the terminal code similar to the following (the followign code was manually styled):
+Sketch should quickly output in the terminal code similar to the following:
 
 ```
-SKETCH version 1.7.6
+... boilerplate INFO output ...
+SKETCH version 1.8
 Benchmark = bitarray_synth.sk
+... some parsing debug output ...
+/* BEGIN PACKAGE ANONYMOUS*/
+/*bitarray_synth.sk:1*/
 
-void op (bit x0, bit x1, ref bit _out) {
+void op__id24 (bit x0, bit x1, ref bit _out)/*bitarray_synth.sk:1*/
+{
   _out = !(x0 || x1);
   return;
 }
-@FromFile("bits.data")
-void sketch_main(int n, bit[n] bits, bit out) {
-  bit _out_s2 = 0;
-  op(bits[0], bits[0], _out_s2);
-  assert (_out_s2 == out);
-}
-@FromFile("bits.data")
-void sketch_main__Wrapper (int n, bit[n] bits, bit out) 
-implements sketch_main__WrapperNospec {
-  sketch_main(n, bits, out);
-}
-void sketch_main__WrapperNospec (int n, bit[n] bits, bit out) {}
+/*bitarray_synth.sk:5*/
 
+void sketch_main__WrapperNospec (int n, bit[n] bits, bit out)/*bitarray_synth.sk:5*/
+{ }
+/*bitarray_synth.sk:5*/
+@FromFile("bits.data") 
+void sketch_main__Wrapper__id26 (int n, bit[n] bits, bit out)  implements sketch_main__WrapperNospec/*bitarray_synth.sk:5*/
+{
+  sketch_main__id25(n, bits, out);
+}
+/*bitarray_synth.sk:5*/
+@FromFile("bits.data") 
+void sketch_main__id25 (int n, bit[n] bits, bit out)/*bitarray_synth.sk:5*/
+{
+  bit _out_s2 = 0;
+  op__id24(bits[0], bits[1], _out_s2);
+  assert (_out_s2 == out); //Assert at bitarray_synth.sk:6 (0)
+}
+/* END PACKAGE ANONYMOUS*/
 [SKETCH] DONE
-Total time = 189
+Total time = 156
+... [INFO] BUILD SUCCESS boilerplate output ...
 ```
 
 Now inspect the hypersketch_console.out output file:
@@ -189,24 +201,17 @@ fmtl_program_file.fmtl:
 
 ```
 op = declare("op", ["H__2"], {});
-op__id18 = op.unit_clone("op__id18", {"H__2" : "H__2__id18"});
-op__id18.inplace_unit_concretize({"H__2__id18" : "0"});
-sketch_main = declare(
-  "sketch_main", ["H__0", "H__1"], {"op" : "op"});
-sketch_main__id19 = sketch_main.unit_clone("sketch_main__id19",
-  {"H__0" : "H__0__id19", "H__1" : "H__1__id19"});
-sketch_main__id19.replace("op", op__id18);
-sketch_main__id19.inplace_unit_concretize(
-  {"H__0__id19" : "0", "H__1__id19" : "0"});
-sketch_main__Wrapper = declare(
-  "sketch_main__Wrapper", [], 
-  {"sketch_main" : "sketch_main"});
-sketch_main__Wrapper__id20 = sketch_main__Wrapper.unit_clone(
-  "sketch_main__Wrapper__id20", {});
-sketch_main__Wrapper__id20.replace(
-  "sketch_main", sketch_main__id19);
-sketch_main__Wrapper__id20.inplace_unit_concretize({});
-return sketch_main__Wrapper__id20;
+op__id24 = op.unit_clone("op__id24", {"H__2" : "H__2__id24"});
+op__id24.inplace_unit_concretize({"H__2__id24" : "1"});
+sketch_main = declare("sketch_main", ["H__0", "H__1"], {"op" : "op"});
+sketch_main__id25 = sketch_main.unit_clone("sketch_main__id25", {"H__0" : "H__0__id25", "H__1" : "H__1__id25"});
+sketch_main__id25.replace("op", op__id24);
+sketch_main__id25.inplace_unit_concretize({"H__0__id25" : "0", "H__1__id25" : "1"});
+sketch_main__Wrapper = declare("sketch_main__Wrapper", [], {"sketch_main" : "sketch_main"});
+sketch_main__Wrapper__id26 = sketch_main__Wrapper.unit_clone("sketch_main__Wrapper__id26", {});
+sketch_main__Wrapper__id26.replace("sketch_main", sketch_main__id25);
+sketch_main__Wrapper__id26.inplace_unit_concretize({});
+return sketch_main__Wrapper__id26;
 ```
 
 With that you have gone though the entire process of running hypersketch: passing a sketch file and .data file, passing the hypersketch file, and then inspecting the solution and output of the hypersketch program.
