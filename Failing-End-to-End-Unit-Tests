@@ -1,4 +1,61 @@
+Failing tests Jan 24th 2026
+in merging HyperSketchIntegration branch into master
+count: 16
+from last:
+      new failing: 4
+      old failing: 12 // old means the previous test at Jan 30th 2023.
+      fixed: 3
+
+      32     123     729 miniTestb358.sk new 
+     212     745    4630 miniTestb377.sk old
+      20      65     409 miniTestb385.sk new 
+      25      78     459 miniTestb435.sk old
+      25      81     470 miniTestb436.sk old
+      34      74     423 miniTestb579.sk new 
+    2894    9528  146863 miniTestb678.sk old
+       7      24     128 miniTestb776.sk old 
+      17      32     238 miniTestb858.sk old 
+      64     105     971 miniTestb860.sk old 
+      37      65     603 miniTestb861.sk old
+      29      59     441 miniTestb862.sk old
+      75     314    1743 miniTestb869.sk new 
+      13      42     262 miniTestb889.sk old
+     204     527    4831 miniTestb895.sk old
+      18      50     345 miniTestb901.sk old
+     895     895   18016 cur
+    4601   12807  181561 total
+
+not failing any more
+      30      85     460 miniTestBigInts2.sk
+      13      42     176 miniTestb183.sk
+     588    6967   35372 miniTestb841.sk
+
+what broke since the previous test::
+for miniTestb358.sk
+      Sketch failed to parse: Bad token [\@10,43]:"\"
+      at line 
+      """return {| gen(x, y, t, lim-1) (& | \| | ^) gen(x, y, t, lim-1) |};"""
+      the "\|" is not parsed properly.
+      todo: investigate and fix the parsing error. 
+      hack: manually removed the "\|" choice. 
+for miniTestb385.sk
+      Failed with IllegalArgumentException exception; message: File not found: generators.skh
+      fix: added a copy of generators.skh from src/sketchlib to src/test/sk/seq
+for sketch miniTestb579.sk 
+      got Sketch Not Resolved Error: Error: baseCheck: SIZE MISMATCH: 4 != 5 x_2_2_0
+      hack: running it with the following command works fine.
+            sketch miniTestb579.sk --bnd-inbits 4
+      todo: investigate why there is a missmatch with the default.
+for sketch miniTestb869.sk
+      fails to resolve quickly
+      prints a large debug trace, probably due to HyperSketch's prints.
+      remains enigmatic during the run.
+      but it indeed completed after "Total time = 2165877" in an individual, so it might be just timing out.
+
+---
+
 Best known Mon, Jan 30th 2023
+count: 15
 
       30      85     460 miniTestBigInts2.sk
       13      42     176 miniTestb183.sk
